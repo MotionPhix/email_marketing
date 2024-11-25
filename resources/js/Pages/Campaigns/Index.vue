@@ -1,7 +1,7 @@
 <script setup>
 import AppLayout from "@/Layouts/AppLayout.vue";
 import { Link } from '@inertiajs/vue3'
-import {Button} from "@/Components/ui/button/index.js";
+import {Button} from "@/Components/ui/button";
 import {ExternalLinkIcon} from "@radix-icons/vue";
 
 defineProps({
@@ -64,15 +64,19 @@ defineProps({
           No campaigns
         </h2>
 
-        <p class="text-gray-500">
+        <p class="text-gray-500 mb-4">
           You don't have any campaigns yet.
         </p>
 
-        <Link
-          as="button"
-          :href="route('campaigns.create')">
-          Create campaign
-        </Link>
+        <Button as-child>
+
+          <Link
+            as="button"
+            :href="route('campaigns.create')">
+            Create campaign
+          </Link>
+
+        </Button>
 
       </div>
 

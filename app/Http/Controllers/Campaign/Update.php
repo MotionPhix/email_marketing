@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Campaign;
 use App\Http\Controllers\Controller;
 use App\Models\Campaign;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class Update extends Controller
 {
@@ -18,10 +19,18 @@ class Update extends Controller
 
     $validated = $request->validate([
       'scheduled_at' => 'nullable|date|after:now',
-      'title' => 'required|unique:campaigns|max:100',
+
+      'title' => [
+        'required',
+        'max:100',
+        Rule::unique('campaigns')
+          ->where(fn($query) => $query->where('user_id', $request->user()->id))
+          ->ignore($campaign->id ?? null), // Exclude the current campaign ID if updating
+      ],
+
       'subject' => 'required|max:200',
-      'template_id' => 'nullable|exists:templates,uuid',
-      'audience_id' => 'nullable|exists:audiences,uuid',
+      'template_id' => 'nullable|exists:templates,id',
+      'audience_id' => 'nullable|exists:audiences,id',
       'description' => 'nullable',
     ]);
 
@@ -36,11 +45,12 @@ class Update extends Controller
 
       $campaign->update([
         'title' => $validated['title'],
-        'content' => $validated['content'],
+        'template_id' => $validated['template_id'],
+        'audience_id' => $validated['audience_id'],
+        'description' => $validated['description'],
         'status' => $validated['scheduled_at'] ? 'scheduled' : 'draft',
         'scheduled_at' => $validated['scheduled_at'],
       ]);
-
     }
 
     return redirect()

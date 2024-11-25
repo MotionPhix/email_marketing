@@ -35,6 +35,11 @@ Route::middleware([
       \App\Http\Controllers\Campaign\Form::class
     )->name('campaigns.create');
 
+    Route::get(
+      '/s/{campaign:uuid}',
+      \App\Http\Controllers\Campaign\show::class
+    )->name('campaigns.show');
+
     Route::post(
       '/',
       \App\Http\Controllers\Campaign\Store::class

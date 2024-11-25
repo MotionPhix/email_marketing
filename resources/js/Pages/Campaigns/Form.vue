@@ -21,6 +21,7 @@ import {
 import {onBeforeUnmount, onMounted, ref, watch} from "vue";
 import {useCampaignStore} from "@/Stores/campaignStore";
 import TemplateSelector from "@/Components/TemplateSelector.vue";
+import { useToast } from 'maz-ui'
 
 const {campaign} = defineProps<{
   campaign: object,
@@ -29,6 +30,7 @@ const {campaign} = defineProps<{
 }>();
 
 const campaignStore = useCampaignStore()
+const toast = useToast()
 
 if (campaign.uuid) campaignStore.setCampaign(campaign)
 
@@ -77,13 +79,23 @@ const nextStep = () => {
     }
 
   } else if (step.value === 2) {
+
     if (! form.template_id) {
       return form.setError('template_id', 'Please select or create a template.');
+    }
+
+    if (campaignStore.campaign) {
+
+      Object.keys(campaignStore.campaign).forEach((key) => {
+        if (key in form) form[key] = campaignStore.campaign[key];
+      });
+
     }
 
     step.value = 3;
 
     localStorage.setItem('campaignStep', step.value);
+
   }
 };
 
@@ -94,11 +106,37 @@ const previousStep = () => {
   }
 };
 
+const show = () => {
+  router.visit(route('campaigns.show', campaign.uuid));
+};
+
 const onSubmit = () => {
   if (campaign.uuid) {
-    form.put(route('campaigns.update', campaign.id), {
+
+    form.put(route('campaigns.update', campaign.uuid), {
       preserveScroll: true,
+
+      onError: (errors) => {
+        toast.error(errors.name ?? errors.design ?? errors.content)
+      },
+
+      onSuccess: () => {
+
+        toast.success("Campaign created.", {
+          action: {
+            func: () => show(),
+            text: 'Show',
+            closeToast: true
+          }
+        })
+
+        Object.keys(campaignStore.campaign).forEach((key) => {
+          if (key in form) form[key] = campaignStore.campaign[key];
+        });
+
+      },
     })
+
     return
   }
 
@@ -109,34 +147,24 @@ const onSubmit = () => {
 
 // Redirect after Template Creation
 const redirectToTemplateBuilder = () => {
-  campaignStore.setCampaign(form); // Save progress
-  router.visit(route('templates.create', campaign.uuid)); // Redirect to template builder
+  campaignStore.setCampaign(form);
+  router.visit(route('templates.create', campaign.uuid));
 };
 
 onMounted(() => {
   const savedStep = localStorage.getItem('campaignStep');
-  // const savedForm = JSON.parse(localStorage.getItem('campaignForm'));
 
   if (savedStep) step.value = parseInt(savedStep, 10);
-
-  // if (savedForm) {
-  //   Object.keys(savedForm).forEach((key) => {
-  //     if (key in form) form[key] = savedForm[key];
-  //   });
-  // }
 
   if (campaignStore.campaign) {
     Object.keys(campaignStore.campaign).forEach((key) => {
       if (key in form) form[key] = campaignStore.campaign[key];
     });
-
-    step.value = 2; // Ensure user starts from step 2
   }
 });
 
 onBeforeUnmount(() => {
   localStorage.setItem('campaignStep', step.value);
-  // localStorage.setItem('campaignForm', JSON.stringify(form));
 });
 </script>
 
@@ -188,15 +216,20 @@ onBeforeUnmount(() => {
 
         <Popover>
           <PopoverTrigger as-child>
+
             <Button
               variant="outline"
               :class="cn(
-          'justify-start text-left font-normal',
-                    !form.scheduled_at && 'text-muted-foreground',
-                  )">
+                'justify-start text-left font-normal',
+                !form.scheduled_at && 'text-muted-foreground',
+              )">
+
               <CalendarIcon class="mr-2 h-4 w-4"/>
-              {{ form.scheduled_at ? format(form.scheduled_at, 'PP') : "Schedule" }}
+
+              <span>{{ form.scheduled_at ? format(form.scheduled_at, 'PP') : "Schedule" }}</span>
+
             </Button>
+
           </PopoverTrigger>
 
           <PopoverContent align="end" class="w-full p-0">
@@ -282,6 +315,7 @@ onBeforeUnmount(() => {
           </Label>
 
           <Select v-model="form.audience_id" id="audience">
+
             <SelectTrigger class="w-full">
               <SelectValue placeholder="Select an audience"/>
             </SelectTrigger>
@@ -290,7 +324,8 @@ onBeforeUnmount(() => {
 
               <SelectItem
                 v-for="audience in audiences"
-                :key="audience.uuid" :value="String(audience.id)">
+                :value="audience.id"
+                :key="audience.uuid">
                 {{ audience.name }}
               </SelectItem>
 
@@ -298,7 +333,14 @@ onBeforeUnmount(() => {
 
           </Select>
 
-          <InputError :message="form.errors.audience_id"/>
+          <InputError
+            :message="
+              form.errors.audience_id ??
+              form.errors.title ??
+              form.errors.subject??
+              form.errors.template_id??
+              form.errors.scheduled_at
+            "/>
         </div>
 
         <div class="flex gap-4">

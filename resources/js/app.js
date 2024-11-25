@@ -9,6 +9,7 @@ import {ZiggyVue} from '../../vendor/tightenco/ziggy';
 import {Modal, ModalLink, renderApp} from '@inertiaui/modal-vue'
 import {createPinia} from "pinia";
 import { installToaster } from 'maz-ui'
+import VueApexCharts from "vue3-apexcharts";
 
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
 const pinia = createPinia()
@@ -28,6 +29,7 @@ createInertiaApp({
       .use(plugin)
       .use(ZiggyVue)
       .use(pinia)
+      .use(VueApexCharts)
       .use(installToaster, toasterOptions)
       .component('GlobalModal', Modal)
       .component('GlobalLink', ModalLink)

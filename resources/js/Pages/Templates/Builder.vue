@@ -67,8 +67,6 @@ const saveDesign = () => {
       }
 
       form.post(route('templates.store'))
-
-      console.log('saveDesign', design);
     }
   )
 }
@@ -81,8 +79,6 @@ const exportHtml = () => {
       emailEditor.value.editor.saveDesign(
         (design) => {
           form.design = design
-
-          console.log('design', design);
         }
       )
 
@@ -96,16 +92,17 @@ const exportHtml = () => {
 
         })
 
-        return
+      } else {
+
+        form.post(route('templates.store', campaign.uuid), {
+
+          onError: (errors) => {
+            toast.error(errors.name ?? errors.design ?? errors.content)
+          }
+
+        })
+
       }
-
-      form.post(route('templates.store', campaign.uuid), {
-
-        onError: (errors) => {
-          toast.error(errors.name ?? errors.design ?? errors.content)
-        }
-
-      })
     }
   )
 }

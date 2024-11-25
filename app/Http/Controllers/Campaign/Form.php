@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Campaign;
 
 use App\Http\Controllers\Controller;
-use App\Models\Audience;
 use App\Models\Campaign;
 use App\Models\Template;
 use Illuminate\Http\Request;

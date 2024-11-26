@@ -51,7 +51,7 @@ Route::middleware([
     )->name('campaigns.update');
 
     Route::post(
-      '/send/{campaign:uuid}',
+      '/send/{campaign:uuid?}',
       \App\Http\Controllers\Campaign\Send::class
     )->name('campaigns.send');
 

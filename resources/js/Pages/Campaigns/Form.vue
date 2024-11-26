@@ -4,7 +4,6 @@ import AppLayout from "@/Layouts/AppLayout.vue";
 import InputError from "@/Components/InputError.vue";
 import {Label} from "@/Components/ui/label";
 import {Input} from "@/Components/ui/input";
-import {Textarea} from "@/Components/ui/textarea";
 import {Calendar} from "@/Components/ui/v-calendar";
 import {Button} from '@/Components/ui/button'
 import {CalendarIcon, PlusIcon, ArrowRightIcon, ArrowLeftIcon} from "@radix-icons/vue";
@@ -21,6 +20,7 @@ import {
 import {onBeforeUnmount, onMounted, ref, watch} from "vue";
 import {useCampaignStore} from "@/Stores/campaignStore";
 import TemplateSelector from "@/Components/TemplateSelector.vue";
+import MazTextarea from 'maz-ui/components/MazTextarea'
 import { useToast } from 'maz-ui'
 
 const {campaign} = defineProps<{
@@ -290,10 +290,11 @@ onBeforeUnmount(() => {
               Description
             </Label>
 
-            <Textarea
+            <MazTextarea
               v-model="form.description"
               placeholder="Describe what the campaign is about"
-              id="description"/>
+              id="description"
+            />
 
             <InputError :message="form.errors.description"/>
           </div>

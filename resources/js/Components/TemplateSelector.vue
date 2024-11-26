@@ -1,6 +1,6 @@
 <script setup lang="ts">
 defineProps<{
-  modelValue: number,
+  modelValue?: number,
   templates: Array<{
     value: number;
     label: string;

@@ -67,11 +67,13 @@ import {Checkbox} from "@/Components/ui/checkbox";
 import DropdownAction from "@/Pages/Campaigns/DropdownAction.vue";
 
 export interface Campaign {
+  id: number
   uuid: string
-  title: number
+  title: string
   status: 'draft' | 'processing' | 'sent' | 'failed'
-  scheduled_at: string|null,
-  audience_recipients_count: number
+  scheduled_at: string|null
+  recipients_count: number
+  template_id: number
 }
 
 const {campaigns} = defineProps({
@@ -127,9 +129,9 @@ const columns: ColumnDef<Campaign>[] = [
     },
   },
   {
-    accessorKey: 'audience_recipients_count ',
+    accessorKey: 'recipients_count ',
     header: 'Recipients',
-    cell: ({ row }) => h('div', { class: 'capitalize' }, row.getValue('audience_recipients_count ')),
+    cell: ({ row }) => h('div', { class: 'capitalize' }, row.getValue('recipients_count ')),
   },
   {
     id: 'actions',
@@ -172,6 +174,9 @@ const table = useVueTable({
     get expanded() { return expanded.value },
   },
 })
+
+console.log(campaigns);
+
 </script>
 
 <template>
@@ -199,9 +204,9 @@ const table = useVueTable({
         <div class="flex gap-2 items-center py-4">
           <Input
             class="max-w-sm"
-            placeholder="Filter emails..."
-            :model-value="table.getColumn('email')?.getFilterValue() as string"
-            @update:model-value=" table.getColumn('email')?.setFilterValue($event)"
+            placeholder="Filter campaigns..."
+            :model-value="table.getColumn('title')?.getFilterValue() as string"
+            @update:model-value=" table.getColumn('title')?.setFilterValue($event)"
           />
           <DropdownMenu>
             <DropdownMenuTrigger as-child>
@@ -234,6 +239,7 @@ const table = useVueTable({
                 </TableHead>
               </TableRow>
             </TableHeader>
+
             <TableBody>
               <template v-if="table.getRowModel().rows?.length">
                 <template v-for="row in table.getRowModel().rows" :key="row.id">
@@ -242,6 +248,7 @@ const table = useVueTable({
                       <FlexRender :render="cell.column.columnDef.cell" :props="cell.getContext()" />
                     </TableCell>
                   </TableRow>
+
                   <TableRow v-if="row.getIsExpanded()">
                     <TableCell :colspan="row.getAllCells().length">
                       {{ JSON.stringify(row.original) }}
@@ -267,6 +274,7 @@ const table = useVueTable({
             {{ table.getFilteredSelectedRowModel().rows.length }} of
             {{ table.getFilteredRowModel().rows.length }} row(s) selected.
           </div>
+
           <div class="space-x-2">
             <Button
               variant="outline"
@@ -276,6 +284,7 @@ const table = useVueTable({
             >
               Previous
             </Button>
+
             <Button
               variant="outline"
               size="sm"

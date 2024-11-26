@@ -1,9 +1,26 @@
 <script setup>
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { Head, Link } from '@inertiajs/vue3';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle
+} from '@/Components/ui/card'
+import {
+  Activity,
+  ArrowUpRight,
+  CircleUser,
+  CreditCard,
+  DollarSign,
+  Menu,
+  Package2,
+  Search,
+  Users
+} from 'lucide-vue-next'
 import { onMounted } from 'vue';
 
-// Props from Inertia
 const { campaign, statistics } = defineProps({
   campaign: {
     type: Object,
@@ -15,7 +32,6 @@ const { campaign, statistics } = defineProps({
   },
 });
 
-// Example: Transform SendGrid statistics for chart rendering
 const chartData = {
   categories: statistics.map((stat) => stat.date),
   series: [
@@ -26,20 +42,17 @@ const chartData = {
   ],
 };
 
-// Render Chart on Component Mount
-onMounted(() => {
-  const options = {
-    chart: {
-      type: 'line',
-      height: 300,
-    },
-    series: chartData.series,
-    xaxis: {
-      categories: chartData.categories,
-    },
-  };
-  new ApexCharts(document.querySelector('#campaign-chart'), options).render();
-});
+const options = {
+  chart: {
+    type: 'line',
+    height: 300,
+  },
+  xaxis: {
+    categories: chartData.categories,
+  },
+};
+
+const series = chartData.series
 </script>
 
 <template>
@@ -102,7 +115,8 @@ onMounted(() => {
       </div>
     </div>
 
-    <div class="p-6 rounded-lg bg-gray-100">
+    <div class="p-6 rounded-lg bg-zinc-100 my-12">
+
       <div>
         <h1 class="text-2xl font-bold">{{ campaign.title }}</h1>
         <p class="text-gray-400">Subject: {{ campaign.subject }}</p>
@@ -110,31 +124,104 @@ onMounted(() => {
       </div>
 
       <!-- Statistics Cards -->
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
-        <div class="bg-gray-800 p-4 rounded-lg text-center">
-          <h3 class="text-lg font-semibold">Opens</h3>
-          <p class="text-2xl">{{ statistics.reduce((sum, stat) => sum + stat.metrics.opens, 0) }}</p>
-        </div>
+<!--      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">-->
+<!--        <div class="bg-gray-800 p-4 rounded-lg text-center">-->
+<!--          <h3 class="text-lg font-semibold">Opens</h3>-->
+<!--          <p class="text-2xl">{{ statistics.reduce((sum, stat) => sum + stat.metrics.opens, 0) }}</p>-->
+<!--        </div>-->
 
-        <div class="bg-gray-800 p-4 rounded-lg text-center">
-          <h3 class="text-lg font-semibold">Clicks</h3>
-          <p class="text-2xl">{{ statistics.reduce((sum, stat) => sum + stat.metrics.clicks, 0) }}</p>
-        </div>
+<!--        <div class="bg-gray-800 p-4 rounded-lg text-center">-->
+<!--          <h3 class="text-lg font-semibold">Clicks</h3>-->
+<!--          <p class="text-2xl">{{ statistics.reduce((sum, stat) => sum + stat.metrics.clicks, 0) }}</p>-->
+<!--        </div>-->
 
-        <div class="bg-gray-800 p-4 rounded-lg text-center">
-          <h3 class="text-lg font-semibold">Bounces</h3>
-          <p class="text-2xl">{{ statistics.reduce((sum, stat) => sum + stat.metrics.bounces, 0) }}</p>
-        </div>
-        <div class="bg-gray-800 p-4 rounded-lg text-center">
-          <h3 class="text-lg font-semibold">Spam Reports</h3>
-          <p class="text-2xl">{{ statistics.reduce((sum, stat) => sum + stat.metrics.spam_reports, 0) }}</p>
-        </div>
+<!--        <div class="bg-gray-800 p-4 rounded-lg text-center">-->
+<!--          <h3 class="text-lg font-semibold">Bounces</h3>-->
+<!--          <p class="text-2xl">{{ statistics.reduce((sum, stat) => sum + stat.metrics.bounces, 0) }}</p>-->
+<!--        </div>-->
+<!--        <div class="bg-gray-800 p-4 rounded-lg text-center">-->
+<!--          <h3 class="text-lg font-semibold">Spam Reports</h3>-->
+<!--          <p class="text-2xl">{{ statistics.reduce((sum, stat) => sum + stat.metrics.spam_reports, 0) }}</p>-->
+<!--        </div>-->
+<!--      </div>-->
+
+      <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <Card>
+          <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle class="text-sm font-medium">
+              Total Revenue
+            </CardTitle>
+            <DollarSign class="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+
+          <CardContent>
+            <div class="text-2xl font-bold">
+              $45,231.89
+            </div>
+            <p class="text-xs text-muted-foreground">
+              +20.1% from last month
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle class="text-sm font-medium">
+              Subscriptions
+            </CardTitle>
+            <Users class="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div class="text-2xl font-bold">
+              +2350
+            </div>
+            <p class="text-xs text-muted-foreground">
+              +180.1% from last month
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle class="text-sm font-medium">
+              Sales
+            </CardTitle>
+            <CreditCard class="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+
+          <CardContent>
+            <div class="text-2xl font-bold">
+              +12,234
+            </div>
+            <p class="text-xs text-muted-foreground">
+              +19% from last month
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle class="text-sm font-medium">
+              Active Now
+            </CardTitle>
+            <Activity class="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+
+          <CardContent>
+            <div class="text-2xl font-bold">
+              +573
+            </div>
+            <p class="text-xs text-muted-foreground">
+              +201 since last hour
+            </p>
+          </CardContent>
+        </Card>
       </div>
 
       <!-- Chart Section -->
-      <div class="mt-6 bg-gray-800 p-6 rounded-lg">
+      <div class="mt-12">
         <h2 class="text-xl font-bold">Statistics Overview</h2>
-        <div id="campaign-chart"></div>
+        <apexchart width="100%" height="300" type="line" :options="options" :series="series" />
       </div>
     </div>
 

@@ -51,7 +51,7 @@ Route::middleware([
     )->name('campaigns.update');
 
     Route::post(
-      '/send/{campaign?}',
+      '/send/{campaign:uuid}',
       \App\Http\Controllers\Campaign\Send::class
     )->name('campaigns.send');
 
@@ -112,6 +112,11 @@ Route::middleware([
       \App\Http\Controllers\Template\Form::class
     )->name('templates.edit');
 
+    Route::get(
+      '/p/{template:uuid}',
+      \App\Http\Controllers\Template\Preview::class
+    )->name('templates.preview');
+
     Route::put(
       '/{template}',
       \App\Http\Controllers\Template\Update::class
@@ -123,10 +128,16 @@ Route::middleware([
     )->name('templates.destroy');
 
     Route::post(
-      '/preview',
+      '/p/{template:uuid}',
       \App\Http\Controllers\Template\Preview::class
     )->name('templates.preview');
 
   });
 
 });
+
+// realtime analytics
+Route::post(
+  '/analytics',
+  \App\Http\Controllers\Hook::class,
+)->name('analytics');

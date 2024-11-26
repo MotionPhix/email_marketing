@@ -102,9 +102,9 @@ onMounted(() => {
       </div>
     </div>
 
-    <div class="p-6 bg-gray-900 text-white min-h-screen">
+    <div class="p-6 rounded-lg bg-gray-100">
       <div>
-        <h1 class="text-2xl font-bold">{{ campaign.name }}</h1>
+        <h1 class="text-2xl font-bold">{{ campaign.title }}</h1>
         <p class="text-gray-400">Subject: {{ campaign.subject }}</p>
         <p class="text-gray-400">Status: {{ campaign.status }}</p>
       </div>
@@ -115,10 +115,12 @@ onMounted(() => {
           <h3 class="text-lg font-semibold">Opens</h3>
           <p class="text-2xl">{{ statistics.reduce((sum, stat) => sum + stat.metrics.opens, 0) }}</p>
         </div>
+
         <div class="bg-gray-800 p-4 rounded-lg text-center">
           <h3 class="text-lg font-semibold">Clicks</h3>
           <p class="text-2xl">{{ statistics.reduce((sum, stat) => sum + stat.metrics.clicks, 0) }}</p>
         </div>
+
         <div class="bg-gray-800 p-4 rounded-lg text-center">
           <h3 class="text-lg font-semibold">Bounces</h3>
           <p class="text-2xl">{{ statistics.reduce((sum, stat) => sum + stat.metrics.bounces, 0) }}</p>

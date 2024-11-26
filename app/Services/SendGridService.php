@@ -10,25 +10,64 @@ class SendGridService
 
   public function __construct()
   {
-    $this->sendGrid = new SendGrid(env('SENDGRID_API_KEY'));
+    $this->sendGrid = new SendGrid(config('services.sendgrid.api_key'));
   }
 
-  public function getCampaignStats(string $campaignId, string $startDate, string $endDate)
+  /**
+   * Get email stats for a campaign using SendGrid's stats endpoint.
+   *
+   * @param string $startDate - Start date in YYYY-MM-DD format.
+   * @param string $endDate - End date in YYYY-MM-DD format.
+   * @param string|null $campaignId - Optional campaign identifier.
+   * @return array
+   */
+  public function getEmailStats(string $startDate, string $endDate, string $campaignId = null): array
   {
     try {
-      $response = $this->sendGrid->client->messages()->search()->get([
-        'query' => "unique_args.campaign_id=$campaignId",
+      // Optional filters based on campaign_id
+      $queryParams = [
         'start_date' => $startDate,
         'end_date' => $endDate,
+      ];
+
+      if ($campaignId) {
+        $queryParams['categories'] = 'campaign-' . $campaignId; // Assuming campaign ID is used as a category.
+      }
+
+      $response = $this->sendGrid->client->stats()->get(null, $queryParams);
+
+      if ($response->statusCode() !== 200) {
+        throw new \Exception('Failed to fetch stats. Status code: ' . $response->statusCode());
+      }
+
+      return json_decode($response->body(), true);
+
+    } catch (\Exception $e) {
+      \Log::error('Error fetching SendGrid stats: ' . $e->getMessage());
+      return [];
+    }
+  }
+
+  /**
+   * Extract detailed message activity for a specific campaign.
+   *
+   * @param string $campaignId
+   * @return array
+   */
+  public function getMessageActivity(string $campaignId): array
+  {
+    try {
+      $response = $this->sendGrid->client->messages()->get([
+        'query' => "unique_args.campaign_id=$campaignId",
       ]);
 
       if ($response->statusCode() !== 200) {
-        throw new \Exception('Failed to fetch stats');
+        throw new \Exception('Failed to fetch message activity. Status code: ' . $response->statusCode());
       }
 
       return json_decode($response->body(), true);
     } catch (\Exception $e) {
-      \Log::error('Error fetching SendGrid stats: ' . $e->getMessage());
+      \Log::error('Error fetching SendGrid message activity: ' . $e->getMessage());
       return [];
     }
   }

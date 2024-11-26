@@ -13,26 +13,10 @@ class Preview extends Controller
   /**
    * Handle the incoming request.
    */
-  public function __invoke(Request $request)
+  public function __invoke(Template $template)
   {
-    $request->validate([
-      'template_id' => 'required|exists:templates,id',
-      'audience_id' => 'required|exists:audiences,id',
+    return Inertia('Templates/Preview', [
+      'html' => fn() => $template->content
     ]);
-
-    $template = Template::findOrFail($request->template_id);
-    $audience = Audience::findOrFail($request->audience_id);
-
-    // Sample dynamic data
-    $data = [
-      'name' => $audience->name,
-      'email' => $audience->email,
-      'unsubscribe_link' => route('unsubscribe', ['email' => $audience->email]),
-    ];
-
-    // Render template
-    $renderedHtml = TemplateRenderer::render($template->content, $data);
-
-    return response()->json(['html' => $renderedHtml]);
   }
 }

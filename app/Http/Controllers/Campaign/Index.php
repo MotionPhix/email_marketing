@@ -13,7 +13,8 @@ class Index extends Controller
    */
   public function __invoke(Request $request)
   {
-    $campaigns = Campaign::where('user_id', auth()->id())->latest()->get();
+    $campaigns = Campaign::where('user_id', auth()->id())
+      ->latest()->paginate(10);
 
     return inertia('Campaigns/Index', [
       'campaigns' => $campaigns,

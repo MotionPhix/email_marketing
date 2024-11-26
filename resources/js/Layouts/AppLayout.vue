@@ -53,12 +53,6 @@ const logout = () => {
                 </NavLink>
 
                 <NavLink
-                  href="/campaigns"
-                  :active="route().current('campaigns.*')">
-                  Campaigns
-                </NavLink>
-
-                <NavLink
                   href="/audiences"
                   :active="route().current('audiences.*')">
                   Audiences
@@ -68,6 +62,12 @@ const logout = () => {
                   href="/templates"
                   :active="route().current('templates.*')">
                   Templates
+                </NavLink>
+
+                <NavLink
+                  href="/campaigns"
+                  :active="route().current('campaigns.*')">
+                  Campaigns
                 </NavLink>
 
               </div>

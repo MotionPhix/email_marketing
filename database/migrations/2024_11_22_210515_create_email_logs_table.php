@@ -13,9 +13,21 @@ return new class extends Migration {
     Schema::create('email_logs', function (Blueprint $table) {
       $table->id();
       $table->uuid('uuid');
-      $table->foreignId('campaign_id')->constrained()->onDelete('cascade');
+      $table->string('message_id')->nullable();
+      $table->foreignId('campaign_id')->nullable()->constrained()->onDelete('cascade');
       $table->string('recipient_email');
-      $table->enum('status', ['pending', 'sent', 'failed', 'bounced'])->default('pending');
+      $table->enum('status', [
+        'processed',
+        'group_unsubscribe',
+        'group_resubscribe',
+        'unsubscribe',
+        'delivered',
+        'spamreport',
+        'deferred',
+        'click',
+        'dropped',
+        'open',
+        'bounce'])->default('processed');
       $table->timestamps();
     });
   }

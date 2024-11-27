@@ -93,6 +93,16 @@ Route::middleware([
       \App\Http\Controllers\Audience\Store::class
     )->name('audiences.store');
 
+    Route::put(
+      '/r/{audience:uuid}/{recipient:uuid}',
+      \App\Http\Controllers\Audience\RemoveRecipient::class
+    )->name('audiences.remove_recipient');
+
+    Route::put(
+      '/a/{audience:uuid}/{recipient:uuid}',
+      \App\Http\Controllers\Audience\AddRecipient::class
+    )->name('audiences.add_recipient');
+
   });
 
   Route::prefix('templates')->group(function () {

@@ -4,14 +4,13 @@ import { Head, Link } from '@inertiajs/vue3';
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle
 } from '@/Components/ui/card'
 import {
   Activity,
-  ArrowUpRight,
-  CircleUser,
+  PencilIcon,
+  TrashIcon,
   CreditCard,
   DollarSign,
   Menu,
@@ -19,7 +18,8 @@ import {
   Search,
   Users
 } from 'lucide-vue-next'
-import { onMounted } from 'vue';
+import {computed, onMounted} from 'vue';
+import {Button} from '@/Components/ui/button'
 
 const { campaign, statistics } = defineProps({
   campaign: {
@@ -32,13 +32,32 @@ const { campaign, statistics } = defineProps({
   },
 });
 
+const displayedRecipients = computed(() =>
+  campaign.audience.recipients.slice(0, 5)
+);
+
+// Calculate remaining recipients
+const remainingRecipients = computed(() =>
+  Math.max(0, campaign.audience.recipients.length - 5)
+)
+
+const editRecipient = (recipient) => {
+  // Logic for editing a recipient
+  console.log('Edit recipient', recipient);
+};
+
+const deleteRecipient = (recipient) => {
+  // Logic for deleting a recipient
+  console.log('Delete recipient', recipient);
+};
+
 const chartData = {
   categories: statistics.map((stat) => stat.date),
   series: [
-    { name: 'Opens', data: statistics.map((stat) => stat.metrics.opens) },
-    { name: 'Clicks', data: statistics.map((stat) => stat.metrics.clicks) },
-    { name: 'Bounces', data: statistics.map((stat) => stat.metrics.bounces) },
-    { name: 'Spam Reports', data: statistics.map((stat) => stat.metrics.spam_reports) },
+    { name: 'Opens', data: statistics.map((stat) => stat.stats[0]?.metrics.opens || 0) },
+    { name: 'Clicks', data: statistics.map((stat) => stat.stats[0]?.metrics.clicks || 0) },
+    { name: 'Bounces', data: statistics.map((stat) => stat.stats[0]?.metrics.bounces || 0) },
+    { name: 'Spam Reports', data: statistics.map((stat) => stat.stats[0]?.metrics.spam_reports || 0) },
   ],
 };
 
@@ -50,9 +69,31 @@ const options = {
   xaxis: {
     categories: chartData.categories,
   },
+  stroke: {
+    width: 3.5,
+    curve: 'smooth'
+  },
 };
 
 const series = chartData.series
+
+// Helper to aggregate a specific metric across all dates and stats
+const getTotalMetric = (metric) => {
+  return statistics.reduce((sum, stat) => {
+    return (
+      sum +
+      stat.stats.reduce((innerSum, s) => innerSum + (s.metrics[metric] || 0), 0)
+    );
+  }, 0);
+};
+
+// Compute totals
+const totalOpens = computed(() => getTotalMetric('opens'));
+const totalClicks = computed(() => getTotalMetric('clicks'));
+const totalUniqueClicks = computed(() => getTotalMetric('unique_clicks'));
+const totalBounces = computed(() => getTotalMetric('bounces'));
+const totalDelivered = computed(() => getTotalMetric('delivered'));
+const totalSpams = computed(() => getTotalMetric('spam_reports'));
 </script>
 
 <template>
@@ -79,141 +120,202 @@ const series = chartData.series
 
       <div v-else>
         <!-- Campaign Header -->
-        <div class="mb-6">
+        <div class="mb-6 capitalize">
+
           <h1 class="text-2xl font-bold">{{ campaign.title }}</h1>
           <p class="text-gray-500">{{ campaign.subject }}</p>
-          <p class="text-sm text-gray-400">
-            Created at: {{ new Date(campaign.created_at).toLocaleString() }}
+
+          <p class="text-sm text-gray-400 border-t py-2">
+           {{ campaign.status }}
           </p>
+
         </div>
 
         <!-- Campaign Details -->
         <div class="bg-white shadow-sm p-6 rounded-lg">
-          <h2 class="text-lg font-semibold mb-4">Details</h2>
-          <p><strong>Description:</strong> {{ campaign.description || 'No description provided.' }}</p>
-          <p><strong>Template:</strong> {{ campaign.template?.name || 'No template assigned.' }}</p>
-          <p><strong>Audience:</strong> {{ campaign.audience?.name || 'No audience assigned.' }}</p>
-          <p><strong>Scheduled At:</strong> {{ campaign.scheduled_at || 'Not scheduled.' }}</p>
+
+          <p class="grid">
+
+            <strong>Description</strong>
+
+            <span>
+              {{ campaign.description || 'No description provided.' }}
+            </span>
+
+          </p>
+
+          <p class="grid">
+            <strong>Template</strong>
+            <span>
+              {{ campaign.template?.name || 'No template assigned.' }}
+            </span>
+          </p>
+
+          <p class="grid">
+            <strong>Audience</strong>
+            <span>
+              {{ campaign.audience?.name || 'No audience assigned.' }}
+            </span>
+          </p>
+
+          <p class="grid">
+            <strong>Scheduled</strong>
+            <span>
+              {{ campaign.scheduled_at || 'Not scheduled.' }}
+            </span>
+          </p>
+
         </div>
 
         <!-- Recipients List -->
-        <div v-if="campaign.recipients && campaign.recipients.length"
-             class="mt-6">
+        <div
+          v-if="campaign.audience.recipients && campaign.audience.recipients.length"
+          class="mt-6 px-6">
+
           <h2 class="text-lg font-semibold mb-4">Recipients</h2>
-          <ul class="list-disc pl-6">
-            <li v-for="recipient in campaign.audience.recipients"
-                :key="recipient.id">
-              {{ recipient.name }} ({{ recipient.email }})
-            </li>
-          </ul>
+
+          <div
+            v-for="recipient in displayedRecipients" :key="recipient.uuid"
+            class="group grid grid-cols-[25px_minmax(0,1fr)] items-start last:mb-0 last:pb-0">
+
+            <span class="flex size-3 translate-y-6 rounded-full bg-sky-500" />
+
+            <div class="py-4">
+
+              <section class="font-medium leading-none flex items-center gap-4">
+
+                <h3 class="py-2">
+                  {{ recipient.name }}
+                </h3>
+
+                <!-- Quick Edit Actions -->
+                <div class="gap-2 hidden group-hover:flex">
+                  <Button
+                    @click="editRecipient(recipient)"
+                    size="icon" as-child variant="ghost">
+                    <PencilIcon class="w-[1.2rem] h-[1.2rem]" />
+                  </Button>
+
+                  <Button
+                    @click="deleteRecipient(recipient)"
+                    size="icon" as-child variant="outline">
+                    <TrashIcon class="w-[1.2rem] h-[1.2rem]" />
+                  </Button>
+                </div>
+
+              </section>
+
+              <p class="text-sm text-muted-foreground">
+                {{ recipient.email }}
+              </p>
+
+            </div>
+
+          </div>
+
         </div>
 
-        <div v-else
-             class="mt-6 text-gray-500">
+        <div
+          v-else
+          class="mt-6 text-gray-500 p-6">
+
           <p>No recipients assigned to this campaign.</p>
+
         </div>
+
       </div>
+
     </div>
 
     <div class="p-6 rounded-lg bg-zinc-100 my-12">
 
-      <div>
-        <h1 class="text-2xl font-bold">{{ campaign.title }}</h1>
-        <p class="text-gray-400">Subject: {{ campaign.subject }}</p>
-        <p class="text-gray-400">Status: {{ campaign.status }}</p>
-      </div>
-
-      <!-- Statistics Cards -->
-<!--      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">-->
-<!--        <div class="bg-gray-800 p-4 rounded-lg text-center">-->
-<!--          <h3 class="text-lg font-semibold">Opens</h3>-->
-<!--          <p class="text-2xl">{{ statistics.reduce((sum, stat) => sum + stat.metrics.opens, 0) }}</p>-->
-<!--        </div>-->
-
-<!--        <div class="bg-gray-800 p-4 rounded-lg text-center">-->
-<!--          <h3 class="text-lg font-semibold">Clicks</h3>-->
-<!--          <p class="text-2xl">{{ statistics.reduce((sum, stat) => sum + stat.metrics.clicks, 0) }}</p>-->
-<!--        </div>-->
-
-<!--        <div class="bg-gray-800 p-4 rounded-lg text-center">-->
-<!--          <h3 class="text-lg font-semibold">Bounces</h3>-->
-<!--          <p class="text-2xl">{{ statistics.reduce((sum, stat) => sum + stat.metrics.bounces, 0) }}</p>-->
-<!--        </div>-->
-<!--        <div class="bg-gray-800 p-4 rounded-lg text-center">-->
-<!--          <h3 class="text-lg font-semibold">Spam Reports</h3>-->
-<!--          <p class="text-2xl">{{ statistics.reduce((sum, stat) => sum + stat.metrics.spam_reports, 0) }}</p>-->
-<!--        </div>-->
-<!--      </div>-->
-
-      <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         <Card>
           <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle class="text-sm font-medium">
-              Total Revenue
+              Total Opens
             </CardTitle>
             <DollarSign class="h-4 w-4 text-muted-foreground" />
           </CardHeader>
 
           <CardContent>
             <div class="text-2xl font-bold">
-              $45,231.89
+              {{ totalOpens }}
             </div>
-            <p class="text-xs text-muted-foreground">
-              +20.1% from last month
-            </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle class="text-sm font-medium">
-              Subscriptions
+              Total Clicks
             </CardTitle>
             <Users class="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div class="text-2xl font-bold">
-              +2350
+              {{ totalClicks }}
             </div>
-            <p class="text-xs text-muted-foreground">
-              +180.1% from last month
-            </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle class="text-sm font-medium">
-              Sales
+              Total Bounces
             </CardTitle>
             <CreditCard class="h-4 w-4 text-muted-foreground" />
           </CardHeader>
 
           <CardContent>
             <div class="text-2xl font-bold">
-              +12,234
+              {{ totalBounces }}
             </div>
-            <p class="text-xs text-muted-foreground">
-              +19% from last month
-            </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle class="text-sm font-medium">
-              Active Now
+              Total Delivered
             </CardTitle>
             <Activity class="h-4 w-4 text-muted-foreground" />
           </CardHeader>
 
           <CardContent>
             <div class="text-2xl font-bold">
-              +573
+              {{ totalDelivered }}
             </div>
-            <p class="text-xs text-muted-foreground">
-              +201 since last hour
-            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle class="text-sm font-medium">
+              Total Spam Reports
+            </CardTitle>
+            <Activity class="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+
+          <CardContent>
+            <div class="text-2xl font-bold">
+              {{ totalSpams }}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle class="text-sm font-medium">
+              Total Unique Clicks
+            </CardTitle>
+            <Activity class="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+
+          <CardContent>
+            <div class="text-2xl font-bold">
+              {{ totalUniqueClicks }}
+            </div>
           </CardContent>
         </Card>
       </div>

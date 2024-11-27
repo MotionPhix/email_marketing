@@ -29,7 +29,7 @@ return [
   ],
 
   'sendgrid' => [
-    'api_key' => env('MAIL_PASSWORD'),
+    'api_key' => env('SENDGRID_API_KEY'),
   ],
 
   'slack' => [

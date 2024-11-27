@@ -209,7 +209,7 @@ onBeforeUnmount(() => {
             v-else
             as="button"
             method="post"
-            :href="route('campaigns.send')">
+            :href="route('campaigns.send', campaign.uuid)">
             Send now
           </Link>
         </Button>
@@ -226,7 +226,9 @@ onBeforeUnmount(() => {
 
               <CalendarIcon class="mr-2 h-4 w-4"/>
 
-              <span>{{ form.scheduled_at ? format(form.scheduled_at, 'PP') : "Schedule" }}</span>
+              <span>
+                {{ form.scheduled_at ? format(form.scheduled_at, 'PP') : "Schedule" }}
+              </span>
 
             </Button>
 

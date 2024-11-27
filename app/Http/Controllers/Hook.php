@@ -17,8 +17,11 @@ class Hook extends Controller
     \Log::error($events);
 
     foreach ($events as $event) {
-      $status = $this->mapStatus($event['event']);  // Map status to one of the enum values
-      $campaignId = $event['custom_args']['campaign_id'] ?? null; // Capture campaign ID
+
+      dd($event);
+
+      $status = $this->mapStatus($event['event']);
+      $campaignId = $event['custom_args']['campaign_id'] ?? null;
 
       EmailLog::updateOrCreate(
         [
@@ -26,7 +29,6 @@ class Hook extends Controller
         ],
         [
           'status' => $status,
-          'message_id' => $event['sg_message_id'],
           'useragent' => $event['useragent'] ?? null,
           'recipient_email' => $event['email'],
           'category' => $event['category'][0] ?: null,
@@ -34,25 +36,27 @@ class Hook extends Controller
           'campaign_id' => $campaignId,
         ]
       );
+
     }
 
     return response()->json(['status' => 'success']);
   }
 
-  private function mapStatus($event)
+  private function mapStatus($event): string
   {
-    // Map SendGrid event to the predefined enum values
-    switch ($event) {
-      case 'processed':
-        return 'processed'; // or another valid value based on your use case
-      case 'delivered':
-        return 'sent';
-      case 'bounce':
-        return 'bounced';
-      case 'failed':
-        return 'failed';
-      default:
-        return 'pending'; // Default value if event is unknown
-    }
+    return match ($event) {
+      'dropped' => 'dropped',
+      'delivered' => 'delivered',
+      'bounce' => 'bounce',
+      'failed' => 'failed',
+      'group_unsubscribe' => 'group_unsubscribe',
+      'group_resubscribe' => 'group_resubscribe',
+      'deferred' => 'deferred',
+      'spamreport' => 'spamreport',
+      'unsubscribe' => 'unsubscribe',
+      'open' => 'open',
+      'click' => 'click',
+      default => 'processed',
+    };
   }
 }

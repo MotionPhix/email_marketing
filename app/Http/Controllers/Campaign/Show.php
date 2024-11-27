@@ -16,11 +16,9 @@ class Show extends Controller
     $startDate = now()->subDays(7)->toDateString(); // Last 7 days
     $endDate = now()->toDateString();
 
-    $stats = $sendGridService->getEmailStats($startDate, $endDate, $campaign->uuid);
-
     return Inertia('Campaigns/Show', [
-      'campaign' => fn() => $campaign->load('template', 'audience'),
-      'statistics' => fn() => $stats
+      'campaign' => fn() => $campaign->load('template', 'audience.recipients'),
+      'statistics' => fn() =>$sendGridService->getEmailStats($startDate, $endDate, $campaign->uuid)
     ]);
   }
 }

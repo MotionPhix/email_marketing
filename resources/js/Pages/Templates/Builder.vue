@@ -184,7 +184,7 @@ html, body {
   display: flex;
   flex-direction: column;
   position: relative;
-  height: 100%;
+  height: 10%;
 }
 
 #bar {

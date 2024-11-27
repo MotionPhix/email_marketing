@@ -75,29 +75,33 @@ const {campaigns} = defineProps({
           <TableCaption class="my-0">
 
             <section class="flex justify-end p-4">
-            <Pagination
-              :items-per-page="campaigns.per_page"
-              v-slot="{ page }" :total="campaigns.total"
-              :sibling-count="1" show-edges :default-page="campaigns.current_page">
-              <PaginationList v-slot="{ items }" class="flex items-center gap-1">
-                <PaginationFirst class="size-7"/>
-                <PaginationPrev class="size-7"/>
+              <Pagination
+                :items-per-page="campaigns.per_page"
+                v-slot="{ page }" :total="campaigns.total"
+                :sibling-count="1" show-edges :default-page="campaigns.current_page">
+                <PaginationList v-slot="{ items }" class="flex items-center gap-1">
+                  <PaginationFirst class="size-7"/>
+                  <PaginationPrev class="size-7"/>
 
-                <template v-for="(item, index) in items">
+                  <template v-for="(item, index) in items">
 
-                  <PaginationListItem v-if="item.type === 'page'" :key="index" :value="item.value" as-child>
-                    <Button class="size-7 p-0" :variant="item.value === page ? 'default' : 'outline'">
-                      {{ item.value }}
-                    </Button>
-                  </PaginationListItem>
+                    <PaginationListItem v-if="item.type === 'page'" :key="index" :value="item.value" as-child>
+                      <Button class="size-7 p-0" :variant="item.value === page ? 'default' : 'outline'">
+                        {{ item.value }}
+                      </Button>
+                    </PaginationListItem>
 
-                  <PaginationEllipsis v-else :key="item.type" :index="index"/>
-                </template>
+                    <PaginationEllipsis v-else :key="item.type" :index="index"/>
 
-                <PaginationNext class="size-7"/>
-                <PaginationLast class="size-7"/>
-              </PaginationList>
-            </Pagination>
+                  </template>
+
+                  <PaginationNext class="size-7"/>
+                  <PaginationLast class="size-7"/>
+
+                </PaginationList>
+
+              </Pagination>
+
             </section>
 
           </TableCaption>
@@ -161,7 +165,9 @@ const {campaigns} = defineProps({
                         </GlobalLink>
                       </DropdownMenuItem>
 
-                      <DropdownMenuItem as-child v-if="campaign.audience_id">
+                      <DropdownMenuItem
+                        v-if="campaign.audience_id"
+                        as-child>
                         <Link
                           method="post"
                           class="flex w-full text-left" as="button"

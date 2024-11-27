@@ -13,7 +13,7 @@ return new class extends Migration {
     Schema::create('recipients', function (Blueprint $table) {
       $table->id();
       $table->uuid('uuid');
-      $table->foreignId('audience_id')->constrained()->cascadeOnDelete();
+      $table->foreignId('audience_id')->nullable()->constrained()->cascadeOnDelete();
       $table->foreignId('user_id')->constrained()->cascadeOnDelete();
       $table->string('email')->unique();
 

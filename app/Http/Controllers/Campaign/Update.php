@@ -53,7 +53,6 @@ class Update extends Controller
       ]);
     }
 
-    return redirect()
-      ->route('campaigns.create', $campaign->uuid);
+    return redirect()->back();
   }
 }

@@ -55,6 +55,11 @@ Route::middleware([
       \App\Http\Controllers\Campaign\Send::class
     )->name('campaigns.send');
 
+    Route::get(
+      '/e/{campaign:uuid}',
+      \App\Http\Controllers\Campaign\Form::class
+    )->name('campaigns.edit');
+
     Route::put(
       '/assign/{template:uuid}/{campaign:uuid}',
       \App\Http\Controllers\Campaign\Assign::class
@@ -118,19 +123,19 @@ Route::middleware([
     )->name('templates.preview');
 
     Route::put(
-      '/{template}',
+      '/u/{template}',
       \App\Http\Controllers\Template\Update::class
     )->name('templates.update');
 
-    Route::delete(
-      '/{template}',
-      \App\Http\Controllers\Template\Trash::class
-    )->name('templates.destroy');
-
-    Route::post(
-      '/p/{template:uuid}',
+    Route::get(
+      '/p/{template}',
       \App\Http\Controllers\Template\Preview::class
     )->name('templates.preview');
+
+    Route::delete(
+      '/d/{template}',
+      \App\Http\Controllers\Template\Trash::class
+    )->name('templates.destroy');
 
   });
 

@@ -18,6 +18,7 @@ class Hook extends Controller
 
     foreach ($events as $event) {
       $status = $this->mapStatus($event['event']);  // Map status to one of the enum values
+      $campaignId = $event['custom_args']['campaign_id'] ?? null; // Capture campaign ID
 
       EmailLog::updateOrCreate(
         [
@@ -25,8 +26,12 @@ class Hook extends Controller
         ],
         [
           'status' => $status,
+          'message_id' => $event['sg_message_id'],
+          'useragent' => $event['useragent'] ?? null,
           'recipient_email' => $event['email'],
+          'category' => $event['category'][0] ?: null,
           'timestamp' => $event['timestamp'],
+          'campaign_id' => $campaignId,
         ]
       );
     }

@@ -26,11 +26,9 @@ class Send extends Controller
 
       $storeController = app(Store::class);
       $campaign = $storeController($request);
-
-      if (!$request->scheduled_at) {
-        $this->sendCampaign($campaign);
-      }
     }
+
+    $this->sendCampaign($campaign);
 
     return redirect()
       ->route('campaigns.index')
@@ -54,7 +52,7 @@ class Send extends Controller
       $data = [
         'name' => $recipient->name,
         'email' => $recipient->email,
-        'unsubscribe_link' => route('unsubscribe', ['email' => $recipient->email]),
+//        'unsubscribe_link' => route('unsubscribe', ['email' => $recipient->email]),
       ];
 
       $htmlContent = TemplateRenderer::render($campaign->template->content, $data);
@@ -72,10 +70,14 @@ class Send extends Controller
             'type' => 'text/html',
             'value' => $htmlContent,
           ],
+          [
+            'type' => 'text/plain',
+            'value' => strip_tags($htmlContent), // Generate plain text content if needed
+          ],
         ],
       ];
     })->toArray();
-
+    
     // Send in batches for better performance
     foreach (array_chunk($emails, 200) as $batch) {
       $this->sendWithSendGrid($batch, $campaign);
@@ -105,6 +107,7 @@ class Send extends Controller
 
     if (!$response->successful()) {
       logger('SendGrid Error:', $response->json());
+
       foreach ($emails as $email) {
         EmailLog::create([
           'campaign_id' => $campaign->id,

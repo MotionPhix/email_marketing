@@ -16,7 +16,7 @@ class Preview extends Controller
   public function __invoke(Template $template)
   {
     return Inertia('Templates/Preview', [
-      'html' => fn() => $template->content
+      'content' => fn() => $template->content
     ]);
   }
 }

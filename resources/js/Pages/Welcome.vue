@@ -18,6 +18,20 @@ defineProps({
     },
 });
 
+
+/*'processed',
+  'group_unsubscribe',
+  'group_resubscribe',
+  'unsubscribe',
+  'delivered',
+  'spamreport',
+  'deferred',
+  'click',
+  'dropped',
+  'failed',
+  'open',
+  'bounce'*/
+
 function handleImageError() {
     document.getElementById('screenshot-container')?.classList.add('!hidden');
     document.getElementById('docs-card')?.classList.add('!row-span-1');

@@ -16,18 +16,9 @@ return new class extends Migration {
       $table->string('message_id')->nullable();
       $table->foreignId('campaign_id')->nullable()->constrained()->onDelete('cascade');
       $table->string('recipient_email');
-      $table->enum('status', [
-        'processed',
-        'group_unsubscribe',
-        'group_resubscribe',
-        'unsubscribe',
-        'delivered',
-        'spamreport',
-        'deferred',
-        'click',
-        'dropped',
-        'open',
-        'bounce'])->default('processed');
+      $table->text('useragent')->nullable();
+      $table->string('category')->nullable();
+      $table->string('status')->default('processed');
       $table->timestamps();
     });
   }

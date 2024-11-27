@@ -1,6 +1,6 @@
 <script setup>
 defineProps({
-  design: {
+  content: {
     type: String,
     default: ''
   }
@@ -11,7 +11,7 @@ defineProps({
 
   <GlobalModal>
 
-    <section v-html="design"/>
+    <section v-html="content" />
 
   </GlobalModal>
 

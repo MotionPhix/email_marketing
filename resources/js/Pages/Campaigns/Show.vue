@@ -15,9 +15,8 @@ import {
   DollarSign,
   Users
 } from 'lucide-vue-next'
-import {computed, onMounted} from 'vue';
+import {computed} from 'vue';
 import {Button} from '@/Components/ui/button'
-import { visitModal } from '@inertiaui/modal-vue'
 
 const {campaign, statistics} = defineProps({
   campaign: {
@@ -109,6 +108,20 @@ const totalSpams = computed(() => getTotalMetric('spam_reports'));
       </h2>
     </template>
 
+    <template #action>
+
+      <Button
+        as-child
+        as="button"
+        max-width="md"
+        :href="route('campaigns.schedule', campaign.uuid)">
+        <GlobalLink>
+          Schedule
+        </GlobalLink>
+      </Button>
+
+    </template>
+
     <div class="p-6">
       <div v-if="!campaign"
            class="text-center">
@@ -120,6 +133,7 @@ const totalSpams = computed(() => getTotalMetric('spam_reports'));
         <div class="mb-6 capitalize">
 
           <h1 class="text-2xl font-bold">{{ campaign.title }}</h1>
+
           <p class="text-gray-500">{{ campaign.subject }}</p>
 
           <p class="text-sm text-gray-400 border-t py-2">
@@ -133,7 +147,9 @@ const totalSpams = computed(() => getTotalMetric('spam_reports'));
 
           <p class="grid">
 
-            <strong>Description</strong>
+            <strong>
+              Description
+            </strong>
 
             <span>
               {{ campaign.description || 'No description provided.' }}

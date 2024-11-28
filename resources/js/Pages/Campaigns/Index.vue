@@ -116,7 +116,7 @@ const {campaigns} = defineProps({
 
               <TableHead>Schedule</TableHead>
 
-              <TableHead class="text-right">
+              <TableHead class="text-center">
                 Recipients
               </TableHead>
 
@@ -136,7 +136,7 @@ const {campaigns} = defineProps({
 
               <TableCell>{{ campaign.scheduled_at ?? 'Not scheduled' }}</TableCell>
 
-              <TableCell class="text-right">
+              <TableCell class="text-center">
                 {{ campaign.recipients_count }}
               </TableCell>
 

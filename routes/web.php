@@ -61,9 +61,14 @@ Route::middleware([
     )->name('campaigns.edit');
 
     Route::put(
-      '/assign/{template:uuid}/{campaign:uuid}',
+      '/a/{template:uuid}/{campaign:uuid}',
       \App\Http\Controllers\Campaign\Assign::class
     )->name('campaigns.assign');
+
+    Route::get(
+      '/schedule/{campaign:uuid}',
+      \App\Http\Controllers\Campaign\Schedule::class
+    )->name('campaigns.schedule');
 
   });
 

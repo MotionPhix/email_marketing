@@ -4,12 +4,8 @@ import AppLayout from "@/Layouts/AppLayout.vue";
 import InputError from "@/Components/InputError.vue";
 import {Label} from "@/Components/ui/label";
 import {Input} from "@/Components/ui/input";
-import {Calendar} from "@/Components/ui/v-calendar";
 import {Button} from '@/Components/ui/button'
-import {CalendarIcon, PlusIcon, ArrowRightIcon, ArrowLeftIcon} from "@radix-icons/vue";
-import {Popover, PopoverContent, PopoverTrigger} from '@/Components/ui/popover'
-import {format} from 'date-fns'
-import {cn} from '@/lib/utils'
+import {PlusIcon, ArrowRightIcon, ArrowLeftIcon} from "@radix-icons/vue";
 import {
   Select,
   SelectTrigger,
@@ -196,7 +192,9 @@ onBeforeUnmount(() => {
           <PlusIcon class="size-5" />
         </Button>
 
-        <Button as-child>
+        <Button
+          as-child
+          :disabled="! campaign.template_id">
           <Link
             as="button"
             method="post"
@@ -204,46 +202,7 @@ onBeforeUnmount(() => {
             :href="route('campaigns.send', campaign.uuid)">
             Send now
           </Link>
-
-          <Link
-            v-else
-            as="button"
-            method="post"
-            :href="route('campaigns.send', campaign.uuid)">
-            Send now
-          </Link>
         </Button>
-
-        <Popover>
-          <PopoverTrigger as-child>
-
-            <Button
-              variant="outline"
-              :class="cn(
-                'justify-start text-left font-normal',
-                !form.scheduled_at && 'text-muted-foreground',
-              )">
-
-              <CalendarIcon class="mr-2 h-4 w-4"/>
-
-              <span>
-                {{ form.scheduled_at ? format(form.scheduled_at, 'PP') : "Schedule" }}
-              </span>
-
-            </Button>
-
-          </PopoverTrigger>
-
-          <PopoverContent align="end" class="w-full p-0">
-
-            <Calendar
-              id="scheduled_at"
-              v-model="form.scheduled_at"
-              initial-focus/>
-
-          </PopoverContent>
-        </Popover>
-
       </div>
 
     </template>

@@ -13,6 +13,17 @@ class Update extends Controller
    */
   public function __invoke(Request $request, Recipient $recipient)
   {
-    dd($recipient);
+    if($request->user()->id !== $recipient->user_id) {
+
+      return back()->with('flash', [
+        'bannerStyle' => 'danger',
+        'banner' => 'You are not allowed to update this recipient!',
+      ]);
+
+    }
+
+    $recipient->update($request->only(['email', 'name']));
+
+    return redirect()->back();
   }
 }

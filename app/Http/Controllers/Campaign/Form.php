@@ -24,10 +24,21 @@ class Form extends Controller
         ]),
       'audiences' => fn() => $request->user()
         ->audiences()
-        ->select('id','uuid','name')
-        ->with('recipients:id,audience_id,name,email') // Eager load only necessary columns
-        ->get(),
-      'campaign' => fn() => $campaign ?: new Campaign()
+        ->select('id', 'uuid', 'name')
+        ->withCount('recipients') // Add recipients count for audiences
+        ->get()
+        ->map(fn($audience) => [
+          'id' => $audience->id,
+          'uuid' => $audience->uuid,
+          'name' => $audience->name,
+          'recipients_count' => $audience->recipients_count,
+          'recipients' => $audience->recipients->map(fn($recipient) => [
+            'id' => $recipient->id,
+            'name' => $recipient->name,
+            'email' => $recipient->email,
+          ]),
+        ]),
+      'campaign' => fn() => $campaign ?: new Campaign(),
     ]);
   }
 }

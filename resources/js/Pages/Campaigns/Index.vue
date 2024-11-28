@@ -28,7 +28,7 @@ import {
 } from '@/Components/ui/dropdown-menu'
 import {
   Trash2Icon,
-  SendHorizontalIcon,
+  ForwardIcon,
   Plus,
 } from 'lucide-vue-next'
 import {
@@ -149,7 +149,7 @@ const {campaigns} = defineProps({
                     </Button>
                   </DropdownMenuTrigger>
 
-                  <DropdownMenuContent :side-offset="-4" align="end" class="w-40">
+                  <DropdownMenuContent :side-offset="-36" align="end" class="w-40">
                     <DropdownMenuLabel>Actions</DropdownMenuLabel>
 
                     <DropdownMenuSeparator/>
@@ -166,13 +166,13 @@ const {campaigns} = defineProps({
                       </DropdownMenuItem>
 
                       <DropdownMenuItem
-                        v-if="campaign.audience_id"
+                        v-if="campaign.audience_id && campaign.template_id"
                         as-child>
                         <Link
                           method="post"
                           class="flex w-full text-left" as="button"
                           :href="route('campaigns.send', campaign.uuid)">
-                          <SendHorizontalIcon class="mr-2 h-4 w-4"/>
+                          <ForwardIcon class="mr-2 h-4 w-4"/>
                           <span class="flex-1">Send</span>
                         </Link>
                       </DropdownMenuItem>
@@ -182,7 +182,7 @@ const {campaigns} = defineProps({
                           class="flex w-full text-left" as="button"
                           :href="route('campaigns.show', campaign.uuid)">
                           <FileTextIcon class="mr-2 h-4 w-4"/>
-                          <span class="flex-1">In detail</span>
+                          <span class="flex-1">Insight</span>
                         </Link>
                       </DropdownMenuItem>
 

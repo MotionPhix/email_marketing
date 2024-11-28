@@ -22,12 +22,14 @@ class Index extends Controller
         'campaigns.template_id',
         'campaigns.scheduled_at',
         'campaigns.status',
-        'campaigns.audience_id'
-      , DB::raw('
-        (SELECT COUNT(*)
-         FROM recipients
-         WHERE recipients.audience_id = campaigns.audience_id) as recipients_count
-    '))
+        'campaigns.audience_id',
+        DB::raw('
+          (SELECT COUNT(*)
+           FROM audience_recipient
+           WHERE audience_recipient.audience_id = campaigns.audience_id
+          ) as recipients_count
+        ')
+      )
       ->where('campaigns.user_id', auth()->id())
       ->orderBy('campaigns.created_at', 'desc')
       ->paginate(10);

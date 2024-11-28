@@ -1,6 +1,6 @@
 <script setup>
 import AppLayout from '@/Layouts/AppLayout.vue';
-import { Head, Link } from '@inertiajs/vue3';
+import {Head, Link, router} from '@inertiajs/vue3';
 import {
   Card,
   CardContent,
@@ -13,15 +13,13 @@ import {
   TrashIcon,
   CreditCard,
   DollarSign,
-  Menu,
-  Package2,
-  Search,
   Users
 } from 'lucide-vue-next'
 import {computed, onMounted} from 'vue';
 import {Button} from '@/Components/ui/button'
+import { visitModal } from '@inertiaui/modal-vue'
 
-const { campaign, statistics } = defineProps({
+const {campaign, statistics} = defineProps({
   campaign: {
     type: Object,
     required: true,
@@ -41,23 +39,22 @@ const remainingRecipients = computed(() =>
   Math.max(0, campaign.audience.recipients.length - 5)
 )
 
-const editRecipient = (recipient) => {
-  // Logic for editing a recipient
-  console.log('Edit recipient', recipient);
-};
-
 const deleteRecipient = (recipient) => {
-  // Logic for deleting a recipient
-  console.log('Delete recipient', recipient);
+  router.delete(route('audiences.remove_recipient', {
+    audience: campaign.audience.uuid,
+    recipient: recipient.uuid
+  }), {
+    preserveScroll: true,
+  })
 };
 
 const chartData = {
   categories: statistics.map((stat) => stat.date),
   series: [
-    { name: 'Opens', data: statistics.map((stat) => stat.stats[0]?.metrics.opens || 0) },
-    { name: 'Clicks', data: statistics.map((stat) => stat.stats[0]?.metrics.clicks || 0) },
-    { name: 'Bounces', data: statistics.map((stat) => stat.stats[0]?.metrics.bounces || 0) },
-    { name: 'Spam Reports', data: statistics.map((stat) => stat.stats[0]?.metrics.spam_reports || 0) },
+    {name: 'Opens', data: statistics.map((stat) => stat.stats[0]?.metrics.opens || 0)},
+    {name: 'Clicks', data: statistics.map((stat) => stat.stats[0]?.metrics.clicks || 0)},
+    {name: 'Bounces', data: statistics.map((stat) => stat.stats[0]?.metrics.bounces || 0)},
+    {name: 'Spam Reports', data: statistics.map((stat) => stat.stats[0]?.metrics.spam_reports || 0)},
   ],
 };
 
@@ -126,7 +123,7 @@ const totalSpams = computed(() => getTotalMetric('spam_reports'));
           <p class="text-gray-500">{{ campaign.subject }}</p>
 
           <p class="text-sm text-gray-400 border-t py-2">
-           {{ campaign.status }}
+            {{ campaign.status }}
           </p>
 
         </div>
@@ -178,7 +175,7 @@ const totalSpams = computed(() => getTotalMetric('spam_reports'));
             v-for="recipient in displayedRecipients" :key="recipient.uuid"
             class="group grid grid-cols-[25px_minmax(0,1fr)] items-start last:mb-0 last:pb-0">
 
-            <span class="flex size-3 translate-y-6 rounded-full bg-sky-500" />
+            <span class="flex size-3 translate-y-6 rounded-full bg-sky-500"/>
 
             <div class="py-4">
 
@@ -191,15 +188,25 @@ const totalSpams = computed(() => getTotalMetric('spam_reports'));
                 <!-- Quick Edit Actions -->
                 <div class="gap-2 hidden group-hover:flex">
                   <Button
-                    @click="editRecipient(recipient)"
-                    size="icon" as-child variant="ghost">
-                    <PencilIcon class="w-[1.2rem] h-[1.2rem]" />
+                    max-width="sm"
+                    :close-button="false"
+                    padding-classes="p-0"
+                    :close-explicitly="true"
+                    class="p-1 w-[1.5rem] h-[1.5rem]"
+                    size="icon" as-child>
+                    <GlobalLink
+                      as="button"
+                      :data="{ modal: true }"
+                      :href="route('recipients.edit', recipient.uuid)">
+                      <PencilIcon />
+                    </GlobalLink>
                   </Button>
 
                   <Button
+                    class="p-1 w-[1.5rem] h-[1.5rem]"
                     @click="deleteRecipient(recipient)"
-                    size="icon" as-child variant="outline">
-                    <TrashIcon class="w-[1.2rem] h-[1.2rem]" />
+                    size="icon">
+                    <TrashIcon />
                   </Button>
                 </div>
 
@@ -235,7 +242,7 @@ const totalSpams = computed(() => getTotalMetric('spam_reports'));
             <CardTitle class="text-sm font-medium">
               Total Opens
             </CardTitle>
-            <DollarSign class="h-4 w-4 text-muted-foreground" />
+            <DollarSign class="h-4 w-4 text-muted-foreground"/>
           </CardHeader>
 
           <CardContent>
@@ -250,7 +257,7 @@ const totalSpams = computed(() => getTotalMetric('spam_reports'));
             <CardTitle class="text-sm font-medium">
               Total Clicks
             </CardTitle>
-            <Users class="h-4 w-4 text-muted-foreground" />
+            <Users class="h-4 w-4 text-muted-foreground"/>
           </CardHeader>
           <CardContent>
             <div class="text-2xl font-bold">
@@ -264,7 +271,7 @@ const totalSpams = computed(() => getTotalMetric('spam_reports'));
             <CardTitle class="text-sm font-medium">
               Total Bounces
             </CardTitle>
-            <CreditCard class="h-4 w-4 text-muted-foreground" />
+            <CreditCard class="h-4 w-4 text-muted-foreground"/>
           </CardHeader>
 
           <CardContent>
@@ -279,7 +286,7 @@ const totalSpams = computed(() => getTotalMetric('spam_reports'));
             <CardTitle class="text-sm font-medium">
               Total Delivered
             </CardTitle>
-            <Activity class="h-4 w-4 text-muted-foreground" />
+            <Activity class="h-4 w-4 text-muted-foreground"/>
           </CardHeader>
 
           <CardContent>
@@ -294,7 +301,7 @@ const totalSpams = computed(() => getTotalMetric('spam_reports'));
             <CardTitle class="text-sm font-medium">
               Total Spam Reports
             </CardTitle>
-            <Activity class="h-4 w-4 text-muted-foreground" />
+            <Activity class="h-4 w-4 text-muted-foreground"/>
           </CardHeader>
 
           <CardContent>
@@ -309,7 +316,7 @@ const totalSpams = computed(() => getTotalMetric('spam_reports'));
             <CardTitle class="text-sm font-medium">
               Total Unique Clicks
             </CardTitle>
-            <Activity class="h-4 w-4 text-muted-foreground" />
+            <Activity class="h-4 w-4 text-muted-foreground"/>
           </CardHeader>
 
           <CardContent>
@@ -323,7 +330,7 @@ const totalSpams = computed(() => getTotalMetric('spam_reports'));
       <!-- Chart Section -->
       <div class="mt-12">
         <h2 class="text-xl font-bold">Statistics Overview</h2>
-        <apexchart width="100%" height="300" type="line" :options="options" :series="series" />
+        <apexchart width="100%" height="350" type="line" :options="options" :series="series"/>
       </div>
     </div>
 

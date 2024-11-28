@@ -317,7 +317,7 @@ const logout = () => {
       <!-- Page Heading -->
       <header
         v-if="$slots.header"
-        class="sticky top-0 bg-white dark:bg-gray-800 shadow">
+        class="sticky z-10 top-0 bg-white dark:bg-gray-800 shadow">
         <div
           class="max-w-7xl flex justify-between items-center mx-auto px-4 sm:px-6 lg:px-8"
           :class="$slots.action ? 'py-1' : 'py-2'">

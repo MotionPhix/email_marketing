@@ -17,13 +17,24 @@ class AudienceAndRecipientSeeder extends Seeder
       'email' => 'user@example.com'
     ]);
 
-    \App\Models\Audience::factory(5)
+    $audiences = \App\Models\Audience::factory(5)
       ->hasRecipients(
-        2,
+        random_int(2, 5),
         fn () => ['user_id' => $user->id]
-      ) // Each audience gets between 3 and 7 recipients
+      ) // Each audience gets between 2 and 5 recipients
       ->create([
         'user_id' => $user->id
       ]);
+
+    // Randomly select some audiences for campaigns
+    $selectedAudiences = $audiences->random(3); // Select 3 random audiences
+
+    foreach ($selectedAudiences as $audience) {
+      \App\Models\Campaign::factory(random_int(1, 3)) // Create 1-3 campaigns for each selected audience
+      ->create([
+        'user_id' => $user->id,
+        'audience_id' => $audience->id,
+      ]);
+    }
   }
 }

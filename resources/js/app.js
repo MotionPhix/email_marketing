@@ -6,7 +6,7 @@ import {createApp, h} from 'vue';
 import {createInertiaApp} from '@inertiajs/vue3';
 import {resolvePageComponent} from 'laravel-vite-plugin/inertia-helpers';
 import {ZiggyVue} from '../../vendor/tightenco/ziggy';
-import {Modal, ModalLink, renderApp} from '@inertiaui/modal-vue'
+import {Modal, ModalLink, putConfig, renderApp} from '@inertiaui/modal-vue'
 import {createPinia} from "pinia";
 import { installToaster } from 'maz-ui'
 import VueApexCharts from "vue3-apexcharts";
@@ -20,6 +20,19 @@ const toasterOptions = {
   timeout: 10_000,
   persistent: false,
 }
+
+putConfig({
+  modal: {
+    closeButton: true,
+    closeExplicitly: true,
+    position: 'top',
+  },
+  slideover: {
+    closeButton: false,
+    closeExplicitly: true,
+    position: 'right',
+  },
+})
 
 createInertiaApp({
   title: (title) => `${title} - ${appName}`,

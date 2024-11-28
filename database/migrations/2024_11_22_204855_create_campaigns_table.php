@@ -20,7 +20,7 @@ return new class extends Migration {
       $table->timestamp('scheduled_at')->nullable(); // Scheduling date
       $table->foreignId('user_id')->constrained()->onDelete('cascade'); // Campaign creator
       $table->foreignId('audience_id')->nullable()->constrained()->cascadeOnDelete();
-      $table->foreignId('template_id')->nullable()->constrained('templates')->onDelete('set null');
+      $table->foreignId('template_id')->nullable()->constrained()->onDelete('set null');
       $table->timestamps();
     });
   }

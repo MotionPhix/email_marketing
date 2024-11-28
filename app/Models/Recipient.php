@@ -18,9 +18,10 @@ class Recipient extends Model
     return RecipientFactory::new();
   }
 
-  public function audience()
+  public function audiences()
   {
-    return $this->belongsTo(Audience::class);
+    return $this->belongsToMany(Audience::class, 'audience_recipient')
+      ->withTimestamps();
   }
 
   public function user()

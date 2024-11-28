@@ -74,6 +74,16 @@ Route::middleware([
       \App\Http\Controllers\Recipient\Store::class
     )->name('recipients.store');
 
+    Route::get(
+      '/e/{recipient:uuid}',
+      \App\Http\Controllers\Recipient\Form::class
+    )->name('recipients.edit');
+
+    Route::put(
+      '/u/{recipient:uuid}',
+      \App\Http\Controllers\Recipient\Update::class
+    )->name('recipients.update');
+
     Route::post(
       '/upload',
       \App\Http\Controllers\Recipient\Upload::class,
@@ -93,7 +103,7 @@ Route::middleware([
       \App\Http\Controllers\Audience\Store::class
     )->name('audiences.store');
 
-    Route::put(
+    Route::delete(
       '/r/{audience:uuid}/{recipient:uuid}',
       \App\Http\Controllers\Audience\RemoveRecipient::class
     )->name('audiences.remove_recipient');

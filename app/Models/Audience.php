@@ -14,7 +14,8 @@ class Audience extends Model
 
   public function recipients()
   {
-    return $this->hasMany(Recipient::class);
+    return $this->belongsToMany(Recipient::class, 'audience_recipient')
+      ->withTimestamps();
   }
 
   public function user()

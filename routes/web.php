@@ -70,6 +70,11 @@ Route::middleware([
       \App\Http\Controllers\Campaign\Schedule::class
     )->name('campaigns.schedule');
 
+    Route::put(
+      '/schedule/{campaign:uuid}',
+      \App\Http\Controllers\Campaign\Console::class
+    )->name('campaigns.console');
+
   });
 
   Route::prefix('recipients')->group(function () {

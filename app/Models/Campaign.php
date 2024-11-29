@@ -11,10 +11,16 @@ class Campaign extends Model
   use HasFactory, BootUuid;
 
   protected $fillable = [
-    'title', 'subject',
-    'status', 'scheduled_at',
-    'user_id', 'audience_id',
-    'template_id', 'description',
+    'title',
+    'subject',
+    'status',
+    'scheduled_at',
+    'user_id',
+    'audience_id',
+    'template_id',
+    'description',
+    'frequency',
+    'send_at',
   ];
 
   public function user()

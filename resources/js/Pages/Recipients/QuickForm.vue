@@ -64,12 +64,14 @@ const onSubmit = () => {
       </CardContent>
 
       <CardFooter class="justify-end flex gap-2 px-6 pb-6">
+
         <Button type="button" variant="outline" @click="close">
           Cancel
         </Button>
 
         <Button @click="onSubmit">Update</Button>
       </CardFooter>
+
     </Card>
 
   </GlobalModal>

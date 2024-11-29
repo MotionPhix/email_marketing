@@ -13,13 +13,13 @@ use Illuminate\Queue\SerializesModels;
 class ScheduleCampaignJob implements ShouldQueue
 {
   use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
+  protected CampaignEmailService $campaignEmailService;
 
   /**
    * Create a new job instance.
    */
   public function __construct(
     public Campaign $campaign,
-    protected CampaignEmailService $campaignEmailService
   ) {}
 
   /**

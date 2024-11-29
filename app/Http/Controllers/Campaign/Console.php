@@ -15,40 +15,111 @@ class Console extends Controller
    */
   public function __invoke(Request $request, Campaign $campaign)
   {
-    $startDate = Carbon::parse($campaign->scheduled_at);
-    $endDate = $campaign->end_date ? Carbon::parse($campaign->end_date) : null;
+    $validated = $request->validate([
+      'scheduled_at' => 'required|array',
+      'frequency' => 'required|in:bi_weekly,weekly,monthly,quarterly',
+      'stop_campaign' => 'nullable|boolean',
+      'end_date' => 'nullable|array',
+    ]);
 
-    switch ($campaign->frequency) {
-      case 'daily':
-        $this->scheduleCampaigns($campaign, $startDate, $endDate, '1 day');
-        break;
+    if (is_array($validated['scheduled_at'])) {
 
-      case 'weekly':
-        $this->scheduleCampaigns($campaign, $startDate, $endDate, '1 week');
-        break;
+      $validated['scheduled_at'] = Carbon::createFromDate(
+        $validated['scheduled_at']['year'],
+        $validated['scheduled_at']['month'],
+        $validated['scheduled_at']['day']
+      );
 
-      case 'monthly':
-        $this->scheduleCampaigns($campaign, $startDate, $endDate, '1 month');
-        break;
-
-      default:
-        return response()->json(['message' => 'Invalid frequency'], 400);
     }
 
-    return response()->json(['message' => 'Campaign scheduled successfully']);
+    if ((bool)$validated['stop_campaign'] === true) {
+
+      $validated['end_date'] = Carbon::now();
+
+    } else {
+
+      $validated['end_date'] = $validated['scheduled_at']->copy()->addYear();
+
+    }
+
+    try {
+
+      $this->scheduleCampaigns(
+        $campaign,
+        $validated['scheduled_at'],
+        $validated['end_date'],
+        $validated['frequency']
+      );
+
+      $campaign->update([
+        'scheduled_at' => $validated['scheduled_at'],
+        'frequency' => $validated['frequency'],
+        'end_date' => $validated['end_date'],
+      ]);
+
+      return $this->redirectWithFlash('success', 'Campaign was scheduled successfully!');
+
+    } catch (\Throwable $e) {
+
+      logger()->error('Failed to schedule campaign', [
+        'error' => $e->getMessage(),
+        'campaign_id' => $campaign->id,
+      ]);
+
+      return $this->redirectWithFlash(
+        'danger',
+        'Failed to schedule campaign. Please try again.'
+      );
+
+    }
+
   }
 
   /**
    * Schedule campaign jobs based on the interval.
    */
-  private function scheduleCampaigns(Campaign $campaign, Carbon $startDate, ?Carbon $endDate, string $interval)
-  {
+  private function scheduleCampaigns(
+    Campaign $campaign,
+    Carbon $startDate,
+    ?Carbon $endDate,
+    string $frequency
+  ) {
+    $intervalMethod = match ($frequency) {
+      'weekly' => fn (&$date) => $date->addWeek(),
+      'bi_weekly' => fn (&$date) => $date->addWeeks(2),
+      'monthly' => fn (&$date) => $date->addMonth(),
+      'quarterly' => fn (&$date) => $date->addMonths(3),
+      default => throw new \InvalidArgumentException('Unsupported frequency: ' . $frequency),
+    };
+
     $currentDate = $startDate;
 
-    while (!$endDate) {
-      // || $currentDate->lessThanOrEqualTo($endDate)
+    while (!$endDate || $currentDate <= $endDate) {
+
+      logger()->info('Scheduling job with timestamp', [
+        'timestamp' => $currentDate->timestamp,
+        'date' => $currentDate->toDateTimeString(),
+      ]);
+
+      if ($currentDate->timestamp > 2147483647) {
+
+        throw new \Exception('Scheduled date exceeds MySQL timestamp range.');
+
+      }
+
       ScheduleCampaignJob::dispatch($campaign)->delay($currentDate);
-      $currentDate->add($interval);
+      $intervalMethod($currentDate);
     }
+  }
+
+  /**
+   * Redirect with a flash message.
+   */
+  private function redirectWithFlash(string $style, string $message)
+  {
+    return redirect()->back()->with('flash', [
+      'bannerStyle' => $style,
+      'banner' => $message,
+    ]);
   }
 }

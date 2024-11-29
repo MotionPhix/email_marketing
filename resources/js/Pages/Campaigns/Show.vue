@@ -114,10 +114,22 @@ const totalSpams = computed(() => getTotalMetric('spam_reports'));
         as-child
         as="button"
         max-width="md"
+        :close-button="false"
+        v-if="campaign.template_id && campaign.audience_id && !campaign.formatted_scheduled_at"
         :href="route('campaigns.schedule', campaign.uuid)">
         <GlobalLink>
           Schedule
         </GlobalLink>
+      </Button>
+
+      <Button
+        as-child
+        as="button"
+        v-if="campaign.template_id && campaign.audience_id && campaign.scheduled_at"
+        :href="route('campaigns.send', campaign.uuid)">
+        <Link>
+          Send
+        </Link>
       </Button>
 
     </template>
@@ -171,10 +183,19 @@ const totalSpams = computed(() => getTotalMetric('spam_reports'));
             </span>
           </p>
 
-          <p class="grid">
+          <p class="grid divide-y">
             <strong>Scheduled</strong>
-            <span>
-              {{ campaign.scheduled_at || 'Not scheduled.' }}
+
+            <span class="text-neutral-400 text-sm py-2">
+              {{ campaign.formatted_end_date || 'Not scheduled.' }}
+
+              <span v-if="campaign.formatted_scheduled_at">
+                 | Until {{ campaign.formatted_scheduled_at }}
+              </span>
+            </span>
+
+            <span class="text-neutral-400 text-sm" v-if="campaign.frequency">
+               Running {{ campaign.frequency }}
             </span>
           </p>
 

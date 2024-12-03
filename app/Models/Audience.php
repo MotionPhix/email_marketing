@@ -14,9 +14,14 @@ class Audience extends Model
 
   public function recipients()
   {
-    return $this->belongsToMany(Recipient::class, 'audience_recipient')
-      ->withTimestamps();
+    return $this->belongsToMany(
+      Recipient::class,
+      'audience_recipient',
+      'audience_id',
+      'recipient_id'
+    );
   }
+
 
   public function user()
   {

@@ -1,9 +1,16 @@
 <script setup>
 import {useForm} from '@inertiajs/vue3';
+import {Button} from "@/Components/ui/button";
+import MazTextarea from "maz-ui/components/MazTextarea";
+import {Input} from "@/Components/ui/input";
+import InputError from "@/Components/InputError.vue";
+import {computed, ref} from "vue";
 
-const { audience } = defineProps({
+const {audience} = defineProps({
   audience: Object
 })
+
+const action = computed(() => audience.uuid ? 'Update' : 'Create')
 
 const form = useForm({
   name: audience.name,
@@ -12,34 +19,62 @@ const form = useForm({
 </script>
 
 <template>
-  <div>
-    <h1 class="text-2xl font-bold">Create Audience</h1>
-    <form @submit.prevent="form.post(route('audiences.store'))" class="mt-4">
-      <div class="mb-4">
+  <GlobalModal ref="modalRef" :close-button="false" v-slot="{ close }" max-width="md">
+    <h1 class="text-2xl font-bold">
+      {{ audience.uuid ? 'Edit' : 'New' }} Audience
+    </h1>
+
+    <form
+      class="mt-4"
+      @submit.prevent="audience.uuid
+      ? form.put(route('audiences.update', audience.uuid), {
+        onSuccess: () => close()
+      })
+      : form.post(route('audiences.store'), {
+        onSuccess: () => close()
+      })">
+      <div class="mb-4 grid">
         <label for="name" class="block text-sm font-medium text-gray-700">Name</label>
-        <input
+        <Input
           v-model="form.name"
+          placeholder="Give the audience a name"
           type="text"
           id="name"
-          class="mt-1 block w-full border-gray-300 rounded-md"
         />
+
+        <InputError :message="form.errors.name"/>
       </div>
 
       <div class="mb-4">
-        <label for="description" class="block text-sm font-medium text-gray-700">Description</label>
+        <label
+          for="description"
+          class="block text-sm font-medium text-gray-700">
+          Description
+        </label>
 
-        <textarea
+        <MazTextarea
           v-model="form.description"
+          placeholder="Describe the audience"
           id="description"
-          class="mt-1 block w-full border-gray-300 rounded-md" />
+          class="mt-1 block w-full border-gray-300 rounded-md"/>
       </div>
 
-      <button
-        type="submit"
-        class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-        :disabled="form.processing">
-        Create Audience
-      </button>
+      <div class="flex justify-end gap-4 pt-6">
+        <Button
+          type="button"
+          @click="close"
+          variant="ghost"
+          :disabled="form.processing">
+          Cancel
+        </Button>
+
+        <Button
+          type="submit"
+          :loading="form.processing"
+          :disabled="form.processing">
+          {{ action }} Audience
+        </Button>
+      </div>
     </form>
-  </div>
+  </GlobalModal>
 </template>

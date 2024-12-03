@@ -72,6 +72,7 @@ const {campaigns} = defineProps({
       <div v-if="campaigns.data.length" class="mt-4 border rounded-lg overflow-hidden">
 
         <Table>
+
           <TableCaption class="my-0">
 
             <section class="flex justify-end p-4">

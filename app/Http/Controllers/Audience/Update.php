@@ -23,6 +23,6 @@ class Update extends Controller
       'description' => $request->description,
     ]);
 
-    return response()->json($audience);
+    return back();
   }
 }

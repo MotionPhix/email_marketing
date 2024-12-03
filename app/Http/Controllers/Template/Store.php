@@ -7,13 +7,14 @@ use App\Models\Campaign;
 use App\Models\Template;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use function Pest\Laravel\json;
 
 class Store extends Controller
 {
   /**
    * Handle the incoming request.
    */
-  public function __invoke(Request $request)
+  public function __invoke(Request $request, ?Campaign $campaign = null)
   {
     // Validate the request
     $validated = $request->validate([
@@ -25,7 +26,7 @@ class Store extends Controller
             return $query->where('user_id', $request->user()->id);
           })
       ], // Name is required and unique for the user
-      'design' => ['required'],
+      'design' => ['required', 'array'],
       'content' => ['required', 'string'], // HTML content
     ], [
       'name.required' => 'Provide a name for the template',
@@ -34,24 +35,24 @@ class Store extends Controller
       'content.required' => 'Provide content that we will use in emails',
     ]);
 
-    // Encode the design field as JSON
-    $validated['design'] = json_encode($validated);
-
     // Create a new template
     $template = Template::create([
       'name' => $validated['name'],
-      'design' => $validated['design'],
+      'design' => json_encode($validated['design'], true),
       'content' => $validated['content'],
       'user_id' => $request->user()->id,
     ]);
 
-    $campaign = Campaign::where('id', $request->campaign_id)->first();
-    $campaign->update([
-      'template_id' => $template->id
-    ]);
+    if ($campaign) {
 
-    // Redirect back to the campaigns with the created template ID
-    return redirect()
-      ->route('campaigns.create', $campaign->uuid);
+      $campaign = Campaign::where('id', $request->campaign_id)->first();
+
+      $campaign->update([
+        'template_id' => $template->id
+      ]);
+
+    }
+
+    return redirect()->back();
   }
 }

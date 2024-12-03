@@ -20,12 +20,26 @@ class Recipient extends Model
 
   public function audiences()
   {
-    return $this->belongsToMany(Audience::class, 'audience_recipient')
-      ->withTimestamps();
+    return $this->belongsToMany(
+      Audience::class,
+      'audience_recipient',
+      'recipient_id',
+      'audience_id'
+    );
   }
 
   public function user()
   {
     return $this->belongsTo(User::class);
+  }
+
+  public function unsubscribes()
+  {
+    return $this->hasMany(CampaignUnsubscribe::class);
+  }
+
+  public function unsubscribedFromCampaign(Campaign $campaign)
+  {
+    return $this->unsubscribes()->where('campaign_id', $campaign->id)->exists();
   }
 }

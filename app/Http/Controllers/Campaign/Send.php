@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Campaign;
 use App\Http\Controllers\Controller;
 use App\Models\Campaign;
 use App\Models\EmailLog;
+use App\Models\User;
 use App\Services\CampaignEmailService;
 use App\Services\TemplateRenderer;
 use Illuminate\Http\Request;
@@ -31,7 +32,7 @@ class Send extends Controller
       $campaign = $storeController($request);
     }
 
-    $this->sendCampaign($campaign);
+    $this->sendCampaign($campaign, $request->user());
 
     return redirect()
       ->route('campaigns.index')
@@ -41,9 +42,9 @@ class Send extends Controller
   /**
    * Send the campaign emails.
    */
-  private function sendCampaign(Campaign $campaign)
+  private function sendCampaign(Campaign $campaign, User $user)
   {
     $recipients = $campaign->audience->recipients;
-    $this->emailService->sendEmails($campaign, $recipients);
+    $this->emailService->sendEmails($campaign, $recipients, $user);
   }
 }

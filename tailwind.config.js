@@ -86,6 +86,7 @@ export default {
   plugins: [
     forms,
     typography,
+    require('tailwind-scrollbar'),
     require('tailwindcss-animate'),
   ],
 }

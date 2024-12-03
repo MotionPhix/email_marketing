@@ -1,5 +1,5 @@
 <script setup>
-import {Head, Link} from '@inertiajs/vue3'
+import {Link} from '@inertiajs/vue3'
 import AppLayout from "@/Layouts/AppLayout.vue";
 import {Button} from "@/Components/ui/button";
 
@@ -7,10 +7,6 @@ defineProps({templates: Array});
 </script>
 
 <template>
-  <Head>
-    <title>Templates</title>
-  </Head>
-
   <AppLayout title="Templates">
 
     <template #header>
@@ -19,20 +15,44 @@ defineProps({templates: Array});
       </h2>
     </template>
 
-    <div class="py-12">
-      <div class="mt-4">
-        <Button as-child>
-          <Link :href="route('templates.create')" as="button">
-            Create Template
-          </Link>
-        </Button>
+    <template #action>
+      <Button as-child :href="route('templates.create')">
+        <Link as="button">
+          New
+        </Link>
+      </Button>
+    </template>
 
-        <div v-for="template in templates" :key="template.id" class="border rounded p-4 mt-4">
-          <h2 class="text-lg font-semibold">{{ template.name }}</h2>
-          <p class="truncate">{{ template.content }}</p>
-          <div class="mt-2 flex gap-2">
-            <Link :href="`/templates/${template.id}/edit`" class="btn btn-sm btn-secondary">Edit</Link>
-            <button class="btn btn-sm btn-danger" @click="deleteTemplate(template.id)">Delete</button>
+    <div class="py-12">
+      <div class="grid grid-cols-3 gap-6">
+        <div
+          v-for="template in templates"
+          :key="template.id" class="border rounded-lg">
+
+          <h2 class="p-2 text-lg font-semibold sticky top-0 z-10 bg-gray-100">{{ template.name }}</h2>
+
+          <section class="h-72 overflow-y-auto px-2" v-html="template.content" />
+
+          <div class="mt-2 flex gap-2 p-2 justify-end">
+            <Button
+              as-child
+              :href="route('templates.edit', template.uuid)" >
+              <Link
+                as="button">
+                Edit
+              </Link>
+            </Button>
+
+            <Button
+              as-child
+              method="delete"
+              preserve-scroll
+              :href="route('templates.destroy',  template.uuid)"
+              variant="destructive">
+              <Link as="button">
+                Delete
+              </Link>
+            </Button>
           </div>
         </div>
       </div>

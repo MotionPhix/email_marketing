@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import {EmailEditor} from 'vue-email-editor'
 import ApplicationMark from "@/Components/ApplicationMark.vue"
 import {Button} from "@/Components/ui/button";
@@ -9,21 +9,19 @@ import {ref} from "vue";
 import Editable from "@/Components/Editable.vue";
 import { useToast } from 'maz-ui'
 
-const {fullDesign, campaign} = defineProps({
-  campaign: Object,
-  fullDesign: {
-    type: Object,
-    default: () => {
-    }
-  }
-})
+const {fullDesign, campaign} = defineProps<{
+  campaign?: object
+  fullDesign: object
+}>()
 
 const form = useForm({
   name: fullDesign.name,
   design: fullDesign.design,
   content: fullDesign.content,
-  campaign_id: campaign.id,
+  campaign_id: campaign?.id ?? null,
 })
+
+const back = () => window.history.back()
 
 const emailEditor = ref()
 const campaignStore = useCampaignStore()
@@ -52,57 +50,45 @@ const editorReady = () => {
 }
 
 const editorLoaded = () => {
-  // Pass your template JSON here
-  emailEditor.value.editor.loadDesign(fullDesign.design);
-}
-
-const saveDesign = () => {
-  emailEditor.value.editor.saveDesign(
-    (design) => {
-      form.design = design
-
-      if (fullDesign.uuid) {
-        form.put(route('templates.update', fullDesign.uuid))
-        return
-      }
-
-      form.post(route('templates.store'))
-    }
-  )
+  emailEditor.value.editor.loadDesign(JSON.parse(fullDesign.design));
 }
 
 const exportHtml = () => {
   emailEditor.value.editor.exportHtml(
     (data) => {
       form.content = data.html
+      form.design = data.design
 
-      emailEditor.value.editor.saveDesign(
-        (design) => {
-          form.design = design
+      //  wait for the design to be saved before proceeding
+      setTimeout(() => {
+
+        if (fullDesign.uuid) {
+
+          form.put(route('templates.update', fullDesign.uuid), {
+
+            onError: (errors) => {
+              toast.error(errors.name ?? errors.design ?? errors.content)
+            },
+
+            onSuccess: () => {
+              router.visit(route('templates.index'))
+            }
+
+          })
+
+        } else {
+
+          form.post(route('templates.store', campaign.uuid), {
+
+            onError: (errors) => {
+              toast.error(errors.name ?? errors.design ?? errors.content)
+            }
+
+          })
+
         }
-      )
 
-      if (fullDesign.uuid) {
-
-        form.put(route('templates.update', fullDesign.uuid), {
-
-          onError: (errors) => {
-            toast.error(errors.name ?? errors.design ?? errors.content)
-          }
-
-        })
-
-      } else {
-
-        form.post(route('templates.store', campaign.uuid), {
-
-          onError: (errors) => {
-            toast.error(errors.name ?? errors.design ?? errors.content)
-          }
-
-        })
-
-      }
+      }, 100)
     }
   )
 }
@@ -118,11 +104,8 @@ const exportHtml = () => {
     <div class="container">
       <div id="bar" class="flex gap-4 items-center">
 
-        <Button size="icon" variant="outline" as-child>
-          <Link
-            :href="route('campaigns.create', { template_created: fullDesign.uuid })" as="button">
-            <ArrowLeftIcon/>
-          </Link>
+        <Button size="icon" variant="outline" @click="back">
+          <ArrowLeftIcon/>
         </Button>
 
         <h2
@@ -138,16 +121,19 @@ const exportHtml = () => {
 
         <Button
           variant="ghost"
-          v-on:click="exportHtml" as-child>
+          :href="route(
+            'campaigns.assign',
+            { template: fullDesign?.uuid, campaign: campaignStore?.campaign?.uuid }
+          )"
+          v-if="fullDesign.uuid && campaign.uuid"
+          as-child>
           <Link
-            as="button"
-            v-if="fullDesign.uuid"
-            :href="route('campaigns.assign', { template: fullDesign?.uuid, campaign: campaignStore?.campaign?.uuid })">
+            as="button">
             Assign
           </Link>
         </Button>
 
-        <Button v-on:click="exportHtml">
+        <Button @click="exportHtml">
           Save
         </Button>
 

@@ -5,7 +5,7 @@ defineProps<{
     value: number;
     label: string;
     description: string;
-    preview: string; // Image URL or HTML content as a string
+    preview: string;
   }>;
 }>()
 
@@ -33,17 +33,17 @@ const emits = defineEmits(["update:modelValue"]);
 
       <section class="flex flex-col gap-3">
         <!-- Preview Section -->
-        <div class="h-40 bg-gray-100 rounded-md overflow-hidden flex items-center justify-center">
-<!--          <img-->
-<!--            v-if="template.preview.startsWith('http')"-->
-<!--            :src="template.preview"-->
-<!--            alt="Template preview"-->
-<!--            class="h-full w-full object-cover"-->
-<!--          />-->
+        <div class="h-64 bg-gray-100 rounded-md overflow-hidden flex items-center justify-center">
+          <img
+            v-if="template.preview.startsWith('http')"
+            :src="template.preview"
+            alt="Template preview"
+            class="h-full w-full object-cover"
+          />
+
           <div
             v-html="template.preview"
-            class="w-full h-full p-2 overflow-auto bg-gray-50 text-sm text-gray-800 rounded"
-          ></div>
+            class="w-full h-full p-2 overflow-auto bg-gray-50 text-sm text-gray-800 rounded" />
         </div>
 
         <!-- Template Info -->

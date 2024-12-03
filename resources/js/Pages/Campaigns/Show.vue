@@ -12,6 +12,7 @@ import {
   PencilIcon,
   TrashIcon,
   CreditCard,
+  PlusIcon,
   DollarSign,
   Users
 } from 'lucide-vue-next'
@@ -93,13 +94,6 @@ const totalSpams = computed(() => getTotalMetric('spam_reports'));
 </script>
 
 <template>
-
-  <Head>
-    <title>
-      Manage campaign
-    </title>
-  </Head>
-
   <AppLayout :title="`${campaign.uuid ? 'Edit' : 'Create'} campaign`">
 
     <template #header>
@@ -109,28 +103,43 @@ const totalSpams = computed(() => getTotalMetric('spam_reports'));
     </template>
 
     <template #action>
+      <div class="flex items-center gap-2">
+        <Button
+          as-child
+          max-width="md"
+          :close-button="false"
+          v-if="campaign.template_id && campaign.audience_id && !campaign.formatted_scheduled_at"
+          :href="route('campaigns.schedule', campaign.uuid)">
+          <GlobalLink
+            as="button">
+            Schedule
+          </GlobalLink>
+        </Button>
 
-      <Button
-        as-child
-        as="button"
-        max-width="md"
-        :close-button="false"
-        v-if="campaign.template_id && campaign.audience_id && !campaign.formatted_scheduled_at"
-        :href="route('campaigns.schedule', campaign.uuid)">
-        <GlobalLink>
-          Schedule
-        </GlobalLink>
-      </Button>
+        <Button
+          as-child
+          method="post"
+          variant="secondary"
+          v-if="campaign.template_id && campaign.audience_id && ! campaign.scheduled_at"
+          :href="route('campaigns.send', campaign.uuid)">
+          <Link
+            as="button">
+            Send
+          </Link>
+        </Button>
 
-      <Button
-        as-child
-        as="button"
-        v-if="campaign.template_id && campaign.audience_id && campaign.scheduled_at"
-        :href="route('campaigns.send', campaign.uuid)">
-        <Link>
-          Send
-        </Link>
-      </Button>
+        <Button
+          as-child
+          as="button"
+          size="icon"
+          variant="ghost"
+          :href="route('campaigns.edit', campaign.uuid)">
+          <Link
+            as="button">
+            <PencilIcon/>
+          </Link>
+        </Button>
+      </div>
 
     </template>
 
@@ -206,7 +215,39 @@ const totalSpams = computed(() => getTotalMetric('spam_reports'));
           v-if="campaign.audience.recipients && campaign.audience.recipients.length"
           class="mt-6 px-6">
 
-          <h2 class="text-lg font-semibold mb-4">Recipients</h2>
+          <h2 class="text-lg font-semibold mb-4 flex items-center gap-2">
+            <span>
+              Recipients
+            </span>
+
+            <span class="flex-1"></span>
+
+            <Button
+              as-child
+              variant="secondary"
+              :close-button="false"
+              padding-classes="p-0"
+              panel-classes="rounded-lg overflow-hidden"
+              :href="route('audiences.add_recipient', campaign.audience.uuid)"
+              max-width="md"
+              class="w-8 h-8"
+              size="icon">
+              <GlobalLink
+                as="button">
+                <PlusIcon />
+              </GlobalLink>
+            </Button>
+
+            <Button
+              as-child
+              class="h-8"
+              :href="route('audiences.show', campaign.audience.uuid)">
+              <Link
+                as="button">
+                Show List
+              </Link>
+            </Button>
+          </h2>
 
           <div
             v-for="recipient in displayedRecipients" :key="recipient.uuid"
@@ -235,7 +276,7 @@ const totalSpams = computed(() => getTotalMetric('spam_reports'));
                       as="button"
                       :data="{ modal: true }"
                       :href="route('recipients.edit', recipient.uuid)">
-                      <PencilIcon />
+                      <PencilIcon/>
                     </GlobalLink>
                   </Button>
 
@@ -243,7 +284,7 @@ const totalSpams = computed(() => getTotalMetric('spam_reports'));
                     class="p-1 w-[1.5rem] h-[1.5rem]"
                     @click="deleteRecipient(recipient)"
                     size="icon">
-                    <TrashIcon />
+                    <TrashIcon/>
                   </Button>
                 </div>
 

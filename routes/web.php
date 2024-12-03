@@ -75,6 +75,11 @@ Route::middleware([
       \App\Http\Controllers\Campaign\Console::class
     )->name('campaigns.console');
 
+    Route::get(
+      '/unsubscribe/{campaign:uuid}/{recipient:uuid}',
+      \App\Http\Controllers\Campaign\Unsubscribe::class
+    )->name('campaigns.unsubscribe');
+
   });
 
   Route::prefix('recipients')->group(function () {
@@ -83,6 +88,11 @@ Route::middleware([
       '/',
       \App\Http\Controllers\Recipient\Store::class
     )->name('recipients.store');
+
+    Route::get(
+      '/c',
+      \App\Http\Controllers\Recipient\Form::class
+    )->name('recipients.create');
 
     Route::get(
       '/e/{recipient:uuid}',
@@ -118,10 +128,35 @@ Route::middleware([
       \App\Http\Controllers\Audience\RemoveRecipient::class
     )->name('audiences.remove_recipient');
 
-    Route::put(
-      '/a/{audience:uuid}/{recipient:uuid}',
+    Route::get(
+      '/a/{audience:uuid}',
       \App\Http\Controllers\Audience\AddRecipient::class
     )->name('audiences.add_recipient');
+
+    Route::put(
+      '/m/{audience:uuid}',
+      \App\Http\Controllers\Audience\MergeRecipients::class
+    )->name('audiences.merge_recipients');
+
+    Route::get(
+      '/audience/{audience:uuid}',
+      \App\Http\Controllers\Audience\Show::class
+    )->name('audiences.show');
+
+    Route::get(
+      '/c',
+      \App\Http\Controllers\Audience\Form::class
+    )->name('audiences.create');
+
+    Route::get(
+      '/e/{audience:uuid}',
+      \App\Http\Controllers\Audience\Form::class
+    )->name('audiences.edit');
+
+    Route::put(
+      '/u/{audience:uuid}',
+      \App\Http\Controllers\Audience\Update::class
+    )->name('audiences.update');
 
   });
 
@@ -133,7 +168,7 @@ Route::middleware([
     )->name('templates.index');
 
     Route::get(
-      '/c/{campaign:uuid}',
+      '/c/{campaign:uuid?}',
       \App\Http\Controllers\Template\Form::class
     )->name('templates.create');
 
@@ -153,7 +188,7 @@ Route::middleware([
     )->name('templates.preview');
 
     Route::put(
-      '/u/{template}',
+      '/u/{template:uuid}',
       \App\Http\Controllers\Template\Update::class
     )->name('templates.update');
 
@@ -163,7 +198,7 @@ Route::middleware([
     )->name('templates.preview');
 
     Route::delete(
-      '/d/{template}',
+      '/d/{template:uuid}',
       \App\Http\Controllers\Template\Trash::class
     )->name('templates.destroy');
 

@@ -12,11 +12,20 @@ class Form extends Controller
   /**
    * Handle the incoming request.
    */
-  public function __invoke(Request $request, Campaign $campaign, Template $template = null)
+  public function __invoke(Request $request, ?Campaign $campaign, ?Template $template)
   {
     return Inertia('Templates/Builder', [
-      'fullDesign' => fn() => $template ?: new Template(['design' => '', 'content' => '']),
-      'campaign' => $campaign
+      'fullDesign' => $template ? [
+        'id' => $template->id,
+        'uuid' => $template->uuid,
+        'name' => $template->name,
+        'design' => $template->design,
+        'content' => $template->content,
+      ] : [
+        'design' => '{}', // Return empty JSON object if no template
+        'content' => '',
+      ],
+      'campaign' => $campaign ?: new Campaign()
     ]);
   }
 }

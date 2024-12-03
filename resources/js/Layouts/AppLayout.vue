@@ -78,19 +78,21 @@ const logout = () => {
                 <!-- Teams Dropdown -->
                 <Dropdown v-if="$page.props.jetstream.hasTeamFeatures" align="right" width="60">
                   <template #trigger>
-                                        <span class="inline-flex rounded-md">
-                                            <button type="button"
-                                                    class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800 hover:text-gray-700 dark:hover:text-gray-300 focus:outline-none focus:bg-gray-50 dark:focus:bg-gray-700 active:bg-gray-50 dark:active:bg-gray-700 transition ease-in-out duration-150">
-                                                {{ $page.props.auth.user.current_team.name }}
+                    <span class="inline-flex rounded-md">
+                      <button
+                        type="button"
+                        class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800 hover:text-gray-700 dark:hover:text-gray-300 focus:outline-none focus:bg-gray-50 dark:focus:bg-gray-700 active:bg-gray-50 dark:active:bg-gray-700 transition ease-in-out duration-150">
+                        {{ $page.props.auth.user.current_team.name }}
 
-                                                <svg class="ms-2 -me-0.5 size-4" xmlns="http://www.w3.org/2000/svg"
-                                                     fill="none" viewBox="0 0 24 24" stroke-width="1.5"
-                                                     stroke="currentColor">
-                                                    <path stroke-linecap="round" stroke-linejoin="round"
-                                                          d="M8.25 15L12 18.75 15.75 15m-7.5-6L12 5.25 15.75 9"/>
-                                                </svg>
-                                            </button>
-                                        </span>
+                        <svg
+                          class="ms-2 -me-0.5 size-4" xmlns="http://www.w3.org/2000/svg"
+                          fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                          stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round"
+                                  d="M8.25 15L12 18.75 15.75 15m-7.5-6L12 5.25 15.75 9"/>
+                        </svg>
+                      </button>
+                    </span>
                   </template>
 
                   <template #content>
@@ -318,6 +320,7 @@ const logout = () => {
       <header
         v-if="$slots.header"
         class="sticky z-10 top-0 bg-white dark:bg-gray-800 shadow">
+
         <div
           class="max-w-7xl flex justify-between items-center mx-auto px-4 sm:px-6 lg:px-8"
           :class="$slots.action ? 'py-1' : 'py-2'">
@@ -327,10 +330,11 @@ const logout = () => {
           <slot name="action"/>
 
         </div>
+
       </header>
 
       <!-- Page Content -->
-      <main class="max-w-3xl mx-auto">
+      <main class="max-w-4xl mx-auto">
         <slot/>
       </main>
     </div>

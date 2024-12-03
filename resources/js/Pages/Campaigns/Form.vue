@@ -262,9 +262,9 @@ onBeforeUnmount(() => {
 
         </section>
 
-        <div class="mb-4 grid gap-4" v-if="step === 2">
+        <div class="mb-4 grid gap-4 py-6" v-if="step === 2">
 
-          <Label for="template">Template</Label>
+          <Label>Template</Label>
 
           <TemplateSelector v-model="form.template_id" :templates="templates" />
 

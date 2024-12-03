@@ -48,4 +48,9 @@ class Campaign extends Model
   {
     return $this->hasManyThrough(Recipient::class, Audience::class);
   }
+
+  public function unsubscribes()
+  {
+    return $this->hasMany(CampaignUnsubscribe::class);
+  }
 }

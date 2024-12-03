@@ -15,10 +15,10 @@ return new class extends Migration {
       $table->uuid('uuid');
       $table->string('name');
       $table->text('description')->nullable();
-      $table->text('content')->nullable(); // HTML content for the template
+      $table->longText('content')->nullable(); // HTML content for the template
       $table->json('design')->nullable();
       $table->foreignId('user_id')->nullable()->constrained()->cascadeOnDelete(); // For user-specific templates
-      $table->enum('type', ['free', 'premium'])->default('free'); // Type of template
+      $table->enum('type', ['user', 'free', 'premium'])->default('user'); // Type of template
       $table->timestamps();
     });
   }

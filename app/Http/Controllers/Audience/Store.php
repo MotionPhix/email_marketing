@@ -18,10 +18,10 @@ class Store extends Controller
       'description' => 'nullable|string',
     ]);
 
+    $validated['user_id'] = $request->user()->id;
+
     Audience::create($validated);
 
-    return redirect()
-      ->route('audiences.index')
-      ->with('success', 'Audience created successfully!');
+    return redirect()->back();
   }
 }

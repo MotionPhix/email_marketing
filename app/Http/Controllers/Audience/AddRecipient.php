@@ -13,15 +13,27 @@ class AddRecipient extends Controller
    */
   public function __invoke(Request $request, Audience $audience)
   {
-    if (!count($request->user()->recipients))
+    if (! $request->user()->recipients()->exists())
       return back()->with('flash', [
         'bannerStyle' => 'danger',
         'banner' => 'You don\'t have recipients, yet. Add recipients',
       ]);
 
+    $audience->load('recipients');
+
     return Inertia('Audiences/AddRecipient', [
-      'audience' => $audience->only(['id', 'uuid', 'name']),
-      'recipients' => fn() => $request->user()->recipients
+      'audience' => [
+        'id' => $audience->id,
+        'uuid' => $audience->uuid,
+        'name' => $audience->name,
+        'recipients' => $audience->recipients->map(fn ($recipient) => [
+          'id' => $recipient->id,
+          'uuid' => $recipient->uuid,
+          'name' => $recipient->name,
+          'email' => $recipient->email,
+        ]),
+      ],
+      'recipients' => fn() => $request->user()->recipients->map(fn($recipient) => $recipient->only('id', 'uuid', 'name', 'email')),
     ]);
   }
 }

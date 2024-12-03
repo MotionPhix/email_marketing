@@ -158,6 +158,11 @@ Route::middleware([
       \App\Http\Controllers\Audience\Update::class
     )->name('audiences.update');
 
+    Route::delete(
+      '/u/{audience:uuid}',
+      \App\Http\Controllers\Audience\Trash::class
+    )->name('audiences.destroy');
+
   });
 
   Route::prefix('templates')->group(function () {

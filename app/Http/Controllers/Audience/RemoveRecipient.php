@@ -27,10 +27,6 @@ class RemoveRecipient extends Controller
     // Detach the recipient from the audience
     $audience->recipients()->detach($recipient->id);
 
-    return redirect()->back()
-      ->with('flash', [
-        'bannerStyle' => 'success',
-        'banner' => 'Recipient removed from the audience successfully.',
-      ]);
+    return redirect()->back();
   }
 }

@@ -43,9 +43,14 @@ defineProps<{
       <!-- Recipients -->
       <div class="bg-white dark:bg-gray-800 shadow sm:rounded-lg p-6 mb-6">
         <div class="flex justify-between items-center">
-          <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">Recipients</h3>
-          <Button as-child variant="default" :href="route('recipients.create', audience.uuid)">
-            <span>Add Recipient</span>
+          <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">
+            Recipients
+          </h3>
+
+          <Button
+            as-child variant="default"
+            :href="route('audiences.add_recipient', audience.uuid)">
+            <GlobalLink>Add recipients</GlobalLink>
           </Button>
         </div>
 
@@ -59,9 +64,15 @@ defineProps<{
               <p class="text-sm text-gray-500 dark:text-gray-400">{{ recipient.email }}</p>
             </div>
             <div class="flex space-x-2">
-              <Button as-child size="sm" variant="outline" :href="route('recipients.edit', recipient.uuid)">
-                <span>Edit</span>
+              <Button
+                variant="outline"
+                as-child size="sm"
+                :href="route('recipients.edit', recipient.uuid)">
+                <GlobalLink as="button">
+                  <span>Edit</span>
+                </GlobalLink>
               </Button>
+
               <Button size="sm" variant="destructive" @click="() => confirmRemoveRecipient(recipient.uuid)">
                 Remove
               </Button>

@@ -48,12 +48,14 @@ const onSubmit = () => {
 </script>
 
 <template>
-  <GlobalModal v-slot="{ close }" ref="modalRef">
+  <GlobalModal
+    v-slot="{ close }" ref="modalRef"
+    :close-button="false" panel-classes="rounded-2xl" padding-classes="p-0" max-width="md">
 
     <form @submit.prevent="onSubmit">
 
       <Card class="p-6">
-        <CardTitle>
+        <CardTitle class="capitalize">
           {{ audience.name }} Recipients
         </CardTitle>
 

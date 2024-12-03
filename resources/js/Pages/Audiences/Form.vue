@@ -21,7 +21,7 @@ const form = useForm({
 <template>
   <GlobalModal ref="modalRef" :close-button="false" v-slot="{ close }" max-width="md">
     <h1 class="text-2xl font-bold">
-      {{ audience.uuid ? 'Edit' : 'New' }} Audience
+      {{ audience.uuid ? `Edit ${audience.name}` : 'New' }}
     </h1>
 
     <form
@@ -72,7 +72,7 @@ const form = useForm({
           type="submit"
           :loading="form.processing"
           :disabled="form.processing">
-          {{ action }} Audience
+          {{ action }}
         </Button>
       </div>
     </form>

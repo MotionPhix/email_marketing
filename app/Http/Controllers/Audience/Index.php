@@ -13,20 +13,16 @@ class Index extends Controller
    */
   public function __invoke(Request $request)
   {
-    // Fetch audiences with pagination
-//    $audiences = Audience::where('user_id', $request->user()->id)
-//      ->with('recipients:id,name,email')
-//      ->paginate(10);
-
     $audiences = Audience::where('user_id', $request->user()->id)
       ->with(['recipients' => function ($query) {
-        $query->select('name', 'email')->limit(3);
+        $query->select('uuid', 'name', 'email')->limit(3);
       }])
       ->withCount('recipients')
       ->paginate(10)
       ->through(function ($audience) {
         return [
           'id' => $audience->id,
+          'uuid' => $audience->uuid,
           'name' => $audience->name,
           'description' => $audience->description,
           'recipients' => $audience->recipients,

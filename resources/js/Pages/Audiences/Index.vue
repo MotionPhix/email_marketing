@@ -55,6 +55,8 @@ const perform = (action: string, model: string, path: string, args?: object|stri
 
     case 'delete':
       router.delete(route(path, args), {
+        preserveScroll: true,
+
         onSuccess: () => {
           toast.success(`${model} was deleted successfully!`)
         },

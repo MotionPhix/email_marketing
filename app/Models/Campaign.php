@@ -43,10 +43,10 @@ class Campaign extends Model
     return $this->belongsTo(Template::class);
   }
 
-  // A campaign has many recipients through the audience
+  // A campaign has many recipients
   public function recipients()
   {
-    return $this->hasManyThrough(Recipient::class, Audience::class);
+    return $this->belongsToMany(Recipient::class, 'campaign_recipients');
   }
 
   public function unsubscribes()

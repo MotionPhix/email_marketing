@@ -17,6 +17,8 @@ return new class extends Migration {
       $table->string('name')->nullable();
       $table->string('email')->unique();
 
+      $table->string('status')->default('active');
+
       $table->enum(
         'gender', ['male', 'female', 'unspecified']
       )->default('unspecified');

@@ -53,6 +53,12 @@ const logout = () => {
                 </NavLink>
 
                 <NavLink
+                  href="/recipients"
+                  :active="route().current('recipients.*')">
+                  Recipients
+                </NavLink>
+
+                <NavLink
                   href="/audiences"
                   :active="route().current('audiences.*')">
                   Audiences

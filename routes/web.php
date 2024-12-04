@@ -84,6 +84,11 @@ Route::middleware([
 
   Route::prefix('recipients')->group(function () {
 
+    Route::get(
+      '/',
+      \App\Http\Controllers\Recipient\Index::class
+    )->name('recipients.index');
+
     Route::post(
       '/',
       \App\Http\Controllers\Recipient\Store::class

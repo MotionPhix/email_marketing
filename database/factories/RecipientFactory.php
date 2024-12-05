@@ -16,9 +16,12 @@ class RecipientFactory extends Factory
    */
   public function definition(): array
   {
+    $gender = fake()->randomElement(['female', 'male', 'unspecified']);
+
     return [
       'email' => fake()->unique()->safeEmail(),
-      'name' => fake('ZA')->name(fake()->randomElement(['female', 'male'])),
+      'name' => fake('ZA')->name($gender),
+      'gender' => $gender
     ];
   }
 }

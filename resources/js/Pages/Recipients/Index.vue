@@ -1,14 +1,16 @@
 <script setup lang="ts">
-import {ref, watch} from "vue";
-import {router} from "@inertiajs/vue3";
+import {onMounted, onUnmounted, ref, toRaw, watch} from "vue";
+import {router, usePage} from "@inertiajs/vue3";
 import SearchBar from "@/Components/Recipient/SearchBar.vue";
 import FilterSidebar from "@/Components/Recipient/FilterSidebar.vue";
 import BatchActions from "@/Components/Recipient/BatchActions.vue";
 import RecipientTable from "@/Components/Recipient/RecipientTable.vue";
-import Pagination from "@/Components/Recipient/Pagination.vue";
+// import Pagination from "@/Components/Recipient/Pagination.vue";
 import AppLayout from "@/Layouts/AppLayout.vue";
 import {Button} from "@/Components/ui/button";
-import {FileSymlinkIcon} from "lucide-vue-next";
+import {FileSymlinkIcon, FilterXIcon} from "lucide-vue-next";
+import {debounce} from "maz-ui";
+import {Pagination, PaginationList, PaginationListItem} from "radix-vue";
 
 // Define the `recipients` prop
 const {recipients} = defineProps<{
@@ -16,6 +18,7 @@ const {recipients} = defineProps<{
     data: Array<{ id: number; name: string; email: string; status: string }>;
     current_page: number;
     last_page: number;
+    per_page: number;
     total: number;
   };
 }>();
@@ -23,8 +26,9 @@ const {recipients} = defineProps<{
 const searchQuery = ref("");
 const filters = ref({status: null});
 const selectedRecipients = ref(new Set<number>());
+const page = usePage();
 
-const fetchRecipients = async (params = {}) => {
+/*const fetchRecipients = async (params = {}) => {
   // Construct the query object dynamically
   const query = {};
 
@@ -60,7 +64,7 @@ const fetchRecipients = async (params = {}) => {
       replace: true,
     }
   );
-};
+};*/
 
 const toggleRecipient = (id: number) => {
   selectedRecipients.value.has(id)
@@ -73,6 +77,38 @@ const selectAllRecipients = (selectAll: boolean) => {
     selectAll ? selectedRecipients.value.add(id) : selectedRecipients.value.delete(id);
   });
 };
+
+const fetchRecipients = debounce(async (params = {}) => {
+  const query = {};
+
+  // Add search query if present
+  if (searchQuery.value) {
+    query.search = searchQuery.value;
+  }
+
+  // Add filters if any are present
+  if (filters.value.status) {
+    switch (filters.value.status) {
+      case 'male':
+      case 'female':
+      case 'unspecified':
+        query.gender = filters.value.status
+        break;
+
+      default:
+        query.status = filters.value.status
+        break;
+    }
+  }
+
+  const finalParams = { ...query, ...params };
+
+  await router.get(route("recipients.index"), finalParams, {
+    preserveState: true,
+    preserveScroll: true,
+    replace: true,
+  });
+}, 300);
 
 // Deselect all recipients
 const deselectAllRecipients = () => {
@@ -91,7 +127,31 @@ const clearFilters = () => {
 };
 
 // Watch for changes in search and filters
-watch([searchQuery, filters], () => fetchRecipients());
+watch([searchQuery, filters], ([newSearchQuery, newFilters]) => {
+  fetchRecipients()
+
+  localStorage.setItem(
+    "filters",
+    JSON.stringify(toRaw(newFilters))
+  );
+});
+
+onMounted(() => {
+  const savedFilters = localStorage.getItem("filters");
+
+  if (savedFilters) {
+    try {
+      const parsedFilters = JSON.parse(savedFilters);
+      filters.value = { status: null, ...parsedFilters }; // Merge defaults
+    } catch (e) {
+      console.error("Failed to parse saved filters", e);
+    }
+  }
+})
+
+onUnmounted(() => {
+  localStorage.removeItem("filters");
+});
 </script>
 
 <template>
@@ -124,7 +184,7 @@ watch([searchQuery, filters], () => fetchRecipients());
         <FilterSidebar v-model="filters"/>
 
         <!-- Recipient Table -->
-        <div class="flex-1">
+        <div class="flex-1 grid gap-6">
           <!-- Deselect All and Clear Filters Buttons -->
           <div class="mt-4 flex items-center gap-2 pt-5">
             <Button
@@ -135,10 +195,10 @@ watch([searchQuery, filters], () => fetchRecipients());
             </Button>
 
             <Button
+              size="icon"
               @click="clearFilters"
-              class="bg-red-500 text-white p-2 rounded hover:bg-red-600 transition duration-200"
-            >
-              Clear Filters
+              class="bg-red-500">
+              <FilterXIcon />
             </Button>
 
             <BatchActions
@@ -152,11 +212,31 @@ watch([searchQuery, filters], () => fetchRecipients());
             @select-all="selectAllRecipients"
           />
 
-          <Pagination
-            :current="recipients.current_page"
-            :total-pages="recipients.last_page"
-            @change-page="page => fetchRecipients({ page })"
-          />
+<!--          <Pagination-->
+<!--            :per-page="recipients.per_page"-->
+<!--            :current="recipients.current_page"-->
+<!--            :total-pages="recipients.last_page"-->
+<!--            @change-page="page => fetchRecipients({ page })"-->
+<!--          />-->
+
+          <Pagination v-slot="{ page }" :total="100" :sibling-count="1" show-edges :default-page="2">
+            <PaginationList v-slot="{ items }" class="flex items-center gap-1">
+              <PaginationFirst />
+              <PaginationPrev />
+
+              <template v-for="(item, index) in items">
+                <PaginationListItem v-if="item.type === 'page'" :key="index" :value="item.value" as-child>
+                  <Button class="w-10 h-10 p-0" :variant="item.value === page ? 'default' : 'outline'">
+                    {{ item.value }}
+                  </Button>
+                </PaginationListItem>
+                <PaginationEllipsis v-else :key="item.type" :index="index" />
+              </template>
+
+              <PaginationNext />
+              <PaginationLast />
+            </PaginationList>
+          </Pagination>
         </div>
       </div>
     </div>

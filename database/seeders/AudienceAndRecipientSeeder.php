@@ -19,8 +19,11 @@ class AudienceAndRecipientSeeder extends Seeder
 
     $audiences = \App\Models\Audience::factory(5)
       ->hasRecipients(
-        random_int(2, 5),
-        fn () => ['user_id' => $user->id]
+        random_int(2, 7),
+        fn () => [
+          'user_id' => $user->id,
+          'status' => fake()->randomElement(['active', 'inactive', 'banned', 'unsubscribed'])
+        ]
       ) // Each audience gets between 2 and 5 recipients
       ->create([
         'user_id' => $user->id

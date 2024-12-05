@@ -17,7 +17,7 @@ return new class extends Migration {
       $table->string('name')->nullable();
       $table->string('email')->unique();
 
-      $table->string('status')->default('active');
+      $table->string('status')->default('active'); // could be banned, unsubscribed (from everything)
 
       $table->enum(
         'gender', ['male', 'female', 'unspecified']

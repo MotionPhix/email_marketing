@@ -110,9 +110,14 @@ Route::middleware([
     )->name('recipients.update');
 
     Route::post(
-      '/upload',
+      'import',
+      \App\Http\Controllers\Recipient\Import::class,
+    )->name('recipients.import.store');
+
+    Route::get(
+      'import',
       \App\Http\Controllers\Recipient\Upload::class,
-    )->name('recipients.upload');
+    )->name('recipients.import');
 
   });
 

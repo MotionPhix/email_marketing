@@ -8,6 +8,7 @@ import RecipientTable from "@/Components/Recipient/RecipientTable.vue";
 import Pagination from "@/Components/Recipient/Pagination.vue";
 import AppLayout from "@/Layouts/AppLayout.vue";
 import {Button} from "@/Components/ui/button";
+import {FileSymlinkIcon} from "lucide-vue-next";
 
 // Define the `recipients` prop
 const {recipients} = defineProps<{
@@ -34,11 +35,21 @@ const fetchRecipients = async (params = {}) => {
 
   // Add filters if any are present
   if (filters.value.status) {
-    query.status = filters.value.status;
+    switch (filters.value.status) {
+      case 'male':
+      case 'female':
+      case 'unspecified':
+        query.gender = filters.value.status
+        break;
+
+      default:
+        query.status = filters.value.status
+        break;
+    }
   }
 
   // Merge the additional params passed into the function
-  const finalParams = { ...query, ...params };
+  const finalParams = {...query, ...params};
 
   await router.get(
     route("recipients.index"),
@@ -70,11 +81,11 @@ const deselectAllRecipients = () => {
 
 // Clear filters and reset the search
 const clearFilters = () => {
-  filters.value = { status: null }; // Reset filters to their default values
+  filters.value = {status: null}; // Reset filters to their default values
   searchQuery.value = ""; // Reset the search query
 
   // Adjust the URL to remove filter parameters and keep the search query if any
-  const params = searchQuery.value ? { search: searchQuery.value } : {};
+  const params = searchQuery.value ? {search: searchQuery.value} : {};
 
   fetchRecipients(params); // Fetch recipients with the cleared filters and updated URL
 };
@@ -84,19 +95,27 @@ watch([searchQuery, filters], () => fetchRecipients());
 </script>
 
 <template>
-  <AppLayout>
+  <AppLayout title="Explore Recipients">
 
     <!-- Header -->
     <template #header>
       <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
-        Recipients
+        Explore Recipients
       </h2>
     </template>
 
     <!-- Action Button -->
     <template #action>
-      <!-- Search Bar -->
-      <SearchBar v-model="searchQuery" @search="fetchRecipients"/>
+      <div class="flex items-center gap-2">
+        <Button size="icon" as-child :href="route('recipients.import')">
+          <GlobalLink as="button">
+            <FileSymlinkIcon />
+          </GlobalLink>
+        </Button>
+
+        <!-- Search Bar -->
+        <SearchBar v-model="searchQuery" @search="fetchRecipients"/>
+      </div>
     </template>
 
     <div class="py-12 px-6">

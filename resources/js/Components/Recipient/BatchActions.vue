@@ -8,6 +8,30 @@ const emit = defineEmits(["perform-action"]);
 const performAction = (action: string) => {
   emit("perform-action", { action, recipients: selectedRecipients });
 };
+
+const handleAction = (payload: { action: string; recipients: number[] }) => {
+  const { action, recipients } = payload;
+  switch (action) {
+    case "delete":
+      // Handle deletion logic
+      console.log("Deleting:", recipients);
+      break;
+    case "export_pdf":
+      // Handle export to PDF
+      console.log("Exporting to PDF:", recipients);
+      break;
+    case "export_excel":
+      // Handle export to Excel
+      console.log("Exporting to Excel:", recipients);
+      break;
+    case "export_csv":
+      // Handle export to CSV
+      console.log("Exporting to CSV:", recipients);
+      break;
+    default:
+      console.warn("Unknown action:", action);
+  }
+};
 </script>
 
 <template>

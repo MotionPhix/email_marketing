@@ -119,6 +119,11 @@ Route::middleware([
       \App\Http\Controllers\Recipient\Upload::class,
     )->name('recipients.import');
 
+    Route::post(
+      '/batch-action',
+      \App\Http\Controllers\Recipient\BatchHandler::class,
+    )->name('recipients.batch');
+
   });
 
   Route::prefix('audiences')->group(function () {

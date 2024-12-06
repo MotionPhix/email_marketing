@@ -5,20 +5,24 @@ import SearchBar from "@/Components/Recipient/SearchBar.vue";
 import FilterSidebar from "@/Components/Recipient/FilterSidebar.vue";
 import BatchActions from "@/Components/Recipient/BatchActions.vue";
 import RecipientTable from "@/Components/Recipient/RecipientTable.vue";
-// import Pagination from "@/Components/Recipient/Pagination.vue";
+import Pagination from "@/Components/Recipient/Pagination.vue";
 import AppLayout from "@/Layouts/AppLayout.vue";
 import {Button} from "@/Components/ui/button";
 import {FileSymlinkIcon, FilterXIcon} from "lucide-vue-next";
 import {debounce} from "maz-ui";
-import {Pagination, PaginationList, PaginationListItem} from "radix-vue";
 
 // Define the `recipients` prop
 const {recipients} = defineProps<{
   recipients: {
     data: Array<{ id: number; name: string; email: string; status: string }>;
+    first_page_url?: string;
+    last_page_url?: string;
+    next_page_url?: string;
+    prev_page_url?: string;
     current_page: number;
     last_page: number;
     per_page: number;
+    links: Array<{ url?: string, label?: string, active: boolean }>;
     total: number;
   };
 }>();
@@ -27,44 +31,6 @@ const searchQuery = ref("");
 const filters = ref({status: null});
 const selectedRecipients = ref(new Set<number>());
 const page = usePage();
-
-/*const fetchRecipients = async (params = {}) => {
-  // Construct the query object dynamically
-  const query = {};
-
-  // Add search query if present
-  if (searchQuery.value) {
-    query.search = searchQuery.value;
-  }
-
-  // Add filters if any are present
-  if (filters.value.status) {
-    switch (filters.value.status) {
-      case 'male':
-      case 'female':
-      case 'unspecified':
-        query.gender = filters.value.status
-        break;
-
-      default:
-        query.status = filters.value.status
-        break;
-    }
-  }
-
-  // Merge the additional params passed into the function
-  const finalParams = {...query, ...params};
-
-  await router.get(
-    route("recipients.index"),
-    finalParams,
-    {
-      preserveState: true,
-      preserveScroll: true,
-      replace: true,
-    }
-  );
-};*/
 
 const toggleRecipient = (id: number) => {
   selectedRecipients.value.has(id)
@@ -78,7 +44,17 @@ const selectAllRecipients = (selectAll: boolean) => {
   });
 };
 
-const fetchRecipients = debounce(async (params = {}) => {
+const fetchRecipients = debounce(async (paramsOrUrl: Record<string, any> | string) => {
+  if (typeof paramsOrUrl === "string") {
+    // If a URL is provided, visit it directly
+    await router.get(paramsOrUrl, {}, {
+      preserveState: true,
+      preserveScroll: true,
+      replace: true,
+    });
+    return;
+  }
+
   const query = {};
 
   // Add search query if present
@@ -101,7 +77,7 @@ const fetchRecipients = debounce(async (params = {}) => {
     }
   }
 
-  const finalParams = { ...query, ...params };
+  const finalParams = { ...query, ...paramsOrUrl };
 
   await router.get(route("recipients.index"), finalParams, {
     preserveState: true,
@@ -212,31 +188,18 @@ onUnmounted(() => {
             @select-all="selectAllRecipients"
           />
 
-<!--          <Pagination-->
-<!--            :per-page="recipients.per_page"-->
-<!--            :current="recipients.current_page"-->
-<!--            :total-pages="recipients.last_page"-->
-<!--            @change-page="page => fetchRecipients({ page })"-->
-<!--          />-->
+          <Pagination
+            :links="recipients.links"
+            :per-page="recipients.per_page"
+            :current-page="recipients.current_page"
+            :total="recipients.total"
+            :first-page-url="recipients.first_page_url"
+            :last-page-url="recipients.last_page_url"
+            :next-page-url="recipients.next_page_url"
+            :prev-page-url="recipients.prev_page_url"
+            :last-page="recipients.last_page"
+            @change-page="fetchRecipients" />
 
-          <Pagination v-slot="{ page }" :total="100" :sibling-count="1" show-edges :default-page="2">
-            <PaginationList v-slot="{ items }" class="flex items-center gap-1">
-              <PaginationFirst />
-              <PaginationPrev />
-
-              <template v-for="(item, index) in items">
-                <PaginationListItem v-if="item.type === 'page'" :key="index" :value="item.value" as-child>
-                  <Button class="w-10 h-10 p-0" :variant="item.value === page ? 'default' : 'outline'">
-                    {{ item.value }}
-                  </Button>
-                </PaginationListItem>
-                <PaginationEllipsis v-else :key="item.type" :index="index" />
-              </template>
-
-              <PaginationNext />
-              <PaginationLast />
-            </PaginationList>
-          </Pagination>
         </div>
       </div>
     </div>

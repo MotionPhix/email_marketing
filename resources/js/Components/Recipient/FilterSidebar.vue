@@ -1,20 +1,11 @@
 <script setup lang="ts">
-import {
-  Select,
-  SelectTrigger,
-  SelectValue,
-  SelectContent,
-  SelectItem,
-  SelectGroup,
-  SelectLabel,
-  SelectSeparator
-} from "@/Components/ui/select";
 import {FilterIcon} from "lucide-vue-next";
 import {
   Command,
   CommandGroup,
   CommandItem,
-  CommandList, CommandSeparator, CommandShortcut,
+  CommandList,
+  CommandSeparator
 } from '@/Components/ui/command'
 
 const {modelValue} = defineProps<{ modelValue: Record<string, any> }>();
@@ -27,57 +18,13 @@ const updateFilter = (key: string, value: any) => {
 
 <template>
   <div class="w-1/4 sticky top-28">
+
     <h4 class="font-bold gap-2 mb-2 flex items-center">
       <FilterIcon class="w-4 h-4 stroke-2"/>
       <span>Filters</span>
     </h4>
 
-    <Select
-      v-model="modelValue.status"
-      @update:modelValue="updateFilter('status', $event)">
-      <SelectTrigger class="w-full">
-        <SelectValue placeholder="Filter recipients"/>
-      </SelectTrigger>
-
-      <SelectContent>
-        <SelectGroup>
-          <SelectLabel>Filter by gender</SelectLabel>
-
-          <SelectSeparator/>
-
-          <SelectItem value="male">
-            Male
-          </SelectItem>
-          <SelectItem value="female">
-            Female
-          </SelectItem>
-          <SelectItem value="unspecified">
-            Not known
-          </SelectItem>
-        </SelectGroup>
-
-        <SelectGroup>
-          <SelectLabel>Filter by status</SelectLabel>
-
-          <SelectSeparator/>
-
-          <SelectItem value="active">
-            Active
-          </SelectItem>
-          <SelectItem value="inactive">
-            Not active
-          </SelectItem>
-          <SelectItem value="banned">
-            Banned
-          </SelectItem>
-          <SelectItem value="unsubscribed">
-            Opted out
-          </SelectItem>
-        </SelectGroup>
-      </SelectContent>
-    </Select>
-
-    <div class="sticky top-16">
+    <div class="sticky top-18">
       <Command
         multiple
         class="rounded-lg border shadow-sm max-w-[450px]"
@@ -100,8 +47,11 @@ const updateFilter = (key: string, value: any) => {
             </CommandItem>
 
             <CommandItem value="female">
-              <svg class="mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24"
-                   color="#000000" fill="none">
+              <svg
+                class="mr-2 h-4 w-4"
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24" width="24" height="24"
+                color="#000000" fill="none">
                 <path
                   d="M12 14C15.3137 14 18 11.3137 18 8C18 4.68629 15.3137 2 12 2C8.68629 2 6 4.68629 6 8C6 11.3137 8.68629 14 12 14ZM12 14V22M9 19H15"
                   stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
@@ -110,8 +60,11 @@ const updateFilter = (key: string, value: any) => {
             </CommandItem>
 
             <CommandItem value="unspecified">
-              <svg class="mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24"
-                   color="#000000" fill="none">
+              <svg
+                class="mr-2 h-4 w-4"
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24" width="24" height="24"
+                color="#000000" fill="none">
                 <path
                   d="M7 14.9999C5.34315 14.9999 4 16.343 4 17.9999C4 19.6567 5.34315 20.9999 7 20.9999C8.65685 20.9999 10 19.6567 10 17.9999C10 16.343 8.65685 14.9999 7 14.9999Z"
                   stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
@@ -147,7 +100,6 @@ const updateFilter = (key: string, value: any) => {
                   stroke="currentColor" stroke-width="1.5"/>
               </svg>
               <span>Active</span>
-              <CommandShortcut>⌘P</CommandShortcut>
             </CommandItem>
 
             <CommandItem value="inactive">
@@ -160,7 +112,6 @@ const updateFilter = (key: string, value: any) => {
                   stroke="currentColor" stroke-width="1.5"/>
               </svg>
               <span>Not active</span>
-              <CommandShortcut>⌘B</CommandShortcut>
             </CommandItem>
 
             <CommandItem value="banned">
@@ -174,7 +125,6 @@ const updateFilter = (key: string, value: any) => {
                   stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
               </svg>
               <span>Banned</span>
-              <CommandShortcut>⌘S</CommandShortcut>
             </CommandItem>
 
             <CommandItem value="unsubscribed">
@@ -191,7 +141,6 @@ const updateFilter = (key: string, value: any) => {
                   stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
               </svg>
               <span>Opted out</span>
-              <CommandShortcut>⌘S</CommandShortcut>
             </CommandItem>
           </CommandGroup>
 

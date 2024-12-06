@@ -33,7 +33,11 @@ const onSubmit = () => {
 </script>
 
 <template>
-  <GlobalModal ref="modalRef" v-slot="{ close }">
+  <GlobalModal
+    :close-button="false"
+    max-width="sm" padding-classes="p-0"
+    panel-classes="rounded-xl overflow-hidden"
+    ref="modalRef" v-slot="{ close }">
 
     <Card class="w-full">
       <CardHeader>

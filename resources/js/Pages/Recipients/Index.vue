@@ -9,6 +9,7 @@ import Pagination from "@/Components/Recipient/Pagination.vue";
 import AppLayout from "@/Layouts/AppLayout.vue";
 import {Button} from "@/Components/ui/button";
 import {FileSymlinkIcon, FilterXIcon} from "lucide-vue-next";
+import { visitModal } from '@inertiaui/modal-vue'
 import {debounce} from "maz-ui";
 
 // Define the `recipients` prop
@@ -77,7 +78,7 @@ const fetchRecipients = debounce(async (paramsOrUrl: Record<string, any> | strin
     }
   }
 
-  const finalParams = { ...query, ...paramsOrUrl };
+  const finalParams = {...query, ...paramsOrUrl};
 
   await router.get(route("recipients.index"), finalParams, {
     preserveState: true,
@@ -102,6 +103,58 @@ const clearFilters = () => {
   fetchRecipients(params); // Fetch recipients with the cleared filters and updated URL
 };
 
+const handleAction = (payload: { action: string; recipients: number[] }) => {
+  const {action, recipients} = payload;
+  switch (action) {
+    case "delete":
+      // Handle deletion logic
+      router.get(route('recipients.batch', {
+        action: action,
+        recipients: recipients
+      }), {}, {
+        preserveScroll: true,
+        onSuccess: () => {
+          console.log('deleted recipients')
+        },
+        onError: (errors) => {
+          console.log(errors)
+        }
+      });
+      break;
+    case "export_pdf":
+      // Handle export to PDF
+      window.open(route('recipients.batch', {
+        action: action,
+        recipients: recipients,
+      }), '_blank')
+      break;
+    case "export_excel":
+      // Handle export to Excel
+      window.open(route('recipients.batch', {
+        action: action,
+        recipients: recipients,
+      }), '_blank')
+      break;
+    case "export_csv":
+      // Handle export to CSV
+      window.open(route('recipients.batch', {
+        action: action,
+        recipients: recipients,
+      }), '_blank')
+      break;
+    default:
+      // Edit recipient
+      visitModal(route('recipients.batch', { action: action, recipients: recipients }), {
+        method: 'get',
+        data: {},
+        onClose: () => {
+          console.log('Recipient edited')
+          deselectAllRecipients()
+        },
+      });
+  }
+};
+
 // Watch for changes in search and filters
 watch([searchQuery, filters], ([newSearchQuery, newFilters]) => {
   fetchRecipients()
@@ -118,7 +171,7 @@ onMounted(() => {
   if (savedFilters) {
     try {
       const parsedFilters = JSON.parse(savedFilters);
-      filters.value = { status: null, ...parsedFilters }; // Merge defaults
+      filters.value = {status: null, ...parsedFilters}; // Merge defaults
     } catch (e) {
       console.error("Failed to parse saved filters", e);
     }
@@ -145,7 +198,7 @@ onUnmounted(() => {
       <div class="flex items-center gap-2">
         <Button size="icon" as-child :href="route('recipients.import')">
           <GlobalLink as="button">
-            <FileSymlinkIcon />
+            <FileSymlinkIcon/>
           </GlobalLink>
         </Button>
 
@@ -164,20 +217,39 @@ onUnmounted(() => {
           <!-- Deselect All and Clear Filters Buttons -->
           <div class="mt-4 flex items-center gap-2 pt-5">
             <Button
+              size="icon"
+              :disabled="! selectedRecipients.size"
               @click="deselectAllRecipients"
-              class="bg-gray-300 p-2 rounded hover:bg-gray-400 transition duration-200"
-            >
-              Deselect All
+              class="bg-gray-300">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" color="#000000"
+                   fill="none">
+                <path
+                  d="M5.08069 15.2964C3.86241 16.0335 0.668175 17.5386 2.61368 19.422C3.56404 20.342 4.62251 21 5.95325 21H13.5468C14.8775 21 15.936 20.342 16.8863 19.422C18.8318 17.5386 15.6376 16.0335 14.4193 15.2964C11.5625 13.5679 7.93752 13.5679 5.08069 15.2964Z"
+                  stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                <path
+                  d="M13.5 7C13.5 9.20914 11.7091 11 9.5 11C7.29086 11 5.5 9.20914 5.5 7C5.5 4.79086 7.29086 3 9.5 3C11.7091 3 13.5 4.79086 13.5 7Z"
+                  stroke="currentColor" stroke-width="1.5"/>
+                <path d="M17 5L22 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
+                      stroke-linejoin="round"/>
+                <path d="M17 8L22 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
+                      stroke-linejoin="round"/>
+                <path d="M20 11L22 11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
+                      stroke-linejoin="round"/>
+              </svg>
             </Button>
 
             <Button
               size="icon"
+              :disabled="! filters.status"
               @click="clearFilters"
               class="bg-red-500">
-              <FilterXIcon />
+              <FilterXIcon/>
             </Button>
 
+            <span class="flex-1"/>
+
             <BatchActions
+              @perform-action="handleAction"
               :selected-recipients="Array.from(selectedRecipients)"/>
           </div>
 
@@ -198,7 +270,7 @@ onUnmounted(() => {
             :next-page-url="recipients.next_page_url"
             :prev-page-url="recipients.prev_page_url"
             :last-page="recipients.last_page"
-            @change-page="fetchRecipients" />
+            @change-page="fetchRecipients"/>
 
         </div>
       </div>

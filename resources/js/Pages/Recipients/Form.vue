@@ -1,5 +1,7 @@
 <script setup>
 import { useForm } from '@inertiajs/vue3';
+import {Input} from "@/Components/ui/input";
+import {Button} from "@/Components/ui/button";
 
 const { recipient } = defineProps({
   recipient: Object,
@@ -13,23 +15,15 @@ const form = useForm({
 </script>
 
 <template>
-  <div>
-    <h1 class="text-2xl font-bold">Add Recipient</h1>
+  <GlobalModal max-width="sm" panel-classes="rounded-xl bg-white">
+    <h1 class="text-2xl font-bold">
+      {{ recipient.uuid ? 'Edit' : 'Update' }} Recipient
+    </h1>
 
     <form @submit.prevent="form.post(route('recipients.add'))" class="mt-4">
       <div class="mb-4">
-        <label for="email" class="block text-sm font-medium text-gray-700">Email</label>
-        <input
-          v-model="form.email"
-          type="email"
-          id="email"
-          class="mt-1 block w-full border-gray-300 rounded-md"
-        />
-      </div>
-
-      <div class="mb-4">
         <label for="name" class="block text-sm font-medium text-gray-700">Name</label>
-        <input
+        <Input
           v-model="form.name"
           type="text"
           id="name"
@@ -37,12 +31,23 @@ const form = useForm({
         />
       </div>
 
-      <button
-        type="submit"
-        class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-        :disabled="form.processing">
-        Add Recipient
-      </button>
+      <div class="mb-4">
+        <label for="email" class="block text-sm font-medium text-gray-700">Email</label>
+        <Input
+          v-model="form.email"
+          type="email"
+          id="email"
+          class="mt-1 block w-full border-gray-300 rounded-md"
+        />
+      </div>
+
+      <div class="flex justify-end pt-4">
+        <Button
+          type="submit"
+          :disabled="form.processing">
+          {{ recipient.uuid ? 'Update' : 'Save' }} Recipient
+        </Button>
+      </div>
     </form>
-  </div>
+  </GlobalModal>
 </template>

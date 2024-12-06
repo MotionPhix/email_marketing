@@ -2,20 +2,19 @@
 
 namespace App\Exports;
 
-use App\Models\Recipient;
+use Illuminate\Support\Collection;
 use Maatwebsite\Excel\Concerns\FromCollection;
-use Illuminate\Contracts\View\View;
-use Maatwebsite\Excel\Concerns\FromView;
-use phpDocumentor\Reflection\Types\Collection;
 
-class RecipientsExport implements FromView // FromCollection
+class RecipientsExport implements FromCollection
 {
-  public function __construct(protected $recipients) { }
+  public function __construct(protected Collection $recipients) { }
 
-  public function view(): View
+  public function collection()
   {
-    return view('exports.recipients', [
-      'recipients' => $this->recipients
+    return $this->recipients->map(fn($recipient) => [
+      'id' => $recipient->id,
+      'name' => $recipient->name,
+      'email' => $recipient->email,
     ]);
   }
 }

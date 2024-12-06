@@ -119,8 +119,8 @@ Route::middleware([
       \App\Http\Controllers\Recipient\Upload::class,
     )->name('recipients.import');
 
-    Route::post(
-      '/batch-action',
+    Route::get(
+      '/batch-action/{action}/{recipients}',
       \App\Http\Controllers\Recipient\BatchHandler::class,
     )->name('recipients.batch');
 

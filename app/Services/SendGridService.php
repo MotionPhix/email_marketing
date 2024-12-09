@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Campaign;
 use SendGrid;
 
 class SendGridService
@@ -31,7 +32,8 @@ class SendGridService
       ];
 
       if ($campaignId) {
-        $queryParams['categories'] = 'campaign-' . $campaignId; // Assuming campaign ID is used as a category.
+        $campaign = Campaign::where('uuid', $campaignId)->first();
+        $queryParams['categories'] = $campaign->name;
       }
 
       $response = $this->sendGrid->client->stats()->get(null, $queryParams);
@@ -57,9 +59,16 @@ class SendGridService
   public function getMessageActivity(string $campaignId): array
   {
     try {
-      $response = $this->sendGrid->client->messages()->get([
-        'query' => "unique_args.campaign_id=$campaignId",
-      ]);
+//      $response = $this->sendGrid->client->messages()->get([
+//        'query' => "unique_args.campaign_id=$campaignId",
+//      ]);
+
+      // Filter by unique argument for the campaign
+      $queryParams = [
+        'query' => 'unique_args.campaign_id=' . $campaignId,
+      ];
+
+      $response = $this->sendGrid->client->messages()->get(null, $queryParams);
 
       if ($response->statusCode() !== 200) {
         throw new \Exception('Failed to fetch message activity. Status code: ' . $response->statusCode());

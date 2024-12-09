@@ -6,12 +6,13 @@ use App\Traits\BootUuid;
 use Database\Factories\RecipientFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Recipient extends Model
 {
-  use HasFactory, BootUuid;
+  use HasFactory, BootUuid, SoftDeletes;
 
-  protected $fillable = ['audience_id', 'email', 'name', 'user_id', 'gender'];
+  protected $fillable = ['audience_id', 'status', 'email', 'name', 'user_id', 'gender'];
 
   protected static function newFactory()
   {

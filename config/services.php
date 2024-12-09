@@ -30,6 +30,7 @@ return [
 
   'sendgrid' => [
     'api_key' => env('SENDGRID_API_KEY'),
+    'public_key' => 'MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEkWcFKehhyw3fu8p3AqFh/6dE4mDwgraUsSnBkPNDrqmwQ5ve48nZFUceMkzJJjPhVvYuSp8eiCDxDTZkcZensw=='
   ],
 
   'slack' => [

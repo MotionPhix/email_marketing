@@ -34,9 +34,7 @@ class Send extends Controller
 
     $this->sendCampaign($campaign, $request->user());
 
-    return redirect()
-      ->route('campaigns.index')
-      ->with('success', 'Campaign has been scheduled!');
+    return back();
   }
 
   /**

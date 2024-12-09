@@ -3,6 +3,8 @@
 namespace App\Models;
 
 use App\Traits\BootUuid;
+use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -52,5 +54,19 @@ class Campaign extends Model
   public function unsubscribes()
   {
     return $this->hasMany(CampaignUnsubscribe::class);
+  }
+
+  public function formattedScheduledAt(): Attribute
+  {
+    return Attribute::make(
+      get: fn () => $this->scheduled_at ? Carbon::parse($this->scheduled_at)->format('D, d M, Y') : null,
+    );
+  }
+
+  public function formattedEndDate(): Attribute
+  {
+    return Attribute::make(
+      get: fn () => $this->end_date ? Carbon::parse($this->end_date)->format('D, d M, Y') : null,
+    );
   }
 }

@@ -27,12 +27,14 @@ class Store extends Controller
           })
       ], // Name is required and unique for the user
       'design' => ['required', 'array'],
-      'content' => ['required', 'string'], // HTML content
+      'content' => ['required', 'string'],
+      'mode' => ['required', 'string'],
     ], [
       'name.required' => 'Provide a name for the template',
       'name.unique' => 'You already have a template with this name',
       'design.required' => 'You have to save the design first',
       'content.required' => 'Provide content that we will use in emails',
+      'mode.required' => 'Set a mode for the template',
     ]);
 
     // Create a new template
@@ -40,6 +42,7 @@ class Store extends Controller
       'name' => $validated['name'],
       'design' => json_encode($validated['design'], true),
       'content' => $validated['content'],
+      'mode' => $validated['mode'],
       'user_id' => $request->user()->id,
     ]);
 

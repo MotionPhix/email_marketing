@@ -46,6 +46,7 @@ class Update extends Controller
       $campaign->update([
         'title' => $validated['title'],
         'template_id' => $validated['template_id'],
+        'subject' => $validated['subject'],
         'audience_id' => $validated['audience_id'],
         'description' => $validated['description'],
         'status' => $validated['scheduled_at'] ? 'scheduled' : 'draft',

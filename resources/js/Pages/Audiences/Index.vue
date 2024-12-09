@@ -23,6 +23,7 @@ import {
   UserPlus,
 } from 'lucide-vue-next'
 import {useToast} from "maz-ui";
+import PageTitle from "@/Components/PageTitle.vue";
 
 const {audiences} = defineProps<{
   audiences: object
@@ -77,9 +78,7 @@ const perform = (action: string, model: string, path: string, args?: object|stri
   <AppLayout title="Audiences">
     <!-- Header -->
     <template #header>
-      <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
-        Audiences
-      </h2>
+      <PageTitle title="Audience List" />
     </template>
 
     <!-- Action Button -->

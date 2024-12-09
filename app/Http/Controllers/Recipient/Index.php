@@ -15,7 +15,7 @@ class Index extends Controller
    */
   public function __invoke(Request $request)
   {
-    $query = Recipient::where('user_id', $request->user()->id);
+    $query = Recipient::where('user_id', $request->user()->id)->withoutTrashed();
 
     // Apply search
     if ($search = $request->input('search')) {

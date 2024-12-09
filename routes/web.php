@@ -230,4 +230,5 @@ Route::middleware([
 Route::post(
   '/analytics',
   \App\Http\Controllers\Hook::class,
-)->name('analytics');
+)->middleware(['throttle:60,1'])
+  ->name('analytics');

@@ -19,6 +19,7 @@ class Form extends Controller
         'id' => $template->id,
         'uuid' => $template->uuid,
         'name' => $template->name,
+        'mode' => $template->mode,
         'design' => $template->design,
         'content' => $template->content,
       ] : [

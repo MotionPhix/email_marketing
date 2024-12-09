@@ -47,7 +47,7 @@ class BatchHandler extends Controller
   {
     $recipient = $recipients->first();
 
-    return Inertia('Recipients/QuickForm', [
+    return Inertia('Recipients/Form', [
       'recipient' => $recipient
     ]);
   }
@@ -55,8 +55,19 @@ class BatchHandler extends Controller
   private function deleteRecipients($recipients)
   {
     $recipients->each->delete();
+    $skippedCount = 0;
 
-    return back();
+    $recipients->each(function ($recipient) use (&$skippedCount) {
+      if ($recipient->campaigns()->exists()) {
+        $skippedCount++;
+      } else {
+        $recipient->delete();
+      }
+    });
+
+    return back()->withErrors([
+      'message', "Deletion successful, skipped {$skippedCount} recipients"
+    ]);
   }
 
   private function exportToPdf($recipients)

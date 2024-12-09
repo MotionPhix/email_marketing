@@ -8,6 +8,13 @@ import {Head, Link, router, useForm} from "@inertiajs/vue3";
 import {ref} from "vue";
 import Editable from "@/Components/Editable.vue";
 import { useToast } from 'maz-ui'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from "@/Components/ui/select";
 
 const {fullDesign, campaign} = defineProps<{
   campaign?: object
@@ -19,6 +26,7 @@ const form = useForm({
   design: fullDesign.design,
   content: fullDesign.content,
   campaign_id: campaign?.id ?? null,
+  mode: fullDesign.mode ?? 'static',
 })
 
 const back = () => window.history.back()
@@ -118,6 +126,22 @@ const exportHtml = () => {
         </h2>
 
         <span class="flex-1"/>
+
+        <Select v-model="form.mode">
+          <SelectTrigger class="w-32">
+            <SelectValue placeholder="Set template type" />
+          </SelectTrigger>
+
+          <SelectContent>
+            <SelectItem value="static">
+              Static
+            </SelectItem>
+
+            <SelectItem value="dynamic">
+              Dynamic
+            </SelectItem>
+          </SelectContent>
+        </Select>
 
         <Button
           variant="ghost"

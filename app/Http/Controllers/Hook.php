@@ -2,8 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\EmailEvent;
 use App\Models\EmailLog;
 use Illuminate\Http\Request;
+use SendGrid\EventWebhook\EventWebhook;
+use SendGrid\EventWebhook\EventWebhookHeader;
 
 class Hook extends Controller
 {
@@ -12,51 +15,52 @@ class Hook extends Controller
    */
   public function __invoke(Request $request)
   {
+    // Log the raw incoming event data for debugging purposes
+    \Log::info('Webhook received:', $request->all());
+
     $events = $request->all();
 
-    \Log::error($events);
+    // Transform event data for batch insertion
+    $eventData = array_map(function ($event) {
+      return [
+        'email' => $event['email'] ?? null,
+        'event' => $event['event'] ?? null,
+        'campaign_uuid' => $event['campaign_uuid'] ?? $event['unique_args']['campaign_id'] ?? null,
+        'user_uuid' => $event['user_uuid'] ?? null,
+        'timestamp' => \Carbon\Carbon::createFromTimestamp($event['timestamp'])->toDateTimeString(),
+        'ip' => $event['ip'] ?? null,
+        'user_agent' => $event['useragent'] ?? null,
+        'sg_message_id' => $event['sg_message_id'] ?? null,
+        'url' => $event['url'] ?? null,
+        'reason' => $event['reason'] ?? null,
+        'status' => $event['status'] ?? null,
+      ];
+    }, $events);
 
-    foreach ($events as $event) {
+    // Process each event
+    foreach ($eventData as $data) {
 
-      dd($event);
-
-      $status = $this->mapStatus($event['event']);
-      $campaignId = $event['custom_args']['campaign_id'] ?? null;
-
-      EmailLog::updateOrCreate(
+      $emailLog = EmailLog::firstOrCreate(
+        ['sg_message_id' => $data['sg_message_id']],
         [
-          'message_id' => $event['sg_message_id'],
-        ],
-        [
-          'status' => $status,
-          'useragent' => $event['useragent'] ?? null,
-          'recipient_email' => $event['email'],
-          'category' => $event['category'][0] ?: null,
-          'timestamp' => $event['timestamp'],
-          'campaign_id' => $campaignId,
+          'campaign_uuid' => $data['campaign_uuid'],
+          'email' => $data['email'],
+          'user_uuid' => $data['user_uuid']
         ]
       );
 
+      EmailEvent::insert([
+        'ip' => $data['ip'],
+        'event' => $data['event'],
+        'email_log_id' => $emailLog->id,
+        'timestamp' => $data['timestamp'],
+        'user_agent' => $data['user_agent'],
+        'reason' => $data['reason'],
+        'status' => $data['status'],
+        'url' => $data['url'],
+      ]);
     }
 
     return response()->json(['status' => 'success']);
-  }
-
-  private function mapStatus($event): string
-  {
-    return match ($event) {
-      'dropped' => 'dropped',
-      'delivered' => 'delivered',
-      'bounce' => 'bounce',
-      'failed' => 'failed',
-      'group_unsubscribe' => 'group_unsubscribe',
-      'group_resubscribe' => 'group_resubscribe',
-      'deferred' => 'deferred',
-      'spamreport' => 'spamreport',
-      'unsubscribe' => 'unsubscribe',
-      'open' => 'open',
-      'click' => 'click',
-      default => 'processed',
-    };
   }
 }

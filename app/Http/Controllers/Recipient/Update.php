@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Recipient;
 use App\Http\Controllers\Controller;
 use App\Models\Recipient;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class Update extends Controller
 {
@@ -22,7 +23,24 @@ class Update extends Controller
 
     }
 
-    $recipient->update($request->only(['email', 'name']));
+    $validated = $request->validate([
+      'email' => [
+        'required', 'email',
+        Rule::unique('recipients')
+          ->where(fn($query) => $query->where('user_id', $request->user()->id))
+          ->ignore($recipient->id ?? null),
+      ],
+      'gender' => 'nullable|in:male,female,unspecified',
+      'status' => 'nullable|in:active,inactive,banned,unsubscribed',
+      'name' => 'required',
+    ], [
+      'email.required' => 'Provide an email for the recipient',
+      'email.email' => 'Please enter a valid email address',
+      'email.unique' => 'You have a recipient with this email',
+      'name.required' => 'Provide a name for the recipient'
+    ]);
+
+    $recipient->update($request->only(['email', 'name', 'gender', 'status']));
 
     return redirect()->back();
   }

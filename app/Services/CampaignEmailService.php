@@ -31,14 +31,13 @@ class CampaignEmailService
       }
 
       $email = $this->prepareEmail($campaign, $recipient, $user);
-      $sendgrid = new \SendGrid(config('services.sendgrid.apikey'));
+      $sendgrid = new \SendGrid(config('services.sendgrid.api_key'));
 
       try {
         $response = $sendgrid->send($email);
-        $this->logEmailStatus($campaign, $recipient, $response->statusCode() === 202 ? 'sent' : 'failed');
+        \Log::info($response->body());
       } catch (\Exception $e) {
         \Log::error('SendGrid Error: ' . $e->getMessage());
-        $this->logEmailStatus($campaign, $recipient, 'failed', $e->getMessage());
       }
     }
 
@@ -60,9 +59,9 @@ class CampaignEmailService
     $email->setSubject($campaign->subject);
     $email->addTo($recipient->email, $recipient->name);
 
-    if ($campaign->template->type === 'dynamic') {
+    if ($campaign->template->mode === 'dynamic') {
       $htmlContent = $this->renderTemplate($campaign, [
-        'name' => $recipient->name,
+        'recipient_name' => $recipient->name,
         'first_name' => $recipient->first_name,
         'last_name' => $recipient->last_name,
         'email' => $recipient->email,
@@ -70,7 +69,7 @@ class CampaignEmailService
         'address' => $recipient->address,
         'campaign_name' => $campaign->name,
         'campaign_subject' => $campaign->subject,
-        'unsubscribe_link' => $this->generateUnsubscribeLink($recipient),
+        'unsubscribe_link' => $this->generateUnsubscribeLink($campaign, $recipient),
         'company_name' => $user->company_name,
         'company_email' => $user->email,
         'company_phone' => $user->phone,
@@ -84,21 +83,21 @@ class CampaignEmailService
     $email->addContent("text/plain", strip_tags($htmlContent));
     $email->addContent("text/html", $htmlContent);
 
-    $email->addCustomArg('campaign_id', $campaign->uuid);
-    $email->addCustomArg('recipient_id', $recipient->uuid);
-    $email->addCategory('campaign-' . $campaign->uuid);
+    $email->addCustomArg('campaign_uuid', $campaign->uuid);
+    $email->addCustomArg('user_uuid', auth()->user()->uuid);
+    $email->addCategory($campaign->name);
 
     return $email;
   }
 
-  private function generateUnsubscribeLink(Recipient $recipient)
+  private function generateUnsubscribeLink(Campaign $campaign, Recipient $recipient)
   {
-    return route('campaigns.unsubscribe', ['recipient' => $recipient->uuid]);
+    return route('campaigns.unsubscribe', ['campaign' => $campaign->uuid, 'recipient' => $recipient->uuid]);
   }
 
   private function getHtmlContent(Campaign $campaign, array $data)
   {
-    if ($campaign->template->type === 'dynamic') {
+    if ($campaign->template->mode === 'dynamic') {
       return $this->renderTemplate($campaign, $data);
     }
 
@@ -116,31 +115,29 @@ class CampaignEmailService
   {
     $template = $campaign->template->content; // Retrieve template content from DB
 
+    // $cleanTemplate = $this->cleanHtmlTemplate($template);
+
     // Match placeholders in the template
-    preg_match_all('/{{(.*?)}}/', $template, $matches);
+    // preg_match_all('/{{(.*?)}}/', $template, $matches);
+    preg_match_all('/{{\s*(.*?)\s*}}/', $template, $matches);
 
     foreach ($matches[1] as $placeholder) {
-      $template = str_replace("{{{$placeholder}}}", $data[$placeholder] ?? '', $template);
+      $cleanTemplate = str_replace("{{{$placeholder}}}", $data[$placeholder] ?? '', $template);
     }
 
-    return $template;
+    return $cleanTemplate;
   }
 
-  /**
-   * Log the email status.
-   *
-   * @param Campaign $campaign
-   * @param $recipient
-   * @param string $status
-   * @param string|null $error
-   */
-  private function logEmailStatus(Campaign $campaign, $recipient, $status, $error = null)
+  private function cleanHtmlTemplate($template)
   {
-    EmailLog::create([
-      'campaign_id' => $campaign->id,
-      'recipient_email' => $recipient->email,
-      'status' => $status,
-      'error' => $error,
-    ]);
+    // Strip inline styles and unnecessary HTML elements (like <span> tags) from the template
+    $template = preg_replace('/<span[^>]*>/', '', $template);  // Remove span tags
+    $template = preg_replace('/<\/span>/', '', $template);      // Remove closing span tags
+    $template = preg_replace('/style="[^"]*"/', '', $template); // Remove inline styles
+
+    // Optionally, you could use strip_tags() to remove all HTML if needed
+    // $template = strip_tags($template, '<p><a><b><i><u><strong>'); // Keep some tags
+
+    return $template;
   }
 }

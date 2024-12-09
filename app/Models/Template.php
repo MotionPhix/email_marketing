@@ -10,7 +10,15 @@ class Template extends Model
 {
   use HasFactory, BootUuid;
 
-  protected $fillable = ['name', 'content', 'description', 'design', 'user_id', 'type'];
+  protected $fillable = [
+    'name',
+    'content',
+    'description',
+    'design',
+    'user_id',
+    'type',
+    'mode'
+  ];
 
   public function user()
   {

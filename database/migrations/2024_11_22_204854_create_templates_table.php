@@ -14,11 +14,12 @@ return new class extends Migration {
       $table->id();
       $table->uuid('uuid');
       $table->string('name');
+      $table->enum('mode', ['static', 'dynamic'])->default('static');
       $table->text('description')->nullable();
-      $table->longText('content')->nullable(); // HTML content for the template
+      $table->longText('content')->nullable();
       $table->json('design')->nullable();
-      $table->foreignId('user_id')->nullable()->constrained()->cascadeOnDelete(); // For user-specific templates
-      $table->enum('type', ['user', 'free', 'premium'])->default('user'); // Type of template
+      $table->foreignId('user_id')->nullable()->constrained()->cascadeOnDelete();
+      $table->enum('type', ['user', 'free', 'premium'])->default('user');
       $table->timestamps();
     });
   }

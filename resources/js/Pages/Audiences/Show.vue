@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import AppLayout from "@/Layouts/AppLayout.vue";
 import {Button} from "@/Components/ui/button";
+import {Link} from "@inertiajs/vue3"
 
 defineProps<{
   audience: object
@@ -96,14 +97,27 @@ defineProps<{
             :key="campaign.uuid"
             class="py-4 flex justify-between items-center">
             <div>
-              <p class="text-sm font-medium text-gray-800 dark:text-gray-200">{{ campaign.title }}</p>
-              <p class="text-sm text-gray-500 dark:text-gray-400">{{ campaign.subject }}</p>
+              <p class="text-sm font-medium text-gray-800 dark:text-gray-200">
+                {{ campaign.title }}
+              </p>
+              <p class="text-sm text-gray-500 dark:text-gray-400">
+                {{ campaign.subject }}
+              </p>
             </div>
             <div class="flex space-x-2">
-              <Button as-child size="sm" variant="outline" :href="route('campaigns.edit', campaign.uuid)">
-                <span>Edit</span>
+              <Button
+                as-child
+                size="sm"
+                :href="route('campaigns.show', campaign.uuid)">
+                <Link as="button">
+                  <span>See Campaign</span>
+                </Link>
               </Button>
-              <Button size="sm" variant="destructive" @click="() => confirmDeleteCampaign(campaign.uuid)">
+
+              <Button
+                size="sm"
+                variant="destructive"
+                @click="() => confirmDeleteCampaign(campaign.uuid)">
                 Delete
               </Button>
             </div>

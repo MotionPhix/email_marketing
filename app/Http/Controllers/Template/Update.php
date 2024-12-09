@@ -26,6 +26,7 @@ class Update extends Controller
       ],
       'design' => ['required', 'array'],
       'content' => ['required', 'string'],
+      'mode' => ['required', 'string'],
     ], [
       'name.required' => 'Provide a name for the template',
       'name.unique' => 'You already have a template with this name',

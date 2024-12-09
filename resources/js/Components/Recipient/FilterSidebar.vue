@@ -111,7 +111,7 @@ const updateFilter = (key: string, value: any) => {
                   d="M22.25 12C22.25 6.47715 17.7728 2 12.25 2C6.72715 2 2.25 6.47715 2.25 12C2.25 17.5228 6.72715 22 12.25 22C17.7728 22 22.25 17.5228 22.25 12Z"
                   stroke="currentColor" stroke-width="1.5"/>
               </svg>
-              <span>Not active</span>
+              <span>Dormant</span>
             </CommandItem>
 
             <CommandItem value="banned">
@@ -124,7 +124,7 @@ const updateFilter = (key: string, value: any) => {
                   d="M13.2 3.2L18.8 8.8M20 6C20 3.79086 18.2091 2 16 2C13.7909 2 12 3.79086 12 6C12 8.20914 13.7909 10 16 10C18.2091 10 20 8.20914 20 6Z"
                   stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
               </svg>
-              <span>Banned</span>
+              <span>Blacklisted</span>
             </CommandItem>
 
             <CommandItem value="unsubscribed">

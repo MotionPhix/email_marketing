@@ -13,12 +13,10 @@ return new class extends Migration {
     Schema::create('email_logs', function (Blueprint $table) {
       $table->id();
       $table->uuid('uuid');
-      $table->string('message_id')->nullable();
-      $table->foreignId('campaign_id')->nullable()->constrained()->onDelete('cascade');
-      $table->string('recipient_email');
-      $table->text('useragent')->nullable();
-      $table->string('category')->nullable();
-      $table->string('status')->default('processed');
+      $table->string('sg_message_id')->unique();
+      $table->string('campaign_uuid')->nullable();
+      $table->string('email');
+      $table->string('user_uuid')->nullable();
       $table->timestamps();
     });
   }

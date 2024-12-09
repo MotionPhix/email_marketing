@@ -17,6 +17,7 @@ import {
   TooltipProvider,
   TooltipTrigger
 } from '@/Components/ui/tooltip'
+import PageTitle from "@/Components/PageTitle.vue";
 
 // Define the `recipients` prop
 const {recipients} = defineProps<{
@@ -149,15 +150,7 @@ const handleAction = (payload: { action: string; recipients: number[] }) => {
       }), '_blank')
       break;
     default:
-      // Edit recipient
-      visitModal(route('recipients.batch', { action: action, recipients: recipients }), {
-        method: 'get',
-        data: {},
-        onClose: () => {
-          console.log('Recipient edited')
-          deselectAllRecipients()
-        },
-      });
+      console.log('nothing to do')
   }
 };
 
@@ -194,9 +187,7 @@ onUnmounted(() => {
 
     <!-- Header -->
     <template #header>
-      <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
-        Explore Recipients
-      </h2>
+      <PageTitle title="Explore Recipients" />
     </template>
 
     <!-- Action Button -->

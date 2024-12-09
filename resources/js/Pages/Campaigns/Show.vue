@@ -123,12 +123,11 @@ const updateDateRange = (newStartDate, newEndDate) => {
         <Button
           as-child
           as="button"
-          size="icon"
-          variant="ghost"
+          variant="outline"
           :href="route('campaigns.edit', campaign.uuid)">
           <Link
             as="button">
-            <PencilIcon/>
+            <PencilIcon/> Edit
           </Link>
         </Button>
       </div>
@@ -317,7 +316,22 @@ const updateDateRange = (newStartDate, newEndDate) => {
                 </h3>
 
                 <!-- Quick Edit Actions -->
-                <div class="gap-2 hidden group-hover:flex">
+                <div class="gap-1 hidden group-hover:flex">
+                  <Button
+                    as-child
+                    size="icon"
+                    variant="outline"
+                    class="p-1 w-[1.5rem] h-[1.5rem]"
+                    :href="route('recipients.show', recipient.uuid)">
+                    <Link as="button">
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none">
+                        <path d="M8 7H16.75C18.8567 7 19.91 7 20.6667 7.50559C20.9943 7.72447 21.2755 8.00572 21.4944 8.33329C21.9796 9.05942 21.9992 10.0588 22 12M2 21V7.94427C2 6.1278 2 5.21956 2.38032 4.53806C2.65142 4.05227 3.05227 3.65142 3.53806 3.38032C4.21956 3 5.1278 3 6.94427 3C8.10802 3 8.6899 3 9.19926 3.19101C10.3622 3.62712 10.8418 4.68358 11.3666 5.73313L12 7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+                        <path d="M22 15H15M22 18H15M17.5 21H15" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                        <path d="M10.707 20C10.707 20 11.3662 15.9522 10.707 15.293C10.0478 14.6338 6 15.293 6 15.293M5 21L10 16" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                      </svg>
+                    </Link>
+                  </Button>
+
                   <Button
                     max-width="sm"
                     :close-button="false"
@@ -329,12 +343,12 @@ const updateDateRange = (newStartDate, newEndDate) => {
                       as="button"
                       :data="{ modal: true }"
                       :href="route('recipients.edit', recipient.uuid)">
-                      <PencilIcon/>
+                      <PencilIcon class="w-4 h-4" />
                     </GlobalLink>
                   </Button>
 
                   <Button
-                    class="p-1 w-[1.5rem] h-[1.5rem]"
+                    class="p-1 w-[1.5rem] h-[1.5rem] bg-rose-400"
                     @click="deleteRecipient(recipient)"
                     size="icon">
                     <TrashIcon/>

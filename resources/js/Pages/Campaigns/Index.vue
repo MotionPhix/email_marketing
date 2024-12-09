@@ -42,6 +42,7 @@ import {
   PaginationPrev,
 } from '@/Components/ui/pagination'
 import {TableFooter} from "@/Components/ui/table";
+import PageTitle from "@/Components/PageTitle.vue";
 
 const {campaigns} = defineProps({
   campaigns: Object,
@@ -53,9 +54,7 @@ const {campaigns} = defineProps({
   <AppLayout title="Campaigns">
 
     <template #header>
-      <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
-        Campaigns
-      </h2>
+      <PageTitle title="Campaigns List" />
     </template>
 
     <template #action>

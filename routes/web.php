@@ -110,19 +110,24 @@ Route::middleware([
     )->name('recipients.update');
 
     Route::post(
-      'import',
+      '/i',
       \App\Http\Controllers\Recipient\Import::class,
     )->name('recipients.import.store');
 
     Route::get(
-      'import',
+      '/i',
       \App\Http\Controllers\Recipient\Upload::class,
     )->name('recipients.import');
 
     Route::get(
-      '/batch-action/{action}/{recipients}',
+      '/b/{action}/{recipients}',
       \App\Http\Controllers\Recipient\BatchHandler::class,
     )->name('recipients.batch');
+
+    Route::get(
+      '/s/{recipient:uuid}',
+      \App\Http\Controllers\Recipient\Show::class,
+    )->name('recipients.show');
 
   });
 

@@ -17,14 +17,14 @@ class EmailLog extends Model
     'user_uuid'
   ];
 
-  public function campaign()
-  {
-    return $this->belongsTo(Campaign::class);
-  }
-
   public function events()
   {
     return $this->hasMany(EmailEvent::class);
+  }
+
+  public function campaign()
+  {
+    return $this->belongsTo(Campaign::class, 'campaign_uuid', 'uuid');
   }
 
 }

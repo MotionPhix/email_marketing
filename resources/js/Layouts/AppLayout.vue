@@ -340,7 +340,7 @@ const logout = () => {
       </header>
 
       <!-- Page Content -->
-      <main class="max-w-4xl mx-auto">
+      <main class="max-w-3xl mx-auto">
         <slot/>
       </main>
     </div>

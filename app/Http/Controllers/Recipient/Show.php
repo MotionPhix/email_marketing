@@ -5,7 +5,9 @@ namespace App\Http\Controllers\Recipient;
 use App\Http\Controllers\Controller;
 use App\Models\Campaign;
 use App\Models\EmailEvent;
+use App\Models\EmailLog;
 use App\Models\Recipient;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 
 class Show extends Controller
@@ -15,51 +17,140 @@ class Show extends Controller
    */
   public function __invoke(Request $request, Recipient $recipient)
   {
-    // Get recipient stats
-    $stats = EmailEvent::whereHas('emailLog', function ($query) use ($recipient) {
-      $query->where('email', $recipient->email);
-    })
-      ->selectRaw('
-      COUNT(DISTINCT email_log_id) as totalCampaigns,
-      SUM(event = "open") as opened,
-      SUM(event = "click") as clicked,
-      SUM(event = "bounce") as bounced,
-      SUM(event = "complaint") as complained,
-      SUM(event = "delivered") as delivered
-    ')
-      ->first();
+    $totalEmailsSent = EmailLog::where('email', $recipient->email)->count();
 
-    $recentInteractions = EmailEvent::whereHas('emailLog', function ($query) use ($recipient) {
+    $totalCampaigns = EmailLog::where('email', $recipient->email)
+      ->distinct()
+      ->count('campaign_uuid');
+
+    $totalAudiences = $recipient->audiences()->count();
+
+    // Fetch recipient email stats grouped by event and date
+    $eventStats = EmailEvent::whereHas('emailLog', function ($query) use ($recipient) {
       $query->where('email', $recipient->email);
     })
-      ->with('emailLog.campaign')
-      ->orderBy('timestamp', 'desc')
-      ->limit(5)
+      ->selectRaw('event, COUNT(*) as total, DATE(timestamp) as date')
+      ->groupBy('event', 'date')
+      ->orderBy('date')
+      ->get();
+
+    // Fetch unique opens and clicks
+//    $uniqueStats = EmailEvent::join('email_logs', 'email_events.email_log_id', '=', 'email_logs.id')
+//      ->where('email_logs.email', $recipient->email)
+//      ->whereIn('email_events.event', ['open', 'click'])
+//      ->selectRaw('email_events.event, COUNT(DISTINCT email_logs.email) as total')
+//      ->groupBy('email_events.event')
+//      ->pluck('total', 'event');
+
+    // Unique stats (opens, clicks) with percentages
+    $uniqueStats = EmailEvent::join('email_logs', 'email_events.email_log_id', '=', 'email_logs.id')
+      ->where('email_logs.email', $recipient->email)
+      ->whereIn('email_events.event', ['open', 'click'])
+      ->selectRaw(
+        'email_events.event,
+         COUNT(DISTINCT email_logs.id) as total,
+         (COUNT(DISTINCT email_logs.id) / ?) * 100 as percentage',
+        [$totalEmailsSent]
+      )
+      ->groupBy('email_events.event')
+      ->get();
+
+    // Generate summary stats by summing up totals for each event
+    $summaryStats = $eventStats->groupBy('event')->mapWithKeys(function ($group, $event) {
+      return [$event => $group->sum('total')];
+    });
+
+    // Fill missing events with 0 to ensure consistent structure
+    $summaryStats = array_merge([
+      'open' => 0,
+      'click' => 0,
+      'bounce' => 0,
+      'unsubscribe' => 0,
+      'delivered' => 0,
+      'deferred' => 0,
+      'processed' => 0,
+      'spamreport' => 0,
+    ], $summaryStats->toArray());
+
+    // Calculate total emails for percentages
+    $totalEmails = array_sum($summaryStats);
+
+    // Add percentages to stats
+    $summaryStatsWithPercentages = collect($summaryStats)->mapWithKeys(function ($count, $event) use ($totalEmails) {
+      return [
+        $event => [
+          'count' => $count,
+          'percentage' => $totalEmails > 0 ? round(($count / $totalEmails) * 100, 2) : 0,
+        ]
+      ];
+    });
+
+    // Add unique opens and clicks
+    $summaryStatsWithPercentages['unique_opens'] = [
+      'count' => $uniqueStats['open'] ?? 0,
+      'percentage' => $totalEmails > 0 ? round((($uniqueStats['open'] ?? 0) / $totalEmails) * 100, 2) : 0,
+    ];
+    $summaryStatsWithPercentages['unique_clicks'] = [
+      'count' => $uniqueStats['click'] ?? 0,
+      'percentage' => $totalEmails > 0 ? round((($uniqueStats['click'] ?? 0) / $totalEmails) * 100, 2) : 0,
+    ];
+
+    // Prepare chart data grouped by date
+    $chartData = $eventStats->groupBy('date')->map(function ($dayEvents) {
+      return $dayEvents->keyBy('event')->map(fn($event) => $event->total);
+    });
+
+    // Recent interactions with campaigns
+    $recentInteractions = EmailEvent::join('email_logs', 'email_events.email_log_id', '=', 'email_logs.id')
+      ->join('campaigns', 'email_logs.campaign_uuid', '=', 'campaigns.uuid') // Assuming the campaigns table has a `uuid` column
+      ->where('email_logs.email', $recipient->email)
+      ->whereIn('email_events.event', ['delivered', 'click', 'open', 'bounce', 'unsubscribe', 'spamreport'])
+      ->selectRaw(
+        'email_logs.campaign_uuid,
+         campaigns.title as campaign_title,
+         email_events.event as status,
+         DATE_FORMAT(email_events.timestamp, "%d-%m-%Y %H:%i:%s") as date'
+      )
+      ->distinct()
+      ->orderBy('date')
       ->get()
-      ->map(function ($event) {
-        $campaign = Campaign::where('uuid', $event->emailLog->campaign_uuid)->first();
-
+      ->groupBy('campaign_uuid')
+      ->map(function ($campaignEvents) {
+        $firstEvent = $campaignEvents->first();
         return [
           'campaign' => [
-            'uuid' => $campaign->uuid,
-            'title' => $campaign->title,
-          ],
-          'status' => $event->event,
-          'date' => $event->timestamp->format('Y-m-d H:i'),
+            'uuid' => $firstEvent->campaign_uuid,
+            'title' => $firstEvent->campaign_title ?? 'Unknown Campaign',
+            'activity' => $campaignEvents->map(function ($event) {
+              return [
+                'status' => $event->status,
+                'date' => Carbon::createFromTimeString($event->date)->format('j M, Y h:i:s'),
+              ];
+            })->values()
+          ]
         ];
-      });
+      })->values(); // Reset the indices
+
+      /*->map(function ($interaction) {
+        return [
+          'campaign' => [
+            'uuid' => $interaction->campaign_uuid,
+            'title' => $interaction->campaign_title ?? 'Unknown Campaign',
+          ],
+          'status' => $interaction->status,
+          'date' => Carbon::createFromTimeString($interaction->date)->format('j M, Y h:i:s'),
+        ];
+      })*/
 
     return Inertia('Recipients/Show', [
-      'recipient' => $recipient->only(['uuid', 'name', 'email', 'audiences']),
-      'stats' => [
-        'totalCampaigns' => $stats->totalCampaigns ?? 0,
-        'opened' => $stats->opened ?? 0,
-        'clicked' => $stats->clicked ?? 0,
-        'bounced' => $stats->bounced ?? 0,
-        'complained' => $stats->complained ?? 0,
-        'delivered' => $stats->delivered ?? 0,
-        'recentInteractions' => $recentInteractions,
-      ],
+      'recipient' => $recipient,
+      'stats' => $summaryStatsWithPercentages,
+      'totalEmailsSent' => $totalEmailsSent,
+      'recentInteractions' => $recentInteractions,
+      'totalCampaigns' => $totalCampaigns,
+      'totalAudiences' => $totalAudiences,
+      'chartData' => $chartData,
     ]);
+
   }
 }

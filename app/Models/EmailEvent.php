@@ -23,6 +23,12 @@ class EmailEvent extends Model
 
   public function emailLog()
   {
-    return $this->belongsTo(EmailLog::class);
+    return $this->belongsTo(EmailLog::class, 'email_log_id');
   }
+
+  public function campaign()
+  {
+    return $this->emailLog()->with('campaign');
+  }
+
 }

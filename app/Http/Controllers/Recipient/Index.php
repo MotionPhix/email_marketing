@@ -38,7 +38,7 @@ class Index extends Controller
     $query->orderBy('name');
 
     return Inertia('Recipients/Index', [
-      'recipients' => $query->paginate(10)->withQueryString(), // Preserve query string
+      'recipients' => $query->paginate(7)->withQueryString(), // Preserve query string
     ]);
   }
 }

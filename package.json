@@ -20,7 +20,6 @@
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
     "concurrently": "^9.0.1",
-    "grapesjs": "^0.22.3",
     "laravel-vite-plugin": "^1.0",
     "lucide-vue-next": "^0.461.0",
     "maz-ui": "^3.47.1",
@@ -35,9 +34,7 @@
     "vite": "^5.0",
     "vue": "^3.3.13",
     "vue-email-editor": "^2.1.4",
-    "vue3-apexcharts": "^1.8.0"
-  },
-  "dependencies": {
+    "vue3-apexcharts": "^1.8.0",
     "@tanstack/vue-table": "^8.20.5",
     "v-calendar": "^3.1.2"
   }

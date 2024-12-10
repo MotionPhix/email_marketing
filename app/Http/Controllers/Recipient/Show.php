@@ -34,24 +34,11 @@ class Show extends Controller
       ->orderBy('date')
       ->get();
 
-    // Fetch unique opens and clicks
-//    $uniqueStats = EmailEvent::join('email_logs', 'email_events.email_log_id', '=', 'email_logs.id')
-//      ->where('email_logs.email', $recipient->email)
-//      ->whereIn('email_events.event', ['open', 'click'])
-//      ->selectRaw('email_events.event, COUNT(DISTINCT email_logs.email) as total')
-//      ->groupBy('email_events.event')
-//      ->pluck('total', 'event');
-
     // Unique stats (opens, clicks) with percentages
     $uniqueStats = EmailEvent::join('email_logs', 'email_events.email_log_id', '=', 'email_logs.id')
       ->where('email_logs.email', $recipient->email)
       ->whereIn('email_events.event', ['open', 'click'])
-      ->selectRaw(
-        'email_events.event,
-         COUNT(DISTINCT email_logs.id) as total,
-         (COUNT(DISTINCT email_logs.id) / ?) * 100 as percentage',
-        [$totalEmailsSent]
-      )
+      ->selectRaw('email_events.event, COUNT(DISTINCT email_logs.id) as total')
       ->groupBy('email_events.event')
       ->get();
 
@@ -72,27 +59,25 @@ class Show extends Controller
       'spamreport' => 0,
     ], $summaryStats->toArray());
 
-    // Calculate total emails for percentages
-    $totalEmails = array_sum($summaryStats);
-
-    // Add percentages to stats
-    $summaryStatsWithPercentages = collect($summaryStats)->mapWithKeys(function ($count, $event) use ($totalEmails) {
+    // Add percentages to stats (using totalEmailsSent as denominator)
+    $summaryStatsWithPercentages = collect($summaryStats)->mapWithKeys(function ($count, $event) use ($totalEmailsSent) {
       return [
         $event => [
           'count' => $count,
-          'percentage' => $totalEmails > 0 ? round(($count / $totalEmails) * 100, 2) : 0,
+          'percentage' => $totalEmailsSent > 0 ? round(($count / $totalEmailsSent) * 100, 2) : 0,
         ]
       ];
     });
 
     // Add unique opens and clicks
     $summaryStatsWithPercentages['unique_opens'] = [
-      'count' => $uniqueStats['open'] ?? 0,
-      'percentage' => $totalEmails > 0 ? round((($uniqueStats['open'] ?? 0) / $totalEmails) * 100, 2) : 0,
+      'count' => $uniqueStats->where('event', 'open')->first()?->total ?? 0,
+      'percentage' => $totalEmailsSent > 0 ? round((($uniqueStats->where('event', 'open')->first()?->total ?? 0) / $totalEmailsSent) * 100, 2) : 0,
     ];
+
     $summaryStatsWithPercentages['unique_clicks'] = [
-      'count' => $uniqueStats['click'] ?? 0,
-      'percentage' => $totalEmails > 0 ? round((($uniqueStats['click'] ?? 0) / $totalEmails) * 100, 2) : 0,
+      'count' => $uniqueStats->where('event', 'click')->first()?->total ?? 0,
+      'percentage' => $totalEmailsSent > 0 ? round((($uniqueStats->where('event', 'click')->first()?->total ?? 0) / $totalEmailsSent) * 100, 2) : 0,
     ];
 
     // Prepare chart data grouped by date
@@ -102,7 +87,7 @@ class Show extends Controller
 
     // Recent interactions with campaigns
     $recentInteractions = EmailEvent::join('email_logs', 'email_events.email_log_id', '=', 'email_logs.id')
-      ->join('campaigns', 'email_logs.campaign_uuid', '=', 'campaigns.uuid') // Assuming the campaigns table has a `uuid` column
+      ->join('campaigns', 'email_logs.campaign_uuid', '=', 'campaigns.uuid')
       ->where('email_logs.email', $recipient->email)
       ->whereIn('email_events.event', ['delivered', 'click', 'open', 'bounce', 'unsubscribe', 'spamreport'])
       ->selectRaw(
@@ -129,21 +114,15 @@ class Show extends Controller
             })->values()
           ]
         ];
-      })->values(); // Reset the indices
+      })->values();
 
-      /*->map(function ($interaction) {
-        return [
-          'campaign' => [
-            'uuid' => $interaction->campaign_uuid,
-            'title' => $interaction->campaign_title ?? 'Unknown Campaign',
-          ],
-          'status' => $interaction->status,
-          'date' => Carbon::createFromTimeString($interaction->date)->format('j M, Y h:i:s'),
-        ];
-      })*/
+    $recipient->load('audiences');
 
     return Inertia('Recipients/Show', [
-      'recipient' => $recipient,
+      'recipient' => array_merge(
+        $recipient->only(['id', 'uuid', 'name', 'email']),
+        ['audiences' => $recipient->audiences]
+      ),
       'stats' => $summaryStatsWithPercentages,
       'totalEmailsSent' => $totalEmailsSent,
       'recentInteractions' => $recentInteractions,

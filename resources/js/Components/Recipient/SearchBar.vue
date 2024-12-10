@@ -21,6 +21,7 @@ const onSearch = () => {
   <div class="relative flex items-center">
     <TextInput
       type="text"
+      class="w-full"
       :value="modelValue"
       @input="updateValue($event.target.value)"
       placeholder="Search recipients..." />

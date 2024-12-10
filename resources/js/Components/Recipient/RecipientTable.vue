@@ -38,7 +38,7 @@ const matchedStatus = (status) => {
   <Table class="w-full">
     <TableHeader>
       <TableRow>
-        <TableHead>
+        <TableHead class="w-10">
           <input
             type="checkbox"
             class="w-6 h-6 rounded-md"
@@ -48,14 +48,14 @@ const matchedStatus = (status) => {
         </TableHead>
         <TableHead>Name</TableHead>
         <TableHead>Gender</TableHead>
-        <TableHead class="text-right">Status</TableHead>
+        <TableHead class="text-right w-28">Status</TableHead>
       </TableRow>
     </TableHeader>
 
     <TableBody>
 
       <TableRow v-for="recipient in recipients" :key="recipient.id" class="group">
-        <TableCell>
+        <TableCell class="w-10">
           <input
             type="checkbox"
             class="w-6 h-6 rounded-md"
@@ -77,7 +77,7 @@ const matchedStatus = (status) => {
           {{ recipient.gender }}
         </TableCell>
 
-        <TableCell class="text-right">
+        <TableCell class="text-right w-28">
           <Badge
             class="group-hover:hidden rounded-sm px-2 py-1"
             :class="matchedStatus(recipient.status).class">

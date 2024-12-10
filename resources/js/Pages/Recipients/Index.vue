@@ -226,19 +226,27 @@ onUnmounted(() => {
         </TooltipProvider>
 
         <!-- Search Bar -->
-        <SearchBar v-model="searchQuery" @search="fetchRecipients"/>
+        <SearchBar class="hidden sm:inline-flex" v-model="searchQuery" @search="fetchRecipients"/>
       </div>
     </template>
 
-    <div class="py-12 px-6">
-      <div class="flex gap-4" v-if="recipients.data.length">
+    <div class="py-0 sm:py-12 px-6">
+      <div class="flex gap-4 flex-col sm:flex-row" v-if="recipients.data.length">
         <!-- Filter Sidebar -->
-        <FilterSidebar v-model="filters"/>
+        <div class="flex gap-1 sm:block items-center mt-6 sm:mt-0">
+          <div class="flex-1 sm:hidden">
+            <SearchBar
+              v-model="searchQuery"
+              @search="fetchRecipients"/>
+          </div>
+
+          <FilterSidebar v-model="filters"/>
+        </div>
 
         <!-- Recipient Table -->
         <div class="flex-1 grid gap-6">
           <!-- Deselect All and Clear Filters Buttons -->
-          <div class="mt-4 flex items-center gap-2 pt-5">
+          <div class="flex items-center gap-2 pt-5">
             <Button
               size="icon"
               :disabled="! selectedRecipients.size"

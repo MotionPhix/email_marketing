@@ -15,6 +15,7 @@ import {
   SelectTrigger,
   SelectValue
 } from "@/Components/ui/select";
+import BackButton from "@/Components/BackButton.vue";
 
 const {fullDesign, campaign} = defineProps<{
   campaign?: object
@@ -28,8 +29,6 @@ const form = useForm({
   campaign_id: campaign?.id ?? null,
   mode: fullDesign.mode ?? 'static',
 })
-
-const back = () => window.history.back()
 
 const emailEditor = ref()
 const campaignStore = useCampaignStore()
@@ -112,9 +111,7 @@ const exportHtml = () => {
     <div class="container">
       <div id="bar" class="flex gap-4 items-center">
 
-        <Button size="icon" variant="outline" @click="back">
-          <ArrowLeftIcon/>
-        </Button>
+        <BackButton />
 
         <h2
           class="flex items-center gap-4 font-thin text-2xl text-gray-800 dark:text-gray-200 leading-tight">

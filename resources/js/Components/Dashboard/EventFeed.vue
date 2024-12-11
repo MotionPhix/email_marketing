@@ -1,15 +1,28 @@
-<script setup>
-import {ref} from 'vue'
+<script setup lang="ts">
 import dayjs from 'dayjs'
+import {
+  getLocalTimeZone,
+  parseDateTime
+} from "@internationalized/date";
 
-defineProps({
-  events: {
-    type: Array,
-    required: true
-  }
-})
+defineProps<{
+  events: Array<{
+    vent: string
+    reason?: string
+    email_log_id: number
+    timestamp: string
+    email_log: {
+      id: number
+      email: string
+    }
+  }>
+}>()
 
-const formatDate = (date) => dayjs(date).format('D MMM, YYYY h:mm A')
+const formatDate = (date) => {
+  const formattedDate = date.substring(0, date.lastIndexOf('.'));
+  const newFormattedDate = parseDateTime(formattedDate).toDate(getLocalTimeZone())
+  return dayjs(newFormattedDate).format('D MMM, YYYY H:mm:ss')
+}
 
 const badgeClass = (eventType) => {
   switch (eventType) {

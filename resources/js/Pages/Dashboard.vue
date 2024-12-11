@@ -5,9 +5,17 @@ import {usePage} from '@inertiajs/vue3'
 import Chart from "@/Components/Dashboard/Chart.vue";
 import EventFeed from "@/Components/Dashboard/EventFeed.vue";
 import StatCard from "@/Components/Dashboard/StatCard.vue";
+import {getLocalTimeZone, parseDateTime} from "@internationalized/date";
+import dayjs from "dayjs";
 
 const {props} = usePage()
 const {stats, chartData, eventFeed, currentTime} = props
+
+const formatDate = (date) => {
+  const formattedDate = date.substring(0, date.lastIndexOf('.'));
+  const newFormattedDate = parseDateTime(formattedDate).toDate(getLocalTimeZone())
+  return dayjs(newFormattedDate).format('D MMM, YYYY H:mm:ss')
+}
 </script>
 
 <template>
@@ -39,13 +47,13 @@ const {stats, chartData, eventFeed, currentTime} = props
         </section>
 
         <!-- Chart section -->
-        <section class="bg-white p-6 rounded-lg shadow">
+        <section class="bg-white p-6 rounded-lg border">
           <h2 class="text-lg font-bold mb-4">Email Performance</h2>
           <Chart :chart-data="chartData"/>
         </section>
 
         <!-- Event feed section -->
-        <section class="bg-white p-6 rounded-lg shadow">
+        <section class="bg-white p-6 rounded-lg border">
           <h2 class="text-lg font-bold mb-4">Recent Activity</h2>
           <EventFeed :events="eventFeed"/>
         </section>

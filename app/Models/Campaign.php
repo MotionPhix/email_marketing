@@ -32,7 +32,7 @@ class Campaign extends Model
 
   public function emailLogs()
   {
-    return $this->hasMany(EmailLog::class);
+    return $this->hasMany(EmailLog::class, 'campaign_uuid');
   }
 
   public function audience()

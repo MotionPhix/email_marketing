@@ -12,9 +12,9 @@ return new class extends Migration {
   {
     Schema::create('campaigns', function (Blueprint $table) {
       $table->id();
-      $table->uuid('uuid');
+      $table->uuid('uuid')->index();
       $table->string('title');
-      $table->string('subject');
+      $table->string('subject')->index();
       $table->text('description')->nullable();
       $table->enum('status', ['draft', 'scheduled', 'sent'])->default('draft');
       $table->timestamp('scheduled_at')->nullable(); // Scheduling date

@@ -12,14 +12,14 @@ return new class extends Migration {
   {
     Schema::create('email_events', function (Blueprint $table) {
       $table->id();
-      $table->foreignId('email_log_id')->constrained('email_logs')->onDelete('cascade');
-      $table->string('event'); // 'processed', 'delivered', 'open', 'click', etc.
+      $table->foreignId('email_log_id')->index()->constrained('email_logs')->onDelete('cascade');
+      $table->string('event')->index(); // 'processed', 'delivered', 'open', 'click', etc.
       $table->string('ip')->nullable();
       $table->string('user_agent')->nullable();
       $table->string('url')->nullable();
       $table->text('reason')->nullable();
       $table->string('status')->nullable();
-      $table->timestamp('timestamp')->nullable();
+      $table->timestamp('timestamp')->index()->nullable();
       $table->timestamps();
     });
   }

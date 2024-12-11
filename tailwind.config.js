@@ -65,6 +65,7 @@ export default {
       },
       fontFamily: {
         sans: ['Roboto', ...defaultTheme.fontFamily.sans],
+        serif: ["'DM Serif Display'", "serif"],
       },
       keyframes: {
         'accordion-down': {

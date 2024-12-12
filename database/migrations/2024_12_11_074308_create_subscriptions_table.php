@@ -12,6 +12,7 @@ return new class extends Migration {
   {
     Schema::create('subscriptions', function (Blueprint $table) {
       $table->id();
+      $table->uuid('uuid');
       $table->string('name');
       $table->integer('campaign_limit')->default(0);
       $table->integer('recipient_limit')->default(0);

@@ -32,7 +32,7 @@ import {UserIcon, SettingsIcon} from "lucide-vue-next";
             :alt="$page.props.auth.user.name" />
 
           <AvatarFallback>
-            {{ $page.props.auth.user.name[0] }}
+            {{ $page.props.auth.user.name }}
           </AvatarFallback>
 
         </Avatar>
@@ -64,7 +64,7 @@ import {UserIcon, SettingsIcon} from "lucide-vue-next";
         </DropdownMenuItem>
 
         <DropdownMenuItem as-child
-          :href="route('profile.show')">
+          :href="route('settings')">
           <Link as="button" class="w-full">
             <SettingsIcon />
             Settings

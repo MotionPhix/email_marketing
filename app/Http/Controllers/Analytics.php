@@ -51,8 +51,8 @@ class Analytics extends Controller
     ]);*/
 
     // Filter by date range if provided
-    $startDate = $request->input('start_date', Carbon::now()->subMonth()->format('Y-m-d'));
-    $endDate = $request->input('end_date', Carbon::now()->format('Y-m-d'));
+    $startDate = $request->get('start_date', Carbon::now()->subDays(7)->format('Y-m-d'));
+    $endDate = $request->get('end_date', Carbon::now()->format('Y-m-d'));
 
     // Total stats
     $totalEmailsSent = EmailEvent::whereBetween('timestamp', [$startDate, $endDate])

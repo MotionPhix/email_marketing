@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\Setting;
 use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
@@ -16,6 +17,8 @@ class AudienceAndRecipientSeeder extends Seeder
     $user = User::factory()->create([
       'email' => 'user@example.com'
     ]);
+
+    Setting::factory()->create(['user_id' => $user->id]);
 
     $audiences = \App\Models\Audience::factory(5)
       ->hasRecipients(
@@ -33,7 +36,7 @@ class AudienceAndRecipientSeeder extends Seeder
     $selectedAudiences = $audiences->random(3); // Select 3 random audiences
 
     foreach ($selectedAudiences as $audience) {
-      \App\Models\Campaign::factory(random_int(1, 3)) // Create 1-3 campaigns for each selected audience
+      \App\Models\Campaign::factory(2) // Create 1-3 campaigns for each selected audience
       ->create([
         'user_id' => $user->id,
         'audience_id' => $audience->id,

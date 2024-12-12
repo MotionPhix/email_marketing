@@ -12,12 +12,14 @@ return new class extends Migration {
   {
     Schema::create('settings', function (Blueprint $table) {
       $table->id();
+      $table->uuid('uuid');
       $table->foreignId('user_id')->index()->constrained()->cascadeOnDelete();
+      $table->foreignId('subscription_id')->index()->constrained()->cascadeOnDelete();
       $table->string('email_from_address');
       $table->string('email_from_name');
       $table->string('sender_name');
       $table->string('timezone');
-      $table->string('subscription_type');
+      $table->unique(['user_id', 'subscription_id']);
       $table->timestamps();
     });
   }

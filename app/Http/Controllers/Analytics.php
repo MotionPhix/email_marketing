@@ -145,7 +145,7 @@ class Analytics extends Controller
       'chartData' => $chartData,
       'eventFeed' => $eventFeed,
       'topCampaigns' => $topCampaigns,
-      'currentTime' => now()->format('l, jS F Y h:i A'),
+      'currentTime' => now($request->user()->settings->timezone ?? null)->format('l, jS F Y h:i A'),
     ]);
 
   }

@@ -64,7 +64,7 @@ import {UserIcon, SettingsIcon} from "lucide-vue-next";
         </DropdownMenuItem>
 
         <DropdownMenuItem as-child
-          :href="route('settings')">
+          :href="route('settings.index')">
           <Link as="button" class="w-full">
             <SettingsIcon />
             Settings

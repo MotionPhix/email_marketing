@@ -88,4 +88,12 @@ class User extends Authenticatable
   {
     return $this->hasMany(Template::class);
   }
+
+  /**
+   * Get the settings associated with the user.
+   */
+  public function settings()
+  {
+    return $this->hasOne(Setting::class);
+  }
 }

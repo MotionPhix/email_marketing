@@ -24,10 +24,19 @@ Route::middleware([
     \App\Http\Controllers\Analytics::class,
   )->name('dashboard');
 
-  Route::get(
-    '/settings',
-    \App\Http\Controllers\Setup::class,
-  )->name('settings');
+  Route::prefix('settings')->group(function () {
+
+    Route::get(
+      '/',
+      \App\Http\Controllers\Setting\Setup::class,
+    )->name('settings.index');
+
+    Route::put(
+      '/u/{setting:uuid}',
+      \App\Http\Controllers\Setting\Update::class,
+    )->name('settings.update');
+
+  });
 
   Route::prefix('campaigns')->group(function () {
 

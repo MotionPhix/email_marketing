@@ -95,15 +95,6 @@ class CampaignEmailService
     return route('campaigns.unsubscribe', ['campaign' => $campaign->uuid, 'recipient' => $recipient->uuid]);
   }
 
-  private function getHtmlContent(Campaign $campaign, array $data)
-  {
-    if ($campaign->template->mode === 'dynamic') {
-      return $this->renderTemplate($campaign, $data);
-    }
-
-    return $campaign->template->content;
-  }
-
   /**
    * Render the campaign template with recipient data.
    *
@@ -115,29 +106,25 @@ class CampaignEmailService
   {
     $template = $campaign->template->content; // Retrieve template content from DB
 
-    // $cleanTemplate = $this->cleanHtmlTemplate($template);
+    \Log::debug('before', [$template]);
+
+    // Decode HTML entities
+    $decodedTemplate = html_entity_decode($template);
+
+    \Log::debug('after', [$decodedTemplate]);
 
     // Match placeholders in the template
-    // preg_match_all('/{{(.*?)}}/', $template, $matches);
-    preg_match_all('/{{\s*(.*?)\s*}}/', $template, $matches);
+    preg_match_all('/{{\s*(.*?)\s*}}/', $decodedTemplate, $matches);
 
     foreach ($matches[1] as $placeholder) {
-      $cleanTemplate = str_replace("{{{$placeholder}}}", $data[$placeholder] ?? '', $template);
+      $decodedTemplate = str_replace("{{{$placeholder}}}", $data[$placeholder] ?? '', $decodedTemplate);
     }
 
-    return $cleanTemplate;
-  }
+    // Encode HTML entities
+    //$encodedTemplate = htmlentities($decodedTemplate);
 
-  private function cleanHtmlTemplate($template)
-  {
-    // Strip inline styles and unnecessary HTML elements (like <span> tags) from the template
-    $template = preg_replace('/<span[^>]*>/', '', $template);  // Remove span tags
-    $template = preg_replace('/<\/span>/', '', $template);      // Remove closing span tags
-    $template = preg_replace('/style="[^"]*"/', '', $template); // Remove inline styles
+    \Log::debug('back', [$decodedTemplate]);
 
-    // Optionally, you could use strip_tags() to remove all HTML if needed
-    // $template = strip_tags($template, '<p><a><b><i><u><strong>'); // Keep some tags
-
-    return $template;
+    return $decodedTemplate;
   }
 }

@@ -14,6 +14,7 @@ return new class extends Migration {
       $table->id();
       $table->uuid('uuid');
       $table->string('name');
+      $table->integer('price')->default(0);
       $table->json('features')->nullable();
       $table->timestamps();
     });

@@ -18,11 +18,7 @@ class SubscriptionFactory extends Factory
   {
     return [
       'name' => fake()->randomElement(['Free', 'Basic', 'Pro', 'Enterprise']),
-      'campaign_limit' =>fake()->numberBetween(1, 100),
-      'recipient_limit' =>fake()->numberBetween(100, 10000),
-      'email_limit' =>fake()->numberBetween(500, 50000),
-      'segment_limit' =>fake()->numberBetween(1, 20),
-      'can_schedule_campaigns' =>fake()->boolean,
+      'price' => fake()->numberBetween(20, 80),
     ];
   }
 }

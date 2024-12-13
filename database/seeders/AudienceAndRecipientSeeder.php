@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\Setting;
+use App\Models\Subscription;
 use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
@@ -17,8 +18,6 @@ class AudienceAndRecipientSeeder extends Seeder
     $user = User::factory()->create([
       'email' => 'user@example.com'
     ]);
-
-    Setting::factory()->create(['user_id' => $user->id]);
 
     $audiences = \App\Models\Audience::factory(5)
       ->hasRecipients(

@@ -19,7 +19,6 @@ return new class extends Migration {
       $table->string('email_from_name');
       $table->string('sender_name');
       $table->string('timezone');
-      $table->unique(['user_id', 'subscription_id']);
       $table->timestamps();
     });
   }

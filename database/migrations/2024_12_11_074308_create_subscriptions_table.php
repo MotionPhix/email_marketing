@@ -14,11 +14,7 @@ return new class extends Migration {
       $table->id();
       $table->uuid('uuid');
       $table->string('name');
-      $table->integer('campaign_limit')->default(0);
-      $table->integer('recipient_limit')->default(0);
-      $table->integer('email_limit')->default(0);
-      $table->integer('segment_limit')->default(0);
-      $table->boolean('can_schedule_campaigns')->default(false);
+      $table->json('features')->nullable();
       $table->timestamps();
     });
   }

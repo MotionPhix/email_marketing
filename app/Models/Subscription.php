@@ -10,12 +10,24 @@ class Subscription extends Model
 {
   use HasFactory, BootUuid;
 
+//{
+//"campaign_limit": 50,
+//"recipient_limit": 500,
+//"email_limit": 1000,
+//"segment_limit": 10,
+//"can_schedule_campaigns": true,
+//"support_type": "Priority",
+//"analytics": true,
+//"dedicated_account_manager": false
+//}
+
   protected $fillable = [
     'name',
-    'campaign_limit',
-    'recipient_limit',
-    'email_limit',
-    'segment_limit',
-    'can_schedule_campaigns',
+    'uuid',
+    'features'
+  ];
+
+  protected $casts = [
+    'features' => 'array',
   ];
 }

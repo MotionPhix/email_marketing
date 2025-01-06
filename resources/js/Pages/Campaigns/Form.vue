@@ -148,6 +148,7 @@ const redirectToTemplateBuilder = () => {
 };
 
 onMounted(() => {
+
   const savedStep = localStorage.getItem('campaignStep');
 
   if (savedStep) step.value = parseInt(savedStep, 10);
@@ -157,6 +158,7 @@ onMounted(() => {
       if (key in form) form[key] = campaignStore.campaign[key];
     });
   }
+
 });
 
 onBeforeUnmount(() => {

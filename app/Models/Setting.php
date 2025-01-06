@@ -12,7 +12,7 @@ class Setting extends Model
 
   protected $fillable = [
     'user_id',
-    'subscription_id',
+    'plan_id',
     'email_from_address',
     'email_from_name',
     'sender_name',
@@ -24,8 +24,8 @@ class Setting extends Model
     return $this->belongsTo(User::class);
   }
 
-  public function subscription()
+  public function plan()
   {
-    return $this->belongsTo(Subscription::class);
+    return $this->belongsTo(Plan::class);
   }
 }

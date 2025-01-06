@@ -23,6 +23,7 @@ class Index extends Controller
         'campaigns.scheduled_at',
         'campaigns.status',
         'campaigns.audience_id',
+        'audiences.name as audience_name',
         DB::raw('
           (SELECT COUNT(*)
            FROM audience_recipient
@@ -30,6 +31,7 @@ class Index extends Controller
           ) as recipients_count
         ')
       )
+      ->join('audiences', 'campaigns.audience_id', '=', 'audiences.id')
       ->where('campaigns.user_id', auth()->id())
       ->orderBy('campaigns.created_at', 'desc')
       ->paginate(10);

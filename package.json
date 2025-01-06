@@ -38,6 +38,7 @@
     "vue3-apexcharts": "^1.8.0"
   },
   "dependencies": {
-    "dayjs": "^1.11.13"
+    "dayjs": "^1.11.13",
+    "gsap": "^3.12.5"
   }
 }

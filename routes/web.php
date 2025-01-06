@@ -8,10 +8,9 @@ Route::get('/', function () {
   return Inertia::render('Welcome', [
     'canLogin' => Route::has('login'),
     'canRegister' => Route::has('register'),
-    'laravelVersion' => Application::VERSION,
-    'phpVersion' => PHP_VERSION,
+    'plans' => \App\Models\Plan::all(),
   ]);
-});
+})->name('home');
 
 Route::middleware([
   'auth:sanctum',
@@ -30,6 +29,16 @@ Route::middleware([
       '/',
       \App\Http\Controllers\Setting\Setup::class,
     )->name('settings.index');
+
+    Route::post(
+      '/s',
+      \App\Http\Controllers\Setting\Store::class,
+    )->name('settings.store');
+
+    Route::patch(
+      '/p/{setting:uuid}/p/{plan:uuid}',
+      \App\Http\Controllers\Setting\Payment::class,
+    )->name('settings.payment');
 
     Route::put(
       '/u/{setting:uuid}',

@@ -29,7 +29,7 @@ return [
   ],
 
   'sendgrid' => [
-    'api_key' => env('SENDGRID_API_KEY'),
+    'api_key' => env('MAIL_PASSWORD'),
     'public_key' => 'MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEkWcFKehhyw3fu8p3AqFh/6dE4mDwgraUsSnBkPNDrqmwQ5ve48nZFUceMkzJJjPhVvYuSp8eiCDxDTZkcZensw=='
   ],
 

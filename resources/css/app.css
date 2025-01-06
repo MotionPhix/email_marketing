@@ -91,3 +91,7 @@
 [x-cloak] {
   display: none;
 }
+
+.m-textarea > textarea {
+  @apply !rounded-md dark:!text-gray-800
+}

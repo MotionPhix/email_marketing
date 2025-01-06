@@ -18,10 +18,15 @@ return new class extends Migration {
       $table->text('description')->nullable();
       $table->enum('status', ['draft', 'scheduled', 'sent'])->default('draft');
       $table->timestamp('scheduled_at')->nullable(); // Scheduling date
+      $table->timestamp('sent_at')->nullable();
       $table->foreignId('user_id')->constrained()->onDelete('cascade'); // Campaign creator
       $table->foreignId('audience_id')->nullable()->constrained()->cascadeOnDelete();
       $table->foreignId('template_id')->nullable()->constrained()->onDelete('set null');
       $table->timestamps();
+
+      // Add indexes
+      $table->index(['status', 'scheduled_at']);
+      $table->index('created_at');
     });
   }
 

@@ -14,9 +14,9 @@ class Update extends Controller
   public function __invoke(Request $request, Setting $setting)
   {
     $validatedData = $request->validate([
-      'email_from_address' => 'required|email',
-      'email_from_name' => 'required|string|max:255',
-      'sender_name' => 'nullable|string|max:255',
+      'email_from_address' => 'sometimes|email',
+      'email_from_name' => 'sometimes|min:4|max:255',
+      'sender_name' => 'sometimes|min:4|max:255',
       'timezone' => 'required|string|max:50'
     ]);
 

@@ -40,8 +40,9 @@ const updateFilter = (key: string, value: any) => {
         <CommandList>
           <CommandGroup heading="Filter by gender">
             <CommandItem value="male">
-              <svg class="mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24"
-                   color="#000000" fill="none">
+              <svg
+                class="mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24" width="24" height="24" fill="none">
                 <path
                   d="M21 9C21 12.3137 18.3137 15 15 15C11.6863 15 9 12.3137 9 9C9 5.68629 11.6863 3 15 3C18.3137 3 21 5.68629 21 9Z"
                   stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
@@ -56,8 +57,7 @@ const updateFilter = (key: string, value: any) => {
               <svg
                 class="mr-2 h-4 w-4"
                 xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24" width="24" height="24"
-                color="#000000" fill="none">
+                viewBox="0 0 24 24" width="24" height="24" fill="none">
                 <path
                   d="M12 14C15.3137 14 18 11.3137 18 8C18 4.68629 15.3137 2 12 2C8.68629 2 6 4.68629 6 8C6 11.3137 8.68629 14 12 14ZM12 14V22M9 19H15"
                   stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
@@ -69,8 +69,7 @@ const updateFilter = (key: string, value: any) => {
               <svg
                 class="mr-2 h-4 w-4"
                 xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24" width="24" height="24"
-                color="#000000" fill="none">
+                viewBox="0 0 24 24" width="24" height="24" fill="none">
                 <path
                   d="M7 14.9999C5.34315 14.9999 4 16.343 4 17.9999C4 19.6567 5.34315 20.9999 7 20.9999C8.65685 20.9999 10 19.6567 10 17.9999C10 16.343 8.65685 14.9999 7 14.9999Z"
                   stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
@@ -94,8 +93,9 @@ const updateFilter = (key: string, value: any) => {
 
           <CommandGroup heading="Filter by status">
             <CommandItem value="active">
-              <svg class="mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24"
-                   color="#000000" fill="none">
+              <svg
+                class="mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24" width="24" height="24" fill="none">
                 <path d="M14 18C14 18 15 18 16 20C16 20 19.1765 15 22 14" stroke="currentColor" stroke-width="1.5"
                       stroke-linecap="round" stroke-linejoin="round"/>
                 <path
@@ -109,8 +109,9 @@ const updateFilter = (key: string, value: any) => {
             </CommandItem>
 
             <CommandItem value="inactive">
-              <svg class="mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24"
-                   color="#000000" fill="none">
+              <svg
+                class="mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24" width="24" height="24" fill="none">
                 <path d="M5.25 5L19.25 19" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
                       stroke-linejoin="round"/>
                 <path
@@ -121,8 +122,9 @@ const updateFilter = (key: string, value: any) => {
             </CommandItem>
 
             <CommandItem value="banned">
-              <svg class="mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24"
-                   color="#000000" fill="none">
+              <svg
+                class="mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24" width="24" height="24" fill="none">
                 <path
                   d="M19 12.5V17.9808C19 20.2867 19 21.4396 18.2272 21.8523C16.7305 22.6515 13.9232 19.9852 12.59 19.1824C11.8168 18.7168 11.4302 18.484 11 18.484C10.5698 18.484 10.1832 18.7168 9.41 19.1824C8.0768 19.9852 5.26947 22.6515 3.77285 21.8523C3 21.4396 3 20.2867 3 17.9808V9.70753C3 6.07417 3 4.25749 4.17157 3.12875C5.23467 2.10452 6.8857 2.00968 10 2.0009"
                   stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
@@ -134,8 +136,9 @@ const updateFilter = (key: string, value: any) => {
             </CommandItem>
 
             <CommandItem value="unsubscribed">
-              <svg class="mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24"
-                   color="#000000" fill="none">
+              <svg
+                class="mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24" width="24" height="24" fill="none">
                 <path
                   d="M13 22H6.59087C5.04549 22 3.81631 21.248 2.71266 20.1966C0.453365 18.0441 4.1628 16.324 5.57757 15.4816C7.97679 14.053 10.8425 13.6575 13.5 14.2952"
                   stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
@@ -175,8 +178,9 @@ const updateFilter = (key: string, value: any) => {
 
           <CommandGroup heading="Filter by gender">
             <CommandItem value="male">
-              <svg class="mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24"
-                   color="#000000" fill="none">
+              <svg
+                class="mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24" width="24" height="24" fill="none">
                 <path
                   d="M21 9C21 12.3137 18.3137 15 15 15C11.6863 15 9 12.3137 9 9C9 5.68629 11.6863 3 15 3C18.3137 3 21 5.68629 21 9Z"
                   stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
@@ -191,8 +195,7 @@ const updateFilter = (key: string, value: any) => {
               <svg
                 class="mr-2 h-4 w-4"
                 xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24" width="24" height="24"
-                color="#000000" fill="none">
+                viewBox="0 0 24 24" width="24" height="24" fill="none">
                 <path
                   d="M12 14C15.3137 14 18 11.3137 18 8C18 4.68629 15.3137 2 12 2C8.68629 2 6 4.68629 6 8C6 11.3137 8.68629 14 12 14ZM12 14V22M9 19H15"
                   stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
@@ -204,8 +207,7 @@ const updateFilter = (key: string, value: any) => {
               <svg
                 class="mr-2 h-4 w-4"
                 xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24" width="24" height="24"
-                color="#000000" fill="none">
+                viewBox="0 0 24 24" width="24" height="24" fill="none">
                 <path
                   d="M7 14.9999C5.34315 14.9999 4 16.343 4 17.9999C4 19.6567 5.34315 20.9999 7 20.9999C8.65685 20.9999 10 19.6567 10 17.9999C10 16.343 8.65685 14.9999 7 14.9999Z"
                   stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
@@ -230,8 +232,9 @@ const updateFilter = (key: string, value: any) => {
           <CommandGroup heading="Filter by status">
 
             <CommandItem value="active">
-              <svg class="mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24"
-                   color="#000000" fill="none">
+              <svg
+                class="mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24" width="24" height="24" fill="none">
                 <path d="M14 18C14 18 15 18 16 20C16 20 19.1765 15 22 14" stroke="currentColor" stroke-width="1.5"
                       stroke-linecap="round" stroke-linejoin="round"/>
                 <path
@@ -245,8 +248,9 @@ const updateFilter = (key: string, value: any) => {
             </CommandItem>
 
             <CommandItem value="inactive">
-              <svg class="mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24"
-                   color="#000000" fill="none">
+              <svg
+                class="mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24" width="24" height="24" fill="none">
                 <path d="M5.25 5L19.25 19" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
                       stroke-linejoin="round"/>
                 <path
@@ -257,8 +261,9 @@ const updateFilter = (key: string, value: any) => {
             </CommandItem>
 
             <CommandItem value="banned">
-              <svg class="mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24"
-                   color="#000000" fill="none">
+              <svg
+                class="mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24" width="24" height="24" fill="none">
                 <path
                   d="M19 12.5V17.9808C19 20.2867 19 21.4396 18.2272 21.8523C16.7305 22.6515 13.9232 19.9852 12.59 19.1824C11.8168 18.7168 11.4302 18.484 11 18.484C10.5698 18.484 10.1832 18.7168 9.41 19.1824C8.0768 19.9852 5.26947 22.6515 3.77285 21.8523C3 21.4396 3 20.2867 3 17.9808V9.70753C3 6.07417 3 4.25749 4.17157 3.12875C5.23467 2.10452 6.8857 2.00968 10 2.0009"
                   stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
@@ -270,8 +275,9 @@ const updateFilter = (key: string, value: any) => {
             </CommandItem>
 
             <CommandItem value="unsubscribed">
-              <svg class="mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24"
-                   color="#000000" fill="none">
+              <svg
+                class="mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24" width="24" height="24" fill="none">
                 <path
                   d="M13 22H6.59087C5.04549 22 3.81631 21.248 2.71266 20.1966C0.453365 18.0441 4.1628 16.324 5.57757 15.4816C7.97679 14.053 10.8425 13.6575 13.5 14.2952"
                   stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>

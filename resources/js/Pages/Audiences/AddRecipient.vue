@@ -50,11 +50,12 @@ const onSubmit = () => {
 <template>
   <GlobalModal
     v-slot="{ close }" ref="modalRef"
-    :close-button="false" panel-classes="rounded-2xl" padding-classes="p-0" max-width="md">
+    :close-button="false" panel-classes="rounded-xl"
+    padding-classes="p-0" max-width="md">
 
     <form @submit.prevent="onSubmit">
 
-      <Card class="p-6">
+      <Card class="p-6 dark:bg-gray-700">
         <CardTitle class="capitalize">
           {{ audience.name }} Recipients
         </CardTitle>
@@ -70,25 +71,28 @@ const onSubmit = () => {
             v-model="form.selectedRecipients"
             v-model:searchTerm="searchTerm">
 
-            <CommandInput class="!border-none" placeholder="Search recipients..."/>
+            <CommandInput
+              class="dark:border dark:border-gray-500 dark:!bg-gray-700"
+              placeholder="Search recipients..."/>
             <CommandEmpty>No recipient found</CommandEmpty>
 
             <CommandList
-              class="h-64 overflow-y-auto scrollbar-none scroll-smooth">
-              <CommandGroup class="divide-y">
+              class="h-64 dark:bg-gray-700 overflow-y-auto scrollbar-none scroll-smooth">
+              <CommandGroup>
                 <CommandItem
-                  class="py-3 grid"
+                  class="py-3 grid rounded-md somber"
                   v-for="recipient in filteredRecipients"
                   :key="recipient.id"
                   :value="recipient">
 
                   <span>{{ recipient.name }}</span>
 
-                  <ComboboxItemIndicator class="flex gap-2 text-muted-foreground">
+                  <ComboboxItemIndicator
+                    class="flex justify-between gap-2 text-muted-foreground">
                     <span>{{ recipient.email }}</span>
                     <Check
                       :class="cn(
-                        'mr-2 h-4 w-4',
+                        'mr-2 h-5 w-5',
                       )"
                     />
                   </ComboboxItemIndicator>
@@ -113,3 +117,9 @@ const onSubmit = () => {
     </form>
   </GlobalModal>
 </template>
+
+<style>
+.somber[data-state="checked"] {
+  @apply dark:bg-neutral-500 bg-neutral-200 my-1
+}
+</style>

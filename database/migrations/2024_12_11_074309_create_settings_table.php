@@ -14,11 +14,12 @@ return new class extends Migration {
       $table->id();
       $table->uuid('uuid');
       $table->foreignId('user_id')->index()->constrained()->cascadeOnDelete();
-      $table->foreignId('subscription_id')->index()->constrained()->cascadeOnDelete();
-      $table->string('email_from_address');
-      $table->string('email_from_name');
-      $table->string('sender_name');
-      $table->string('timezone');
+      $table->foreignId('plan_id')->index()->nullable()->constrained()->cascadeOnDelete();
+      $table->string('email_from_address')->nullable();
+      $table->string('email_from_name')->nullable();
+      $table->string('sender_name')->nullable();
+      $table->string('timezone')->default('UTC');
+      $table->json('email_settings')->nullable(); // For additional email settings
       $table->timestamps();
     });
   }

@@ -28,7 +28,7 @@ const onSearch = () => {
 
     <Button
       size="icon"
-      class="absolute top-[4%] right-1 z-10"
+      class="absolute top-[0.13rem] right-1"
       @click="onSearch">
       <SearchIcon />
     </Button>

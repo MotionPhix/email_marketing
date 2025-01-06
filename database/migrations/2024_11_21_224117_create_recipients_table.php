@@ -28,6 +28,10 @@ return new class extends Migration {
       $table->timestamps();
 
       $table->softDeletes();
+
+      // Add indexes for better performance
+      $table->index(['email', 'status']);
+      $table->index('created_at');
     });
   }
 

@@ -39,12 +39,15 @@ const matchedStatus = (status) => {
     <TableHeader>
       <TableRow>
         <TableHead class="w-10">
-          <input
-            type="checkbox"
-            class="w-6 h-6 rounded-md"
-            @change="toggleAll($event.target.checked)"
-            :checked="recipients.every(({ id }) => selectedRecipients.has(id))"
-          />
+          <label for="recipient_headers" class="flex">
+            <input
+              type="checkbox"
+              id="recipient_headers"
+              @change="toggleAll($event.target.checked)"
+              :checked="recipients.every(({ id }) => selectedRecipients.has(id))"
+              class="w-6 h-6 text-lime-600 border-gray-300 rounded shrink-0 focus:ring-blue-500 disabled:opacity-50 disabled:pointer-events-none dark:bg-neutral-800 dark:border-neutral-600 dark:checked:bg-blue-500 dark:checked:border-blue-500 dark:focus:ring-offset-gray-800">
+            <span class="sr-only">Checkbox</span>
+          </label>
         </TableHead>
         <TableHead>Name</TableHead>
         <TableHead>Gender</TableHead>
@@ -56,12 +59,16 @@ const matchedStatus = (status) => {
 
       <TableRow v-for="recipient in recipients" :key="recipient.id" class="group">
         <TableCell class="w-10">
-          <input
-            type="checkbox"
-            class="w-6 h-6 rounded-md"
-            :checked="selectedRecipients.has(recipient.id)"
-            @change="$emit('toggle-recipient', recipient.id)"
-          />
+          <label
+            :for="recipient.uuid" class="flex">
+            <input
+              type="checkbox"
+              :id="recipient.uuid"
+              :checked="selectedRecipients.has(recipient.id)"
+              @change="$emit('toggle-recipient', recipient.id)"
+              class="w-6 h-6 text-lime-600 border-gray-300 rounded shrink-0 focus:ring-blue-500 disabled:opacity-50 disabled:pointer-events-none dark:bg-neutral-800 dark:border-neutral-600 dark:checked:bg-blue-500 dark:checked:border-blue-500 dark:focus:ring-offset-gray-800">
+            <span class="sr-only">Checkbox</span>
+          </label>
         </TableCell>
 
         <TableCell class="grid">

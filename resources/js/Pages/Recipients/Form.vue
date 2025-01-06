@@ -6,6 +6,7 @@ import {Select, SelectTrigger, SelectValue} from "@/Components/ui/select/index.j
 import {SelectContent, SelectItem} from "@/Components/ui/select";
 import {ref} from "vue";
 import InputError from "@/Components/InputError.vue";
+import {Label} from "@/Components/ui/label";
 
 const { recipient } = defineProps<{
   recipient: {
@@ -52,17 +53,21 @@ const onSubmit = () => {
 </script>
 
 <template>
-  <GlobalModal max-width="md" panel-classes="rounded-xl bg-white" ref="modalRef">
+  <GlobalModal
+    max-width="md"
+    panel-classes="rounded-xl bg-white dark:bg-gray-700"
+    ref="modalRef">
     <h1 class="text-2xl font-bold">
       {{ recipient.uuid ? `Edit ${recipient.name}` : 'New recipient' }}
     </h1>
 
     <form @submit.prevent="onSubmit" class="mt-4">
-      <div class="mb-4">
-        <label for="name" class="block text-sm font-medium text-gray-700">Name</label>
+      <div class="mb-4 grid gap-2">
+        <Label for="name">Name</Label>
         <Input
           v-model="form.name"
           placeholder="Enter recipient name"
+          class="dark:!bg-gray-800 dark:text-gray-100"
           type="text"
           id="name"
         />
@@ -70,11 +75,12 @@ const onSubmit = () => {
         <InputError :message="form.errors.name" />
       </div>
 
-      <div class="mb-4">
-        <label for="email" class="block text-sm font-medium text-gray-700">Email</label>
+      <div class="mb-4 gap-2">
+        <Label for="email">Email</Label>
         <Input
           v-model="form.email"
           placeholder="Enter recipient email"
+          class="dark:!bg-gray-800 dark:text-gray-100"
           type="email"
           id="email"
         />
@@ -84,13 +90,15 @@ const onSubmit = () => {
 
       <section class="grid sm:grid-cols-2 gap-2">
 
-        <div class="mb-4">
-          <label for="gender" class="block text-sm font-medium text-gray-700">Gender</label>
+        <div class="mb-4 gap-2">
+          <Label for="gender">Gender</Label>
           <Select
             v-model="form.gender"
             id="gender">
-            <SelectTrigger>
-              <SelectValue placeholder="Select gender" />
+            <SelectTrigger
+              class="dark:!bg-gray-800 dark:text-gray-100">
+              <SelectValue
+                placeholder="Select gender" />
             </SelectTrigger>
 
             <SelectContent>
@@ -109,12 +117,13 @@ const onSubmit = () => {
           <InputError :message="form.errors.gender" />
         </div>
 
-        <div class="mb-4">
-          <label for="status" class="block text-sm font-medium text-gray-700">Status</label>
+        <div class="mb-4 gap-2">
+          <Label for="status">Status</Label>
           <Select
             v-model="form.status"
             id="status">
-            <SelectTrigger>
+            <SelectTrigger
+              class="dark:!bg-gray-800 dark:text-gray-100">
               <SelectValue placeholder="Set status" />
             </SelectTrigger>
 

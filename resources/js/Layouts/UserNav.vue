@@ -20,7 +20,7 @@ import {UserIcon, SettingsIcon} from "lucide-vue-next";
 </script>
 
 <template>
-  <DropdownMenu>
+  <DropdownMenu :modal="false">
     <DropdownMenuTrigger as-child>
       <Button
         variant="ghost"
@@ -39,7 +39,7 @@ import {UserIcon, SettingsIcon} from "lucide-vue-next";
       </Button>
     </DropdownMenuTrigger>
 
-    <DropdownMenuContent class="w-56" align="end">
+    <DropdownMenuContent class="w-48" align="end">
       <DropdownMenuLabel class="font-normal flex">
         <div class="flex flex-col space-y-1">
           <p class="font-medium leading-none">

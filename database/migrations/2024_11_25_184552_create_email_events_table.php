@@ -21,6 +21,9 @@ return new class extends Migration {
       $table->string('status')->nullable();
       $table->timestamp('timestamp')->index()->nullable();
       $table->timestamps();
+
+      $table->index(['email_log_id', 'event']);
+      $table->index('created_at');
     });
   }
 

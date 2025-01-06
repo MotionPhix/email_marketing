@@ -2,9 +2,10 @@
 import {useForm} from '@inertiajs/vue3';
 import {Button} from "@/Components/ui/button";
 import MazTextarea from "maz-ui/components/MazTextarea";
-import {Input} from "@/Components/ui/input";
 import InputError from "@/Components/InputError.vue";
-import {computed, ref} from "vue";
+import {computed} from "vue";
+import {Label} from "@/Components/ui/label";
+import {Input} from "@/Components/ui/input";
 
 const {audience} = defineProps({
   audience: Object
@@ -19,7 +20,11 @@ const form = useForm({
 </script>
 
 <template>
-  <GlobalModal ref="modalRef" :close-button="false" v-slot="{ close }" max-width="md">
+  <GlobalModal
+    ref="modalRef"
+    :close-button="false"
+    v-slot="{ close }" max-width="md"
+    panel-classes="rounded-xl bg-gray-100 dark:bg-gray-700">
     <h1 class="text-2xl font-bold">
       {{ audience.uuid ? `Edit ${audience.name}` : 'New' }}
     </h1>
@@ -33,11 +38,13 @@ const form = useForm({
       : form.post(route('audiences.store'), {
         onSuccess: () => close()
       })">
-      <div class="mb-4 grid">
-        <label for="name" class="block text-sm font-medium text-gray-700">Name</label>
+      <div class="mb-4 grid gap-2">
+        <Label for="name">Name</Label>
+
         <Input
           v-model="form.name"
           placeholder="Give the audience a name"
+          class="dark:text-gray-800"
           type="text"
           id="name"
         />
@@ -45,18 +52,18 @@ const form = useForm({
         <InputError :message="form.errors.name"/>
       </div>
 
-      <div class="mb-4">
-        <label
-          for="description"
-          class="block text-sm font-medium text-gray-700">
+      <div class="mb-4 grid gap-2">
+        <Label
+          for="description">
           Description
-        </label>
+        </Label>
 
         <MazTextarea
           v-model="form.description"
           placeholder="Describe the audience"
+          class="dark:text-gray-800"
           id="description"
-          class="mt-1 block w-full border-gray-300 rounded-md"/>
+          roundedSize="sm"/>
       </div>
 
       <div class="flex justify-end gap-4 pt-6">

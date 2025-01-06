@@ -18,6 +18,9 @@ return new class extends Migration {
       $table->string('email');
       $table->string('user_uuid')->nullable();
       $table->timestamps();
+
+      $table->index(['campaign_id', 'status']);
+      $table->index('created_at');
     });
   }
 

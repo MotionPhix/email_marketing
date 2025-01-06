@@ -10,9 +10,9 @@ return new class extends Migration {
    */
   public function up(): void
   {
-    Schema::create('subscriptions', function (Blueprint $table) {
+    Schema::create('plans', function (Blueprint $table) {
       $table->id();
-      $table->uuid('uuid');
+      $table->uuid('uuid')->index();
       $table->string('name');
       $table->integer('price')->default(0);
       $table->json('features')->nullable();
@@ -25,6 +25,6 @@ return new class extends Migration {
    */
   public function down(): void
   {
-    Schema::dropIfExists('subscriptions');
+    Schema::dropIfExists('plans');
   }
 };

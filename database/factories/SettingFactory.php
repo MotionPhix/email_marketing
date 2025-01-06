@@ -2,7 +2,7 @@
 
 namespace Database\Factories;
 
-use App\Models\Subscription;
+use App\Models\Plan;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -24,7 +24,7 @@ class SettingFactory extends Factory
       'email_from_name' =>  fake()->name,
       'sender_name' =>  fake()->name,
       'timezone' =>  fake()->timezone,
-      'subscription_id' => Subscription::factory(),
+      'subscription_id' => Plan::factory(),
     ];
   }
 }

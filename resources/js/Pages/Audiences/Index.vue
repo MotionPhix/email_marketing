@@ -187,14 +187,15 @@ const perform = (action: string, model: string, path: string, args?: object|stri
               </span>
             </span>
 
-            <DropdownMenu>
+            <DropdownMenu :modal="false">
               <DropdownMenuTrigger as-child>
                 <Button variant="outline" size="icon">
                   <EllipsisIcon/>
                 </Button>
               </DropdownMenuTrigger>
 
-              <DropdownMenuContent align="end" :side-offset="-36" side="top">
+              <DropdownMenuContent
+                align="end" :side-offset="-36" side="top">
                 <DropdownMenuLabel>Quick Actions</DropdownMenuLabel>
 
                 <DropdownMenuSeparator/>

@@ -107,8 +107,10 @@ const exportHtml = () => {
     <title>Manage templates</title>
   </Head>
 
-  <div id="example">
+  <div id="example" class="dark:bg-gray-700">
+
     <div class="container">
+
       <div id="bar" class="flex gap-4 items-center">
 
         <BackButton />
@@ -125,8 +127,8 @@ const exportHtml = () => {
         <span class="flex-1"/>
 
         <Select v-model="form.mode">
-          <SelectTrigger class="w-32">
-            <SelectValue placeholder="Set template type" />
+          <SelectTrigger class="w-32 dark:bg-gray-700 dark:text-gray-100">
+            <SelectValue class=" dark:text-gray-700 font-mediuk" placeholder="Set template type" />
           </SelectTrigger>
 
           <SelectContent>

@@ -68,7 +68,9 @@ const {campaigns} = defineProps({
 
     <div class="py-12">
 
-      <div v-if="campaigns.data.length" class="mt-4 border rounded-lg overflow-hidden">
+      <div
+        v-if="campaigns.data.length"
+        class="mt-4 overflow-hidden border rounded-lg dark:border-neutral-700 bg-gray-50 dark:bg-neutral-800">
 
         <Table>
 
@@ -86,7 +88,7 @@ const {campaigns} = defineProps({
                   <template v-for="(item, index) in items">
 
                     <PaginationListItem v-if="item.type === 'page'" :key="index" :value="item.value" as-child>
-                      <Button class="size-7 p-0" :variant="item.value === page ? 'default' : 'outline'">
+                      <Button class="p-0 size-7" :variant="item.value === page ? 'default' : 'outline'">
                         {{ item.value }}
                       </Button>
                     </PaginationListItem>
@@ -107,16 +109,23 @@ const {campaigns} = defineProps({
           </TableCaption>
 
           <TableHeader>
-            <TableRow>
-              <TableHead>
+            <TableRow class="dark:border-neutral-700 dark:hover:bg-neutral-800">
+              <TableHead scope="col" class="py-3 ps-6 text-start">
+                <label for="campaigns_table" class="flex">
+                  <input type="checkbox" class="w-6 h-6 text-blue-600 border-gray-300 rounded shrink-0 focus:ring-blue-500 disabled:opacity-50 disabled:pointer-events-none dark:bg-neutral-800 dark:border-neutral-600 dark:checked:bg-blue-500 dark:checked:border-blue-500 dark:focus:ring-offset-gray-800" id="campaigns_table">
+                  <span class="sr-only">Checkbox</span>
+                </label>
+              </TableHead>
+
+              <TableHead class="text-xs font-semibold tracking-wide text-gray-800 uppercase dark:text-neutral-200">
                 Campaign
               </TableHead>
 
-              <TableHead class="w-[100px]">Status</TableHead>
+              <TableHead class="w-[100px] text-xs font-semibold uppercase tracking-wide text-gray-800 dark:text-neutral-200">Status</TableHead>
 
-              <TableHead>Schedule</TableHead>
+              <TableHead class="text-xs font-semibold tracking-wide text-gray-800 uppercase dark:text-neutral-200">Schedule</TableHead>
 
-              <TableHead class="text-center">
+              <TableHead class="text-xs font-semibold tracking-wide text-left text-gray-800 uppercase dark:text-neutral-200">
                 Recipients
               </TableHead>
 
@@ -127,7 +136,17 @@ const {campaigns} = defineProps({
           </TableHeader>
 
           <TableBody>
-            <TableRow v-for="campaign in campaigns.data" :key="campaign.id">
+            <TableRow
+              class="dark:border-zinc-700 hover:bg-neutral-200 dark:text-neutral-200 dark:hover:bg-neutral-700 dark:hover:text-neutral-400"
+              v-for="campaign in campaigns.data" :key="campaign.id">
+
+              <TableCell class="py-3 ps-6 text-start">
+                <label :for="campaign.uuid" class="flex">
+                  <input :id="campaign.uuid" type="checkbox" class="w-6 h-6 text-blue-600 border-gray-300 rounded shrink-0 focus:ring-blue-500 disabled:opacity-50 disabled:pointer-events-none dark:bg-neutral-800 dark:border-neutral-600 dark:checked:bg-blue-500 dark:checked:border-blue-500 dark:focus:ring-offset-gray-800">
+                  <span class="sr-only">Checkbox</span>
+                </label>
+              </TableCell>
+
               <TableCell class="font-medium">
                 {{ campaign.title }}
               </TableCell>
@@ -136,13 +155,13 @@ const {campaigns} = defineProps({
 
               <TableCell>{{ campaign.scheduled_at ?? 'Not scheduled' }}</TableCell>
 
-              <TableCell class="text-center">
-                {{ campaign.recipients_count }}
+              <TableCell class="text-left">
+                {{ campaign.audience_name }} — <strong>{{campaign.recipients_count}}</strong>
               </TableCell>
 
               <TableCell>
 
-                <DropdownMenu>
+                <DropdownMenu :modal="false">
                   <DropdownMenuTrigger as-child>
                     <Button variant="outline" size="icon">
                       <DotsHorizontalIcon/>
@@ -160,7 +179,7 @@ const {campaigns} = defineProps({
                         <GlobalLink
                           class="flex w-full text-left" as="button"
                           :href="route('templates.preview', campaign.template_id)">
-                          <ExternalLinkIcon class="mr-2 h-4 w-4"/>
+                          <ExternalLinkIcon class="w-4 h-4 mr-2"/>
                           <span>Preview</span>
                         </GlobalLink>
                       </DropdownMenuItem>
@@ -172,7 +191,7 @@ const {campaigns} = defineProps({
                           method="post"
                           class="flex w-full text-left" as="button"
                           :href="route('campaigns.send', campaign.uuid)">
-                          <ForwardIcon class="mr-2 h-4 w-4"/>
+                          <ForwardIcon class="w-4 h-4 mr-2"/>
                           <span class="flex-1">Send</span>
                         </Link>
                       </DropdownMenuItem>
@@ -181,7 +200,7 @@ const {campaigns} = defineProps({
                         <Link
                           class="flex w-full text-left" as="button"
                           :href="route('campaigns.show', campaign.uuid)">
-                          <FileTextIcon class="mr-2 h-4 w-4"/>
+                          <FileTextIcon class="w-4 h-4 mr-2"/>
                           <span class="flex-1">Insight</span>
                         </Link>
                       </DropdownMenuItem>
@@ -196,13 +215,13 @@ const {campaigns} = defineProps({
                         <Link
                           class="flex w-full text-left" as="button"
                           :href="route('campaigns.edit', campaign.uuid)">
-                          <Pencil1Icon class="mr-2 h-4 w-4"/>
+                          <Pencil1Icon class="w-4 h-4 mr-2"/>
                           <span class="flex-1">Edit</span>
                         </Link>
                       </DropdownMenuItem>
 
                       <DropdownMenuItem>
-                        <Trash2Icon class="mr-2 h-4 w-4"/>
+                        <Trash2Icon class="w-4 h-4 mr-2"/>
                         <span>Delete</span>
                       </DropdownMenuItem>
 
@@ -224,7 +243,7 @@ const {campaigns} = defineProps({
           No campaigns
         </h2>
 
-        <p class="text-gray-500 mb-4">
+        <p class="mb-4 text-gray-500">
           You don't have any campaigns yet.
         </p>
 

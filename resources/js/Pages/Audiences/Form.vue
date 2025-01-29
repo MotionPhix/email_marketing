@@ -1,33 +1,37 @@
 <script setup>
 import {useForm} from '@inertiajs/vue3';
 import {Button} from "@/Components/ui/button";
-import MazTextarea from "maz-ui/components/MazTextarea";
-import InputError from "@/Components/InputError.vue";
-import {computed} from "vue";
-import {Label} from "@/Components/ui/label";
-import {Input} from "@/Components/ui/input";
+import {computed, ref} from "vue";
+import {Separator} from "@/Components/ui/separator";
 
-const {audience} = defineProps({
+const props = defineProps({
   audience: Object
 })
 
-const action = computed(() => audience.uuid ? 'Update' : 'Create')
+const audienceForm = ref()
+const action = computed(() => props.audience.uuid ? 'Update' : 'Create')
 
 const form = useForm({
-  name: audience.name,
-  description: audience.description,
+  name: props.audience.name,
+  description: props.audience.description,
 });
+
+const close = () => {
+  audienceForm.value.onClose()
+}
 </script>
 
 <template>
   <GlobalModal
-    ref="modalRef"
-    :close-button="false"
-    v-slot="{ close }" max-width="md"
-    panel-classes="rounded-xl bg-gray-100 dark:bg-gray-700">
-    <h1 class="text-2xl font-bold">
-      {{ audience.uuid ? `Edit ${audience.name}` : 'New' }}
-    </h1>
+    ref="audienceForm"
+    :close-button="false">
+    <CardTitle>
+      <h1 class="text-2xl font-bold">
+        {{ audience.uuid ? `Edit ${audience.name}` : 'New audience' }}
+      </h1>
+    </CardTitle>
+
+    <Separator class="my-4" />
 
     <form
       class="mt-4"
@@ -39,31 +43,21 @@ const form = useForm({
         onSuccess: () => close()
       })">
       <div class="mb-4 grid gap-2">
-        <Label for="name">Name</Label>
-
-        <Input
+        <FormField
+          label="Audience name"
           v-model="form.name"
           placeholder="Give the audience a name"
-          class="dark:text-gray-800"
-          type="text"
-          id="name"
+          :error="form.errors.name"
         />
-
-        <InputError :message="form.errors.name"/>
       </div>
 
       <div class="mb-4 grid gap-2">
-        <Label
-          for="description">
-          Description
-        </Label>
-
-        <MazTextarea
+        <FormField
+          label="Description"
           v-model="form.description"
           placeholder="Describe the audience"
-          class="dark:text-gray-800"
-          id="description"
-          roundedSize="sm"/>
+          type="textarea"
+        />
       </div>
 
       <div class="flex justify-end gap-4 pt-6">

@@ -5,11 +5,7 @@ import ActionMessage from '@/Components/ActionMessage.vue';
 import FormSection from '@/Components/FormSection.vue';
 import InputError from '@/Components/InputError.vue';
 import InputLabel from '@/Components/InputLabel.vue';
-import PrimaryButton from '@/Components/PrimaryButton.vue';
-import SecondaryButton from '@/Components/SecondaryButton.vue';
-import TextInput from '@/Components/TextInput.vue';
 import {ImageIcon} from "lucide-vue-next";
-import {Button} from "@/Components/ui/button/index.js";
 
 const props = defineProps({
   user: Object,
@@ -17,7 +13,8 @@ const props = defineProps({
 
 const form = useForm({
   _method: 'PUT',
-  name: props.user.name,
+  first_name: props.user.first_name,
+  last_name: props.user.last_name,
   email: props.user.email,
   photo: null,
 });
@@ -106,7 +103,7 @@ const clearPhotoFileInput = () => {
         <div v-show="! photoPreview" class="mt-2 relative group inline-flex">
           <img
             :src="user.profile_photo_url"
-            :alt="user.name" class="rounded-lg size-24 object-cover">
+            :alt="user.first_name" class="rounded-lg size-24 object-cover">
 
           <Button
             variant="secondary"
@@ -145,49 +142,55 @@ const clearPhotoFileInput = () => {
         <InputError :message="form.errors.photo" class="mt-2"/>
       </div>
 
-      <!-- Name -->
+      <!-- First Name -->
       <div class="col-span-6">
-        <InputLabel for="name" value="Name"/>
-        <TextInput
-          id="name"
-          v-model="form.name"
-          type="text"
-          class="mt-1 block w-full"
+        <FormField
+          label="First Name"
+          v-model="form.first_name"
+          :error="form.errors.first_name"
+          placeholder="Enter your first name"
           required
-          autocomplete="name"
         />
-        <InputError :message="form.errors.name" class="mt-2"/>
+      </div>
+
+      <!-- Last Name -->
+      <div class="col-span-6">
+        <FormField
+          label="Last Name"
+          v-model="form.last_name"
+          :error="form.errors.last_name"
+          placeholder="Enter your last name"
+          required
+        />
       </div>
 
       <!-- Email -->
       <div class="col-span-6">
-        <InputLabel for="email" value="Email"/>
-        <TextInput
-          id="email"
+        <FormField
+          label="Email"
           v-model="form.email"
+          :error="form.errors.email"
+          placeholder="Enter your email address"
           type="email"
-          class="mt-1 block w-full"
           required
-          autocomplete="username"
         />
-        <InputError :message="form.errors.email" class="mt-2"/>
 
         <div v-if="$page.props.jetstream.hasEmailVerification && user.email_verified_at === null">
           <p class="text-sm mt-2 dark:text-white">
             Your email address is unverified.
 
             <Link
+              method="post" as="button"
               :href="route('verification.send')"
-              method="post"
-              as="button"
               class="underline text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:focus:ring-offset-gray-800"
-              @click.prevent="sendEmailVerification"
-            >
+              @click.prevent="sendEmailVerification">
               Click here to re-send the verification email.
             </Link>
           </p>
 
-          <div v-show="verificationLinkSent" class="mt-2 font-medium text-sm text-green-600 dark:text-green-400">
+          <div
+            v-show="verificationLinkSent"
+            class="mt-2 font-medium text-sm text-green-600 dark:text-green-400">
             A new verification link has been sent to your email address.
           </div>
         </div>
@@ -195,13 +198,18 @@ const clearPhotoFileInput = () => {
     </template>
 
     <template #actions>
-      <ActionMessage :on="form.recentlySuccessful" class="me-3">
+      <ActionMessage
+        class="me-3"
+        :on="form.recentlySuccessful" >
         Saved.
       </ActionMessage>
 
-      <PrimaryButton :class="{ 'opacity-25': form.processing }" :disabled="form.processing">
+      <Button
+        type="submit"
+        :class="{ 'opacity-25': form.processing }"
+        :disabled="form.processing">
         Save
-      </PrimaryButton>
+      </Button>
     </template>
   </FormSection>
 </template>

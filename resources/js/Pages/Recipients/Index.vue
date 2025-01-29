@@ -8,7 +8,7 @@ import RecipientTable from "@/Components/Recipient/RecipientTable.vue";
 import Pagination from "@/Components/Recipient/Pagination.vue";
 import AppLayout from "@/Layouts/AppLayout.vue";
 import {Button} from "@/Components/ui/button";
-import {FilterXIcon} from "lucide-vue-next";
+import {FilterXIcon, UserXIcon} from "lucide-vue-next";
 import { visitModal } from '@inertiaui/modal-vue'
 import {debounce} from "maz-ui";
 import {
@@ -18,9 +18,9 @@ import {
   TooltipTrigger
 } from '@/Components/ui/tooltip'
 import PageTitle from "@/Components/PageTitle.vue";
+import EmptyState from "@/Components/EmptyState.vue";
 
-// Define the `recipients` prop
-const {recipients} = defineProps<{
+const props = defineProps<{
   recipients: {
     data: Array<{ id: number; name: string; email: string; status: string }>;
     first_page_url?: string;
@@ -47,7 +47,7 @@ const toggleRecipient = (id: number) => {
 };
 
 const selectAllRecipients = (selectAll: boolean) => {
-  recipients.data.forEach(({id}) => {
+  props.recipients.data.forEach(({id}) => {
     selectAll ? selectedRecipients.value.add(id) : selectedRecipients.value.delete(id);
   });
 };
@@ -198,7 +198,7 @@ onUnmounted(() => {
           class="bg-stone-500" size="icon"
           :href="route('recipients.create')" as-child>
           <GlobalLink as="button">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none">
+            <svg class="shrink-0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none">
               <path d="M12.5 22H6.59087C5.04549 22 3.81631 21.248 2.71266 20.1966C0.453365 18.0441 4.1628 16.324 5.57757 15.4816C7.67837 14.2307 10.1368 13.7719 12.5 14.1052C13.3575 14.2261 14.1926 14.4514 15 14.7809" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
               <path d="M16.5 6.5C16.5 8.98528 14.4853 11 12 11C9.51472 11 7.5 8.98528 7.5 6.5C7.5 4.01472 9.51472 2 12 2C14.4853 2 16.5 4.01472 16.5 6.5Z" stroke="currentColor" stroke-width="1.5" />
               <path d="M18.5 22L18.5 15M15 18.5H22" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
@@ -211,7 +211,7 @@ onUnmounted(() => {
             <TooltipTrigger as-child>
               <Button size="icon" as-child :href="route('recipients.import')">
                 <GlobalLink as="button">
-                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none">
+                  <svg class="shrink-0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none">
                     <path d="M20 15.0057V10.6606C20 9.84276 20 9.43383 19.8478 9.06613C19.6955 8.69843 19.4065 8.40927 18.8284 7.83096L14.0919 3.09236C13.593 2.59325 13.3436 2.3437 13.0345 2.19583C12.9702 2.16508 12.9044 2.13778 12.8372 2.11406C12.5141 2 12.1614 2 11.4558 2C8.21082 2 6.58831 2 5.48933 2.88646C5.26731 3.06554 5.06508 3.26787 4.88607 3.48998C4 4.58943 4 6.21265 4 9.45908V14.0052C4 17.7781 4 19.6645 5.17157 20.8366C6.11466 21.7801 7.52043 21.9641 10 22M13 2.50022V3.00043C13 5.83009 13 7.24492 13.8787 8.12398C14.7574 9.00304 16.1716 9.00304 19 9.00304H19.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
                     <path d="M15 22C14.3932 21.4102 12 19.8403 12 19C12 18.1597 14.3932 16.5898 15 16M13 19H20" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
                   </svg>
@@ -226,7 +226,11 @@ onUnmounted(() => {
         </TooltipProvider>
 
         <!-- Search Bar -->
-        <SearchBar class="hidden sm:inline-flex" v-model="searchQuery" @search="fetchRecipients"/>
+        <SearchBar
+          v-model="searchQuery"
+          @search="fetchRecipients"
+          class="hidden sm:inline-flex"
+        />
       </div>
     </template>
 
@@ -234,10 +238,14 @@ onUnmounted(() => {
       <div class="flex gap-4 flex-col sm:flex-row" v-if="recipients.data.length">
         <!-- Filter Sidebar -->
         <div class="flex gap-1 sm:block items-center mt-6 sm:mt-0">
+
           <div class="flex-1 sm:hidden">
+
             <SearchBar
               v-model="searchQuery"
-              @search="fetchRecipients"/>
+              @search="fetchRecipients"
+            />
+
           </div>
 
           <FilterSidebar v-model="filters"/>
@@ -252,8 +260,10 @@ onUnmounted(() => {
               :disabled="! selectedRecipients.size"
               @click="deselectAllRecipients"
               class="bg-gray-300">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" color="#000000"
-                   fill="none">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24" width="24" height="24"
+                fill="none">
                 <path
                   d="M5.08069 15.2964C3.86241 16.0335 0.668175 17.5386 2.61368 19.422C3.56404 20.342 4.62251 21 5.95325 21H13.5468C14.8775 21 15.936 20.342 16.8863 19.422C18.8318 17.5386 15.6376 16.0335 14.4193 15.2964C11.5625 13.5679 7.93752 13.5679 5.08069 15.2964Z"
                   stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
@@ -309,31 +319,19 @@ onUnmounted(() => {
       </div>
 
         <div v-else class="flex items-center justify-center h-full">
-          <div class="text-center grid gap-1">
-
-            <svg class="w-24 h-24 mx-auto mb-4 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" color="#000000" fill="none">
-              <path d="M11 22L9.52157 19.6461C8.49181 18.0065 7.97692 17.1867 7.16053 17.0393C5.83152 16.7993 4.45794 17.7045 3.5 18.509" stroke="currentColor" stroke-width="1.5" />
-              <path d="M3.5 9V16.0279C3.5 17.2307 3.5 17.8321 3.7987 18.3154C4.0974 18.7987 4.63531 19.0677 5.71115 19.6056L9.65542 21.5777C10.4962 21.9981 10.5043 22 11.4443 22H14.5C17.3284 22 18.7426 22 19.6213 21.1213C20.5 20.2426 20.5 18.8284 20.5 16V9C20.5 6.17157 20.5 4.75736 19.6213 3.87868C18.7426 3 17.3284 3 14.5 3H9.5C6.67157 3 5.25736 3 4.37868 3.87868C3.5 4.75736 3.5 6.17157 3.5 9Z" stroke="currentColor" stroke-width="1.5" />
-              <path d="M12 9H8M16 14H8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
-              <path d="M17 2V4M12 2V4M7 2V4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
-            </svg>
-
-            <h2 class="text-xl font-semibold text-gray-700">No Recipients Found</h2>
-
-            <p class="text-gray-500 mb-2">
-              You currently have no recipients.
-            </p>
-
-            <div>
+          <EmptyState
+            :icon="UserXIcon"
+            title="No Recipients Found"
+            description="You currently have no recipients.">
+            <template #action>
               <Button
                 as-child :href="route('recipients.create')">
                 <GlobalLink as="button">
                   Add Recipient
                 </GlobalLink>
               </Button>
-            </div>
-
-          </div>
+            </template>
+          </EmptyState>
         </div>
 
     </div>

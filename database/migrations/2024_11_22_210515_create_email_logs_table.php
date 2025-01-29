@@ -15,11 +15,12 @@ return new class extends Migration {
       $table->uuid('uuid');
       $table->string('sg_message_id')->unique();
       $table->string('campaign_uuid')->nullable();
-      $table->string('email');
       $table->string('user_uuid')->nullable();
+      $table->string('status')->nullable();
+      $table->string('email');
       $table->timestamps();
 
-      $table->index(['campaign_id', 'status']);
+      $table->index(['campaign_uuid', 'status']);
       $table->index('created_at');
     });
   }

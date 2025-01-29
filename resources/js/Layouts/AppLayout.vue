@@ -6,6 +6,7 @@ import UserNav from "@/Layouts/UserNav.vue";
 import MainNav from "@/Layouts/MainNav.vue";
 import ThemeToggle from "@/Layouts/ThemeToggle.vue"
 import MobileNav from "@/Layouts/MobileNav.vue";
+import {Toaster} from "vue-sonner";
 
 defineProps({
   title: String,
@@ -15,6 +16,8 @@ defineProps({
 <template>
   <div>
     <Head :title="title"/>
+
+    <Toaster />
 
     <Banner/>
 

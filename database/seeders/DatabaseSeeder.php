@@ -16,8 +16,8 @@ class DatabaseSeeder extends Seeder
   {
     $this->call([
       PlanSeeder::class,
-      // AudienceAndRecipientSeeder::class,
-      // SettingSeeder::class,
+      AudienceAndRecipientSeeder::class,
+      SettingSeeder::class,
     ]);
   }
 }

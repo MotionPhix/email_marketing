@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "51e0b4644dfc56e24236aa198ae01ce7",
+    "content-hash": "fc5225ecc4ae7b10d40765b789a6b7cc",
     "packages": [
         {
             "name": "bacon/bacon-qr-code",
@@ -1673,16 +1673,16 @@
         },
         {
             "name": "inertiaui/modal",
-            "version": "0.13.1",
+            "version": "0.19.3",
             "source": {
                 "type": "git",
                 "url": "https://github.com/inertiaui/modal.git",
-                "reference": "58c75505e8c38308e215569e83d13cef32a86dfc"
+                "reference": "0c61cca9b28da27289b99cc3e4934319aa4a128d"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/inertiaui/modal/zipball/58c75505e8c38308e215569e83d13cef32a86dfc",
-                "reference": "58c75505e8c38308e215569e83d13cef32a86dfc",
+                "url": "https://api.github.com/repos/inertiaui/modal/zipball/0c61cca9b28da27289b99cc3e4934319aa4a128d",
+                "reference": "0c61cca9b28da27289b99cc3e4934319aa4a128d",
                 "shasum": ""
             },
             "require": {
@@ -1721,7 +1721,7 @@
             "homepage": "https://github.com/inertiaui/modal",
             "support": {
                 "issues": "https://github.com/inertiaui/modal/issues",
-                "source": "https://github.com/inertiaui/modal/tree/0.13.1"
+                "source": "https://github.com/inertiaui/modal/tree/0.19.3"
             },
             "funding": [
                 {
@@ -1729,7 +1729,7 @@
                     "type": "github"
                 }
             ],
-            "time": "2024-11-20T21:51:42+00:00"
+            "time": "2025-01-22T23:26:23+00:00"
         },
         {
             "name": "laravel/fortify",

@@ -212,14 +212,14 @@ onMounted(() => {
           <!-- Call-to-Action Button -->
           <div class="absolute inset-0 size-full">
             <div class="flex flex-col justify-center items-center size-full">
-              <a
+              <Link
                 class="py-3 px-6 inline-flex items-center gap-x-2 text-base font-medium rounded-full border border-gray-200 bg-blue-600 text-white shadow-md hover:bg-blue-700 focus:outline-none focus:bg-blue-700 disabled:opacity-50 disabled:pointer-events-none dark:bg-blue-700 dark:hover:bg-blue-800 dark:focus:bg-blue-800"
-                href="#">
+                :href="route('campaigns.create')" as="button">
                 <svg class="shrink-0 size-5" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <polygon points="5 3 19 12 5 21 5 3"/>
                 </svg>
                 Start Your First Campaign
-              </a>
+              </Link>
             </div>
           </div>
 

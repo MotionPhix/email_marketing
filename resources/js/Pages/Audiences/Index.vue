@@ -1,17 +1,7 @@
 <script setup lang="ts">
 import AppLayout from "@/Layouts/AppLayout.vue";
-import {Button} from "@/Components/ui/button";
 import {Avatar, AvatarFallback} from "@/Components/ui/avatar";
 import {Link, router} from "@inertiajs/vue3";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/Components/ui/dropdown-menu'
 import {
   FileTextIcon,
   XIcon,
@@ -20,13 +10,18 @@ import {
   Trash2Icon,
   UserIcon,
   EllipsisIcon,
+  PlusCircle,
   UserPlus,
 } from 'lucide-vue-next'
 import {useToast} from "maz-ui";
 import PageTitle from "@/Components/PageTitle.vue";
+import EmptyState from "@/Components/EmptyState.vue";
 
-const {audiences} = defineProps<{
-  audiences: object
+const props = defineProps<{
+  audiences: {
+    data: Array<any>;
+    total: number;
+  }
 }>();
 
 const toast = useToast()
@@ -84,17 +79,34 @@ const perform = (action: string, model: string, path: string, args?: object|stri
     <!-- Action Button -->
     <template #action>
       <Button
+        size="sm"
+        v-if="audiences.total"
         class="max-w-md" as-child
         :href="route('audiences.create')">
         <GlobalLink as="button">
-          Add
+          <PlusCircle /> New
         </GlobalLink>
       </Button>
     </template>
 
     <!-- Content -->
     <div class="py-12">
-      <div class="px-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div v-if="!audiences.total" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <EmptyState
+          title="No audiences yet"
+          description="Get started by creating your first audience"
+          :icon="UserIcon">
+          <template #action>
+            <Button as-child :href="route('audiences.create')">
+              <GlobalLink as="button">
+                Create Audience
+              </GlobalLink>
+            </Button>
+          </template>
+        </EmptyState>
+      </div>
+
+      <div v-else class="px-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <div
           v-for="audience in audiences.data"
           :key="audience.id"
@@ -159,7 +171,9 @@ const perform = (action: string, model: string, path: string, args?: object|stri
               <h3>No recipients added, yet!</h3>
 
               <p>
-                <Button as-child :href="route('audiences.add_recipient', audience.uuid)">
+                <Button
+                  as-child
+                  :href="route('audiences.add_recipient', audience.uuid)">
                   <GlobalLink as="button">
                     Add one
                   </GlobalLink>

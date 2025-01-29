@@ -167,15 +167,15 @@ Route::middleware([
       \App\Http\Controllers\Audience\Store::class
     )->name('audiences.store');
 
-    Route::delete(
-      '/r/{audience:uuid}/{recipient:uuid}',
-      \App\Http\Controllers\Audience\RemoveRecipient::class
-    )->name('audiences.remove_recipient');
-
     Route::get(
       '/a/{audience:uuid}',
       \App\Http\Controllers\Audience\AddRecipient::class
     )->name('audiences.add_recipient');
+
+    Route::delete(
+      '/r/{audience:uuid}/{recipient:uuid}',
+      \App\Http\Controllers\Audience\RemoveRecipient::class
+    )->name('audiences.remove_recipient');
 
     Route::put(
       '/m/{audience:uuid}',

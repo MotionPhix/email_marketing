@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Audience;
 use App\Http\Controllers\Controller;
 use App\Models\Audience;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
 
 class AddRecipient extends Controller
 {
@@ -16,12 +17,12 @@ class AddRecipient extends Controller
     if (! $request->user()->recipients()->exists())
       return back()->with('flash', [
         'bannerStyle' => 'danger',
-        'banner' => 'You don\'t have recipients, yet. Add recipients',
+        'banner' => 'You don\'t have recipients, yet. Add recipients first!',
       ]);
 
     $audience->load('recipients');
 
-    return Inertia('Audiences/AddRecipient', [
+    return Inertia::modal('Audiences/AddRecipient', [
       'audience' => [
         'id' => $audience->id,
         'uuid' => $audience->uuid,
@@ -34,6 +35,6 @@ class AddRecipient extends Controller
         ]),
       ],
       'recipients' => fn() => $request->user()->recipients->map(fn($recipient) => $recipient->only('id', 'uuid', 'name', 'email')),
-    ]);
+    ])->baseRoute('audiences.index');
   }
 }

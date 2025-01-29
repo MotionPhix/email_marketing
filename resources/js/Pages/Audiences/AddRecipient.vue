@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import {computed, ref} from 'vue'
-import {Button} from '@/Components/ui/button'
 import {
   Command,
   CommandEmpty,
@@ -12,34 +11,33 @@ import {
 import {cn} from '@/lib/utils'
 import {Check} from 'lucide-vue-next'
 import Form from "@/Pages/Templates/Form.vue";
-import {Card, CardContent, CardDescription, CardFooter, CardTitle} from "@/Components/ui/card";
 import {ComboboxItemIndicator} from "radix-vue";
 import {useForm} from "@inertiajs/vue3";
 
-const {recipients, audience} = defineProps<{
-  recipients: object[]
+const props = defineProps<{
+  recipients: Array<any>
   audience: object
 }>()
 
-const modalRef = ref()
+const addRecipientRef = ref()
 const searchTerm = ref('')
 
 const filteredRecipients = computed(() =>
   searchTerm.value === ''
-    ? recipients
-    : recipients.filter((recipient) => {
+    ? props.recipients
+    : props.recipients.filter((recipient) => {
       return recipient.name.toLowerCase().includes(searchTerm.value.toLowerCase())
     })
 )
 
 const form = useForm({
-  selectedRecipients: audience.recipients,
+  selectedRecipients: props.audience.recipients,
 })
 
 const onSubmit = () => {
-  form.put(route('audiences.merge_recipients', audience.uuid), {
+  form.put(route('audiences.merge_recipients', props.audience.uuid), {
     preserveScroll: true,
-    onSuccess: () => modalRef.value.close(),
+    onSuccess: () => addRecipientRef.value.onClose(),
     onError: (error) => {
       console.log(error)
     }
@@ -49,9 +47,8 @@ const onSubmit = () => {
 
 <template>
   <GlobalModal
-    v-slot="{ close }" ref="modalRef"
-    :close-button="false" panel-classes="rounded-xl"
-    padding-classes="p-0" max-width="md">
+    ref="addRecipientRef"
+    :close-button="false">
 
     <form @submit.prevent="onSubmit">
 

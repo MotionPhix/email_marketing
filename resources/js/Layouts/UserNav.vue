@@ -4,7 +4,7 @@ import {
   AvatarFallback,
   AvatarImage,
 } from '@/Components/ui/avatar'
-import { Button } from '@/Components/ui/button'
+import {Button} from '@/Components/ui/button'
 import {Link} from '@inertiajs/vue3'
 import {
   DropdownMenu,
@@ -17,6 +17,7 @@ import {
   DropdownMenuTrigger,
 } from '@/Components/ui/dropdown-menu'
 import {UserIcon, SettingsIcon} from "lucide-vue-next";
+import {getInitials} from "@/lib/stringUtils";
 </script>
 
 <template>
@@ -29,10 +30,11 @@ import {UserIcon, SettingsIcon} from "lucide-vue-next";
 
           <AvatarImage
             :src="$page.props.auth.user.profile_photo_url"
-            :alt="$page.props.auth.user.name" />
+            :alt="$page.props.auth.user.first_name"
+          />
 
           <AvatarFallback>
-            {{ $page.props.auth.user.name }}
+            {{ $page.props.auth.user.first_name }}
           </AvatarFallback>
 
         </Avatar>
@@ -43,7 +45,7 @@ import {UserIcon, SettingsIcon} from "lucide-vue-next";
       <DropdownMenuLabel class="font-normal flex">
         <div class="flex flex-col space-y-1">
           <p class="font-medium leading-none">
-            {{ $page.props.auth.user.name }}
+            {{ `${$page.props.auth.user.first_name} ${$page.props.auth.user.last_name}` }}
           </p>
 
           <p class="text-xs leading-none text-muted-foreground">
@@ -52,27 +54,28 @@ import {UserIcon, SettingsIcon} from "lucide-vue-next";
         </div>
       </DropdownMenuLabel>
 
-      <DropdownMenuSeparator />
+      <DropdownMenuSeparator/>
 
       <DropdownMenuGroup>
-        <DropdownMenuItem as-child
-          :href="route('profile.show')">
+        <DropdownMenuItem
+          :href="route('profile.show')"
+          as-child>
           <Link as="button" class="w-full">
-            <UserIcon />
+            <UserIcon/>
             Profile
           </Link>
         </DropdownMenuItem>
 
         <DropdownMenuItem as-child
-          :href="route('settings.index')">
+                          :href="route('settings.index')">
           <Link as="button" class="w-full">
-            <SettingsIcon />
+            <SettingsIcon/>
             Settings
           </Link>
         </DropdownMenuItem>
       </DropdownMenuGroup>
 
-      <DropdownMenuSeparator />
+      <DropdownMenuSeparator/>
 
       <DropdownMenuItem as-child>
         <Link

@@ -7,7 +7,6 @@ import BatchActions from "@/Components/Recipient/BatchActions.vue";
 import RecipientTable from "@/Components/Recipient/RecipientTable.vue";
 import Pagination from "@/Components/Recipient/Pagination.vue";
 import AppLayout from "@/Layouts/AppLayout.vue";
-import {Button} from "@/Components/ui/button";
 import {FilterXIcon, UserXIcon} from "lucide-vue-next";
 import { visitModal } from '@inertiaui/modal-vue'
 import {debounce} from "maz-ui";

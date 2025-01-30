@@ -2,151 +2,84 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\EmailEvent;
-use App\Models\Campaign;
-use App\Models\EmailLog;
+use App\Services\AnalyticsService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Inertia\Inertia;
+use Symfony\Component\HttpFoundation\Response;
 
 class Analytics extends Controller
 {
+  public function __construct(
+    private readonly AnalyticsService $analyticsService
+  ) {}
+
   public function __invoke(Request $request)
   {
-    /*// Total stats
-    $totalEmailsSent = EmailEvent::where('event', 'processed')->distinct('email_log_id')->count('email_log_id');
-    $totalRecipients = EmailLog::distinct('email')->count('email');
-    $totalDelivered = EmailEvent::where('event', 'delivered')->distinct('email_log_id')->count('email_log_id');
-    $totalCampaigns = Campaign::count();
+    $this->analyticsService->setUser(Auth::user());
 
-    // Summary stats grouped by event type (e.g., delivered, opened, clicked, etc.)
-    $summaryStats = EmailEvent::selectRaw('event, COUNT(*) as total')
-      ->groupBy('event')
-      ->pluck('total', 'event');
+    try {
+      // Validate date range inputs if provided
+      $validated = $request->validate([
+        'start_date' => 'nullable|date',
+        'end_date' => 'nullable|date|after_or_equal:start_date',
+        'period' => 'nullable|string|in:7d,30d,90d,1y,custom'
+      ]);
 
-    // Chart data grouped by date for delivered emails
-    $chartData = EmailEvent::where('event', 'delivered')
-      ->selectRaw('DATE(timestamp) as date, COUNT(*) as total')
-      ->groupBy('date')
-      ->orderBy('date', 'asc')
-      ->pluck('total', 'date');
+      // Handle period selection
+      $dates = $this->getDateRange($validated['period'] ?? '30d', [
+        'start_date' => $validated['start_date'] ?? null,
+        'end_date' => $validated['end_date'] ?? null,
+      ]);
 
-    // Latest activity feed (limit to recent 10 events)
-    $eventFeed = EmailEvent::latest('timestamp')
-      ->with('emailLog:id,email')
-      ->take(10)
-      ->get(['event', 'reason', 'email_log_id', 'timestamp']);
+      // Get analytics data from service
+      $dashboardData = $this->analyticsService->getDashboardStats(
+        $dates['start']->toDateTimeString(),
+        $dates['end']->toDateTimeString()
+      );
 
-    // Return response to Inertia
-    return inertia('Dashboard', [
-      'stats' => [
-        'totalEmailsSent' => $totalEmailsSent,
-        'totalRecipients' => $totalRecipients,
-        'totalCampaigns' => $totalCampaigns,
-        'totalDelivered' => $totalDelivered, // Added for clarity
-        'summary' => $summaryStats
-      ],
-      'chartData' => $chartData,
-      'eventFeed' => $eventFeed,
-      'currentTime' => now()->format('l, jS F Y h:i A'),
-    ]);*/
+      return Inertia::render('Dashboard', [
+        ...$dashboardData,  // Spread operator since service returns exact structure needed
+        'filters' => [
+          'period' => $validated['period'] ?? '30d',
+          'start_date' => $dates['start']->toDateString(),
+          'end_date' => $dates['end']->toDateString(),
+        ],
+      ]);
 
-    // Filter by date range if provided
-    $startDate = $request->get('start_date', Carbon::now()->subDays(7)->format('Y-m-d'));
-    $endDate = $request->get('end_date', Carbon::now()->format('Y-m-d'));
+    } catch (\Exception $e) {
+      return Inertia::render('Dashboard', [
+        'error' => config('app.debug')
+          ? $e->getMessage()
+          : 'An error occurred while fetching dashboard data.',
+      ])->toResponse($request)
+        ->setStatusCode(Response::HTTP_INTERNAL_SERVER_ERROR);
+    }
+  }
 
-    // Total stats
-    $totalEmailsSent = EmailEvent::whereBetween('timestamp', [$startDate, $endDate])
-      ->where('event', 'processed')
-      ->distinct('email_log_id')
-      ->count('email_log_id');
+  private function getDateRange(string $period, array $customDates): array
+  {
+    $end = Carbon::now()->endOfDay();
 
-    $totalRecipients = EmailLog::whereBetween('created_at', [$startDate, $endDate])
-      ->distinct('email')
-      ->count('email');
+    $start = match ($period) {
+      '7d' => Carbon::now()->subDays(7)->startOfDay(),
+      '30d' => Carbon::now()->subDays(30)->startOfDay(),
+      '90d' => Carbon::now()->subDays(90)->startOfDay(),
+      '1y' => Carbon::now()->subYear()->startOfDay(),
+      'custom' => $customDates['start_date']
+        ? Carbon::parse($customDates['start_date'])->startOfDay()
+        : Carbon::now()->subDays(30)->startOfDay(),
+      default => Carbon::now()->subDays(30)->startOfDay(),
+    };
 
-    $totalDelivered = EmailEvent::whereBetween('timestamp', [$startDate, $endDate])
-      ->where('event', 'delivered')
-      ->distinct('email_log_id')
-      ->count('email_log_id');
+    if ($period === 'custom' && !empty($customDates['end_date'])) {
+      $end = Carbon::parse($customDates['end_date'])->endOfDay();
+    }
 
-    $totalCampaigns = Campaign::whereBetween('created_at', [$startDate, $endDate])->count();
-
-    // Summary stats grouped by distinct event type and email_log_id (e.g., delivered, opened, clicked, etc.)
-    $summaryStats = EmailEvent::whereBetween('timestamp', [$startDate, $endDate])
-      ->selectRaw('event, COUNT(DISTINCT email_log_id) as total')
-      ->groupBy('event')
-      ->pluck('total', 'event');
-
-    // Event rates (CTR, Open Rate, etc.)
-    $eventRates = EmailEvent::whereBetween('timestamp', [$startDate, $endDate])
-      ->selectRaw('(
-        (COUNT(DISTINCT CASE WHEN event = "click" THEN email_log_id END) * 100.0) /
-          NULLIF(COUNT(DISTINCT CASE WHEN event = "delivered" THEN email_log_id END), 0)
-        ) as ctr, (
-          (COUNT(DISTINCT CASE WHEN event = "open" THEN email_log_id END) * 100.0) /
-          NULLIF(COUNT(DISTINCT CASE WHEN event = "delivered" THEN email_log_id END), 0)
-        ) as open_rate, (
-          (COUNT(DISTINCT CASE WHEN event = "bounce" THEN email_log_id END) * 100.0) /
-          NULLIF(COUNT(DISTINCT CASE WHEN event = "processed" THEN email_log_id END), 0)
-        ) as bounce_rate, (
-          (COUNT(DISTINCT CASE WHEN event = "unsubscribe" THEN email_log_id END) * 100.0) /
-          NULLIF(COUNT(DISTINCT CASE WHEN event = "processed" THEN email_log_id END), 0)
-        ) as unsubscribe_rate, (
-          (COUNT(DISTINCT CASE WHEN event = "delivered" THEN email_log_id END) * 100.0) /
-          NULLIF(COUNT(DISTINCT CASE WHEN event = "processed" THEN email_log_id END), 0)
-        ) as delivery_rate
-      ')
-      ->first();
-
-    // Chart data grouped by date for all key event types
-    $chartData = EmailEvent::whereBetween('timestamp', [$startDate, $endDate])
-      ->selectRaw('DATE(timestamp) as date, event, COUNT(DISTINCT email_log_id) as total')
-      ->groupBy('date', 'event')
-      ->orderBy('date', 'asc')
-      ->get()
-      ->groupBy('event')
-      ->map(function ($group) {
-        return $group->pluck('total', 'date');
-      });
-
-    // Latest activity feed (limit to recent 10 events)
-    $eventFeed = EmailEvent::whereBetween('timestamp', [$startDate, $endDate])
-      ->with('emailLog:id,email')
-      ->latest('timestamp')
-      ->take(10)
-      ->get(['event', 'email_log_id', 'timestamp']);
-
-    // Top 5 campaigns by click count
-    $topCampaigns = Campaign::withCount([
-      'emailLogs as total_sent' => function ($query) {
-        $query->whereHas('events', function ($query) {
-          $query->where('event', 'processed');
-        });
-      },
-      'emailLogs as total_clicks' => function ($query) {
-        $query->whereHas('events', function ($query) {
-          $query->where('event', 'click');
-        });
-      }
-    ])
-      ->whereBetween('created_at', [$startDate, $endDate])
-      ->orderByDesc('total_clicks')
-      ->limit(5)
-      ->get();
-
-    return inertia('Dashboard', [
-      'stats' => [
-        'totalEmailsSent' => $totalEmailsSent,
-        'totalRecipients' => $totalRecipients,
-        'totalCampaigns' => $totalCampaigns,
-        'summary' => $summaryStats
-      ],
-      'eventRates' => $eventRates,
-      'chartData' => $chartData,
-      'eventFeed' => $eventFeed,
-      'topCampaigns' => $topCampaigns,
-      'currentTime' => now($request->user()->settings->timezone ?? null)->format('l, jS F Y h:i A'),
-    ]);
-
+    return [
+      'start' => $start,
+      'end' => $end,
+    ];
   }
 }

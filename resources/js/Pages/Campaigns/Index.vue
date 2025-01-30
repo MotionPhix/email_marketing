@@ -29,7 +29,7 @@ import {
 import {
   Trash2Icon,
   ForwardIcon,
-  Plus,
+  Plus, ReceiptTextIcon,
 } from 'lucide-vue-next'
 import {
   Pagination,
@@ -43,6 +43,7 @@ import {
 } from '@/Components/ui/pagination'
 import {TableFooter} from "@/Components/ui/table";
 import PageTitle from "@/Components/PageTitle.vue";
+import EmptyState from "@/Components/EmptyState.vue";
 
 const {campaigns} = defineProps({
   campaigns: Object,
@@ -58,7 +59,7 @@ const {campaigns} = defineProps({
     </template>
 
     <template #action>
-      <Button as-child>
+      <Button as-child v-if="campaigns.data.length">
         <Link as="button" :href="route('campaigns.create')">
           <span>New</span>
           <Plus class="size-5"/>
@@ -239,23 +240,24 @@ const {campaigns} = defineProps({
 
       <div v-else>
 
-        <h2 class="text-2xl">
-          No campaigns
-        </h2>
+        <EmptyState
+          :icon="ReceiptTextIcon"
+          title="No campaigns found"
+          description="Seems like youn haven't started sending out campaigns yet.">
+          <template #action>
 
-        <p class="mb-4 text-gray-500">
-          You don't have any campaigns yet.
-        </p>
+            <Button as-child>
 
-        <Button as-child>
+              <Link
+                as="button"
+                :href="route('campaigns.create')">
+                Create campaign
+              </Link>
 
-          <Link
-            as="button"
-            :href="route('campaigns.create')">
-            Create campaign
-          </Link>
+            </Button>
 
-        </Button>
+          </template>
+        </EmptyState>
 
       </div>
 

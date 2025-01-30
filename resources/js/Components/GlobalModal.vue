@@ -13,7 +13,8 @@ withDefaults(
   padding?: string
 }>(), {
     maxWidth: 'md',
-    placement: 'center'
+    placement: 'center',
+    manualClose: true
   }
 )
 

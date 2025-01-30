@@ -1,109 +1,188 @@
+```vue
 <script setup lang="ts">
-import {Link} from '@inertiajs/vue3'
-import AppLayout from "@/Layouts/AppLayout.vue";
-import PageTitle from "@/Components/PageTitle.vue";
-import {onMounted, ref} from "vue";
-import {ArrowLeftIcon, ExternalLinkIcon} from "@radix-icons/vue";
-import {Button} from "@/Components/ui/button";
-import BackButton from "@/Components/BackButton.vue";
-import CustomBadge from "@/Components/CustomBadge.vue";
+import { Link } from '@inertiajs/vue3'
+import {onMounted, ref, computed, onBeforeUnmount} from "vue"
+import AppLayout from "@/Layouts/AppLayout.vue"
+import PageTitle from "@/Components/PageTitle.vue"
+import BackButton from "@/Components/BackButton.vue"
+import CustomBadge from "@/Components/CustomBadge.vue"
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/Components/ui/tabs"
+import {
+  Activity,
+  Mail,
+  MailCheck,
+  MailX,
+  MousePointerClick,
+  Eye,
+  AlertTriangle,
+  Ban,
+  Users,
+  Clock,
+  TrendingUp
+} from 'lucide-vue-next'
+import {useTabPersistence} from "@/composables/useTabPersistence";
 
-const {recipient, stats, chartData, recentInteractions, totalEmailsSent} = defineProps<{
-  totalEmailsSent: number,
+// Types
+interface Audience {
+  uuid: string
+  name: string
+  created_at: string
+}
+
+interface Campaign {
+  uuid: string
+  title: string
+  activity?: Array<{
+    status: string
+    date: string
+  }>
+}
+
+interface Stats {
+  totalCampaigns: number
+  open: MetricData
+  click: MetricData
+  bounce: MetricData
+  dropped: MetricData
+  delivered: MetricData
+  spamreport: MetricData
+  deferred: { count: number }
+  unsubscribe: { count: number }
+  unique_opens: MetricData
+  unique_clicks: MetricData
+}
+
+interface MetricData {
+  count: number
+  percentage: number
+}
+
+interface Props {
+  totalEmailsSent: number
   recipient: {
     uuid: string
     name: string
     email: string
-    audiences?: Array<{
-      uuid: string
-      name: string
-    }>
-  },
-  stats: {
-    totalCampaigns: number
-    open: {
-      count: number
-      percentage: number
-    }
-    click: {
-      count: number
-      percentage: number
-    }
-    bounce: {
-      count: number
-      percentage: number
-    }
-    dropped: {
-      count: number
-      percentage: number
-    }
-    delivered: {
-      count: number
-      percentage: number
-    }
-    spamreport: {
-      count: number
-      percentage: number
-    }
-    deferred: { count: number }
-    unsubscribe: { count: number }
-    unique_opens: {
-      count: number
-      percentage: number
-    }
-    unique_clicks: {
-      count: number
-      percentage: number
-    }
-  },
+    created_at: string
+    audiences?: Audience[]
+  }
+  stats: Stats
   recentInteractions: Array<{
-    campaign: {
-      uuid: string
-      title: string
-    }
-    status: string // "open", "click", "bounce", etc.
+    campaign: Campaign
+    status: string
     date: string
   }>
   chartData: Record<string, Record<string, number>>
-}>()
+}
 
+const props = defineProps<Props>()
+
+const { activeTab, handleTabChange, clearTabPersistence } = useTabPersistence('metrics')
+
+// Computed
+const memberSince = computed(() => {
+  return new Date(props.recipient.created_at).toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  })
+})
+
+const engagementScore = computed(() => {
+  const { open, click, bounce, spamreport } = props.stats
+  return Math.round(
+    ((open.percentage + click.percentage) - (bounce.percentage + spamreport.percentage)) * 10
+  )
+})
+
+const deliverabilityScore = computed(() => {
+  const { delivered, bounce, dropped } = props.stats
+  return Math.round(
+    (delivered?.percentage / (100 + bounce?.percentage + dropped?.percentage)) * 100
+  ) || 0
+})
+
+// Chart Configuration
 const chartOptions = ref({
   chart: {
     type: 'line',
     height: 350,
-    zoom: false
+    toolbar: {
+      show: true,
+      tools: {
+        download: true,
+        selection: false,
+        zoom: false,
+        zoomin: false,
+        zoomout: false,
+        pan: false,
+      }
+    },
+    animations: {
+      enabled: true,
+      easing: 'easeinout',
+      speed: 800,
+    }
   },
+  stroke: {
+    curve: 'smooth',
+    width: 2,
+  },
+  colors: ['#22c55e', '#3b82f6', '#ef4444', '#f59e0b', '#64748b'],
   xaxis: {
     categories: [] as string[],
+    labels: {
+      rotate: -45,
+      trim: true
+    }
+  },
+  yaxis: {
+    labels: {
+      formatter: (value: number) => Math.round(value)
+    }
+  },
+  tooltip: {
+    shared: true,
+    intersect: false,
+  },
+  legend: {
+    position: 'top',
+    horizontalAlign: 'right',
+  },
+  grid: {
+    borderColor: '#f1f1f1',
+    strokeDashArray: 4,
   },
   series: [
-    {name: 'Opened', data: [] as number[]},
-    {name: 'Clicked', data: [] as number[]},
-    {name: 'Bounced', data: [] as number[]},
-    {name: 'Deferred', data: [] as number[]},
-    {name: 'Spam', data: [] as number[]},
+    { name: 'Opens', data: [] as number[] },
+    { name: 'Clicks', data: [] as number[] },
+    { name: 'Bounces', data: [] as number[] },
+    { name: 'Deferrals', data: [] as number[] },
+    { name: 'Spam Reports', data: [] as number[] },
   ]
 })
 
+// Methods
 const setupChartData = () => {
-  const dates = Object.keys(chartData)
-  const openedData = dates.map(date => chartData[date]?.open || 0)
-  const clickedData = dates.map(date => chartData[date]?.click || 0)
-  const bouncedData = dates.map(date => chartData[date]?.bounce || 0)
-  const deferredData = dates.map(date => chartData[date]?.deferred || 0)
-  const spamData = dates.map(date => chartData[date]?.spamreport || 0)
+  const dates = Object.keys(props.chartData)
+  const openedData = dates.map(date => props.chartData[date]?.open || 0)
+  const clickedData = dates.map(date => props.chartData[date]?.click || 0)
+  const bouncedData = dates.map(date => props.chartData[date]?.bounce || 0)
+  const deferredData = dates.map(date => props.chartData[date]?.deferred || 0)
+  const spamData = dates.map(date => props.chartData[date]?.spamreport || 0)
 
   chartOptions.value = {
     ...chartOptions.value,
     xaxis: {
+      ...chartOptions.value.xaxis,
       categories: dates
     },
     series: [
-      {name: 'Opened', data: openedData},
-      {name: 'Clicked', data: clickedData},
-      {name: 'Bounced', data: bouncedData},
-      {name: 'Deferred', data: deferredData},
-      {name: 'Spammed', data: spamData},
+      { name: 'Opens', data: openedData },
+      { name: 'Clicks', data: clickedData },
+      { name: 'Bounces', data: bouncedData },
+      { name: 'Deferrals', data: deferredData },
+      { name: 'Spam Reports', data: spamData },
     ]
   }
 }
@@ -111,233 +190,340 @@ const setupChartData = () => {
 onMounted(() => {
   setupChartData()
 })
+
+onBeforeUnmount(() => {
+  clearTabPersistence()
+})
 </script>
 
 <template>
   <AppLayout :title="recipient.name">
     <template #header>
-
       <div class="flex gap-4 items-center">
-
         <BackButton />
-
-        <PageTitle :title="recipient.name"/>
-
+        <PageTitle :title="recipient.name" />
       </div>
-
     </template>
 
     <template #action>
-
       <div class="flex space-x-2">
-
-        <Button
-          as-child
-          variant="outline">
-          <GlobalLink
-            as="button"
-            :href="route('recipients.edit', recipient.uuid)">
-            Edit
-          </GlobalLink>
-        </Button>
-
+        <GlobalLink as="Button"
+          variant="outline"
+          :href="route('recipients.edit', recipient.uuid)">
+          Edit Recipient
+        </GlobalLink>
       </div>
-
     </template>
 
-    <div class="py-12 px-6 sm:px-0">
-      <!-- Recipient Info Section -->
-      <div class="px-4 sm:p-6 mb-6">
-        <ul>
-          <li class="grid pb-6">
-            <h2 class="text-4xl sm:text-5xl font-thin">
-              {{ recipient.name }}
-            </h2>
-            <span class="text-muted-foreground">{{ recipient.email }}</span>
-          </li>
+    <div class="py-6 px-4 sm:px-0">
+      <!-- Recipient Overview Card -->
+      <Card class="mb-6">
+        <CardContent class="pt-6">
+          <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <!-- Basic Info -->
+            <div class="space-y-2">
+              <h2 class="text-2xl font-semibold tracking-tight">
+                {{ recipient.name }}
+              </h2>
+              <p class="text-muted-foreground flex items-center gap-2">
+                <Mail class="h-4 w-4" />
+                {{ recipient.email }}
+              </p>
+              <p class="text-sm text-muted-foreground flex items-center gap-2">
+                <Clock class="h-4 w-4" />
+                Member since {{ memberSince }}
+              </p>
+            </div>
 
-          <li v-if="recipient.audiences?.length" class="grid py-4 gap-4">
-            <h3 class="text-xl font-thin grid sm:flex sm:items-center gap-2">
-              <span>Audiences</span>
-
-              <span class="text-sm text-muted-foreground">
-                 — List groups this recipient is a part of
-              </span>
-            </h3>
-
-            <ul class="space-y-4 grid max-w-sm">
-
-              <li
-                v-for="audience in recipient.audiences"
-                class="inline-flex min-w-80 items-center gap-x-2 py-3 px-4 text-sm font-medium bg-white border border-gray-200 text-gray-800 -mt-px first:rounded-t-lg first:mt-0 last:rounded-b-lg dark:bg-neutral-900 dark:border-neutral-700 dark:text-white"
-                :key="audience.uuid">
-
-                <div class="flex justify-between w-full">
-                  <Link
-                    as="button"
-                    :href="route('audiences.show', audience.uuid)"
-                    class="w-full text-left">
-                    {{ audience.name }}
-                  </Link>
-
-                  <span
-                    class="inline-flex items-center py-1 px-2 rounded-full text-xs font-medium bg-blue-500 text-white">
-                    New
-                  </span>
-                </div>
-
-              </li>
-
-            </ul>
-
-          </li>
-        </ul>
-      </div>
-
-      <!-- Summary Stats -->
-      <section class="grid sm:grid-cols-2 md:grid-cols-3 gap-4 mb-8">
-
-        <div class="bg-white border rounded-lg p-6">
-          <h2 class="text-4xl flex gap-4 items-center font-bold text-indigo-600">
-            <span>{{ stats.open.count }}</span>
-            <CustomBadge :percentage="stats.open.percentage" type="open" />
-          </h2>
-
-          <p class="mt-2 flex items-center justify-between gap-2 text-lg font-medium text-gray-800">
-            <span>Open Rate</span>
-
-            <span class="text-xs">
-              Unique Opens | {{ stats.unique_opens.count }}
-            </span>
-          </p>
-
-          <p class="mt-2 pt-2 text-muted-foreground text-sm border-t">
-            Count of emails opened by the recipient over all campaigns.
-          </p>
-        </div>
-
-        <div class="bg-white border rounded-lg p-6">
-          <h2 class="text-4xl flex items-center gap-4 font-bold text-indigo-600">
-            {{ stats.click.count }} <CustomBadge :percentage="stats.click.percentage" type="click" />
-          </h2>
-
-          <p class="mt-2 flex items-center justify-between gap-2 text-lg font-medium text-gray-800">
-            <span>Click Rate</span>
-
-            <span class="text-xs">
-              Unique Clicks | {{ stats.unique_clicks.count }}
-            </span>
-          </p>
-
-          <p class="mt-2 pt-2 text-muted-foreground text-sm border-t">
-            Count of clicks this recipient made on a link within an email.
-          </p>
-        </div>
-
-        <div class="bg-white border rounded-lg p-6">
-          <h2 class="text-4xl font-bold text-indigo-600 flex gap-4 items-center">
-            {{ stats.bounce.count }} <CustomBadge :percentage="stats.bounce.percentage" type="bounce" />
-          </h2>
-
-          <p class="mt-2 text-lg font-medium text-gray-800">Bounce Rate</p>
-          <p class="mt-1 text-muted-foreground text-sm">
-            Count of emails denied by this recipient's server permanently.
-          </p>
-        </div>
-
-        <div class="bg-white border rounded-lg p-6">
-          <h2 class="text-4xl font-bold text-indigo-600 items-center flex gap-4">
-            {{ stats.delivered.count }} <CustomBadge :percentage="stats.delivered.percentage" type="delivered" />
-          </h2>
-
-          <p class="mt-2 text-lg font-medium text-gray-800">Delivery Rate</p>
-          <p class="mt-1 text-muted-foreground text-sm">
-            Number of successful emails delivered to the recipient.
-          </p>
-        </div>
-
-        <div class="bg-white border rounded-lg p-6">
-          <h2 class="text-4xl font-bold text-indigo-600">{{ stats.spamreport.count }}</h2>
-          <p class="mt-2 text-lg font-medium text-gray-800">Spam Rate</p>
-          <p class="mt-1 text-muted-foreground text-sm">
-            Count of email this recipient marked as spam.
-          </p>
-        </div>
-
-        <div class="bg-white border rounded-lg p-6">
-          <h2 class="text-4xl font-bold text-indigo-600">{{ totalEmailsSent }}</h2>
-          <p class="mt-2 text-lg font-medium text-gray-800">Total Sent Emails</p>
-          <p class="mt-1 text-muted-foreground text-sm">
-            Count of emails sent to the recipient over all campaigns.
-          </p>
-        </div>
-
-      </section>
-
-      <!-- Recent Interactions Section -->
-      <div class="bg-white rounded-lg border p-6 mb-6">
-        <h2 class="text-xl font-semibold mb-4">
-          Recent Interactions
-        </h2>
-
-        <ul class="divide-y divide-gray-200">
-          <li
-            v-for="(interaction) in recentInteractions"
-            :key="interaction.campaign.uuid" class="py-3">
-            <Link
-              as="button"
-              class="grid text-left w-full"
-              :href="route('campaigns.show', interaction.campaign.uuid)">
-              <div class="font-medium items-center flex gap-1">
-                {{ interaction.campaign.title }} <ExternalLinkIcon />
+            <!-- Engagement Score -->
+            <div class="space-y-2">
+              <div class="text-2xl font-semibold">
+                {{ engagementScore }}/100
               </div>
+              <p class="text-muted-foreground flex items-center gap-2">
+                <TrendingUp class="h-4 w-4" />
+                Engagement Score
+              </p>
+              <p class="text-sm text-muted-foreground">
+                Based on opens, clicks, and negative interactions
+              </p>
+            </div>
 
-              <div class="divide-y mt-4">
+            <!-- Deliverability Score -->
+            <div class="space-y-2">
+              <div class="text-2xl font-semibold">
+                {{ deliverabilityScore }}%
+              </div>
+              <p class="text-muted-foreground flex items-center gap-2">
+                <MailCheck class="h-4 w-4" />
+                Deliverability Score
+              </p>
+              <p class="text-sm text-muted-foreground">
+                Based on successful deliveries vs. bounces
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <!-- Main Content Tabs -->
+      <Tabs v-model="activeTab" class="space-y-4" @change="handleTabChange">
+        <TabsList>
+          <TabsTrigger value="metrics">Metrics</TabsTrigger>
+          <TabsTrigger value="interactions">Recent Activity</TabsTrigger>
+          <TabsTrigger value="audiences">Audiences</TabsTrigger>
+        </TabsList>
+
+        <!-- Metrics Tab -->
+        <TabsContent value="metrics" class="space-y-4">
+          <!-- Key Metrics Grid -->
+          <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <!-- Open Rate -->
+            <Card>
+              <CardHeader>
+                <CardTitle class="flex justify-between">
+                  <span class="flex items-center gap-2">
+                    <Eye class="h-5 w-5" />
+                    Opens
+                  </span>
+                  <CustomBadge :percentage="stats.open.percentage" type="open" />
+                </CardTitle>
+                <CardDescription>
+                  {{ stats.open.count }} total opens
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div class="text-sm text-muted-foreground">
+                  <div class="flex justify-between">
+                    <span>Unique Opens</span>
+                    <span>{{ stats.unique_opens.count }}</span>
+                  </div>
+                  <div class="flex justify-between mt-1">
+                    <span>Open Rate</span>
+                    <span>{{ stats.open.percentage }}%</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <!-- Click Rate -->
+            <Card>
+              <CardHeader>
+                <CardTitle class="flex justify-between">
+                  <span class="flex items-center gap-2">
+                    <MousePointerClick class="h-5 w-5" />
+                    Clicks
+                  </span>
+                  <CustomBadge :percentage="stats.click.percentage" type="click" />
+                </CardTitle>
+                <CardDescription>
+                  {{ stats.click.count }} total clicks
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div class="text-sm text-muted-foreground">
+                  <div class="flex justify-between">
+                    <span>Unique Clicks</span>
+                    <span>{{ stats.unique_clicks.count }}</span>
+                  </div>
+                  <div class="flex justify-between mt-1">
+                    <span>Click Rate</span>
+                    <span>{{ stats.click.percentage }}%</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <!-- Bounce Rate -->
+            <Card>
+              <CardHeader>
+                <CardTitle class="flex justify-between">
+                  <span class="flex items-center gap-2">
+                    <MailX class="h-5 w-5" />
+                    Bounces
+                  </span>
+                  <CustomBadge :percentage="stats.bounce.percentage" type="bounce" />
+                </CardTitle>
+                <CardDescription>
+                  {{ stats.bounce.count }} total bounces
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div class="text-sm text-muted-foreground">
+                  <div class="flex justify-between">
+                    <span>Bounce Rate</span>
+                    <span>{{ stats.bounce.percentage }}%</span>
+                  </div>
+                  <div class="flex justify-between mt-1">
+                    <span>Deferred</span>
+                    <span>{{ stats.deferred.count }}</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <!-- Delivery Rate -->
+            <Card>
+              <CardHeader>
+                <CardTitle class="flex justify-between">
+                  <span class="flex items-center gap-2">
+                    <MailCheck class="h-5 w-5" />
+                    Deliveries
+                  </span>
+                  <CustomBadge :percentage="stats.delivered.percentage" type="delivered" />
+                </CardTitle>
+                <CardDescription>
+                  {{ stats.delivered.count }} successful deliveries
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div class="text-sm text-muted-foreground">
+                  <div class="flex justify-between">
+                    <span>Delivery Rate</span>
+                    <span>{{ stats.delivered.percentage }}%</span>
+                  </div>
+                  <div class="flex justify-between mt-1">
+                    <span>Total Sent</span>
+                    <span>{{ totalEmailsSent }}</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <!-- Spam Reports -->
+            <Card>
+              <CardHeader>
+                <CardTitle class="flex justify-between">
+                  <span class="flex items-center gap-2">
+                    <AlertTriangle class="h-5 w-5" />
+                    Spam Reports
+                  </span>
+                </CardTitle>
+                <CardDescription>
+                  {{ stats.spamreport.count }} spam complaints
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div class="text-sm text-muted-foreground">
+                  <div class="flex justify-between">
+                    <span>Spam Rate</span>
+                    <span>{{ stats.spamreport.percentage }}%</span>
+                  </div>
+                  <div class="flex justify-between mt-1">
+                    <span>Unsubscribes</span>
+                    <span>{{ stats.unsubscribe.count }}</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          <!-- Performance Chart -->
+          <Card>
+            <CardHeader>
+              <CardTitle>Performance Over Time</CardTitle>
+              <CardDescription>
+                Tracking engagement metrics across campaigns
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <apexchart
+                type="line"
+                height="350"
+                :options="chartOptions"
+                :series="chartOptions.series"
+              />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <!-- Recent Activity Tab -->
+        <TabsContent value="interactions">
+          <Card>
+            <CardHeader>
+              <CardTitle>Recent Campaign Interactions</CardTitle>
+              <CardDescription>
+                Latest activities across email campaigns
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div class="space-y-8">
                 <div
-                  class="text-sm flex items-center gap-1 py-1"
-                  v-for="event in interaction.campaign.activity">
-                  <span class="capitalize text-muted-foreground">
-                    {{ event.status }}
-                  </span>
-
-                  |
-
-                  <span class="text-muted-foreground">
-                    {{ event.date }}
-                  </span>
+                  v-for="interaction in recentInteractions"
+                  :key="interaction.campaign.uuid"
+                  class="flex items-center"
+                >
+                  <div class="space-y-1 flex-1">
+                    <p class="text-sm font-medium leading-none">
+                      {{ interaction.campaign.title }}
+                    </p>
+                    <div
+                      v-for="event in interaction.campaign.activity"
+                      :key="event.status"
+                      class="text-sm text-muted-foreground flex items-center gap-2"
+                    >
+                      <Activity class="h-4 w-4" />
+                      <span class="capitalize">{{ event.status }}</span>
+                      <span>{{ event.date }}</span>
+                    </div>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    :href="route('campaigns.show', interaction.campaign.uuid)"
+                  >
+                    <Link class="flex items-center gap-2">
+                      View
+                    </Link>
+                  </Button>
                 </div>
               </div>
-            </Link>
+            </CardContent>
+          </Card>
+        </TabsContent>
 
-          </li>
-        </ul>
-      </div>
-
-      <!-- Chart -->
-      <section class="p-6">
-        <h2 class="text-lg font-thin mb-4">
-          Recipient Performance
-          <span class="text-muted-foreground">
-            <i>(In campaigns)</i>
-          </span>
-        </h2>
-
-        <apexchart
-          type="line"
-          height="350"
-          :options="chartOptions"
-          :series="chartOptions.series"/>
-      </section>
+        <!-- Audiences Tab -->
+        <TabsContent value="audiences">
+          <Card>
+            <CardHeader>
+              <CardTitle class="flex items-center gap-2">
+                <Users class="h-5 w-5" />
+                Audience Memberships
+              </CardTitle>
+              <CardDescription>
+                Lists and segments this recipient belongs to
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div class="space-y-4">
+                <div
+                  v-for="audience in recipient.audiences"
+                  :key="audience.uuid"
+                  class="flex items-center justify-between p-4 rounded-lg border"
+                >
+                  <div class="space-y-1">
+                    <p class="text-sm font-medium leading-none">
+                      {{ audience.name }}
+                    </p>
+                    <p class="text-sm text-muted-foreground">
+                      Added {{ new Date(audience.created_at).toLocaleDateString() }}
+                    </p>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    :href="route('audiences.show', audience.uuid)"
+                  >
+                    <Link class="flex items-center gap-2">
+                      View Audience
+                    </Link>
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   </AppLayout>
 </template>
-
-<style scoped>
-.btn-primary {
-  @apply bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700;
-}
-
-.btn-secondary {
-  @apply bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700;
-}
-</style>

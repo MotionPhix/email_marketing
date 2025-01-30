@@ -12,6 +12,6 @@ class Upload extends Controller
    */
   public function __invoke(Request $request)
   {
-    return Inertia('Recipients/Import');
+    return Inertia('Recipients/Import')->baseRoute('recipients.index');
   }
 }

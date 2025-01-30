@@ -13,6 +13,10 @@ class Form extends Controller
    */
   public function __invoke(Request $request, Recipient $recipient = null, bool $useModal = false)
   {
+//    return Inertia($request->query->has('modal') ? 'Recipients/QuickForm' : 'Recipients/Form', [
+//      'recipient' => $recipient ?: new Recipient()
+//    ]);
+
     return Inertia($request->query->has('modal') ? 'Recipients/QuickForm' : 'Recipients/Form', [
       'recipient' => $recipient ?: new Recipient()
     ]);

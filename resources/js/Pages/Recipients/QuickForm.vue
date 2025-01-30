@@ -1,5 +1,5 @@
 <script setup>
-import { useForm } from '@inertiajs/vue3'
+import {useForm} from '@inertiajs/vue3'
 import {Button} from "@/Components/ui/button"
 import {
   Card,
@@ -9,12 +9,12 @@ import {
   CardHeader,
   CardTitle,
 } from '@/Components/ui/card'
-import { Input } from '@/Components/ui/input'
-import { Label } from '@/Components/ui/label'
+import {Input} from '@/Components/ui/input'
+import {Label} from '@/Components/ui/label'
 import {ref} from "vue"
 import InputError from "@/Components/InputError.vue";
 
-const { recipient } = defineProps({
+const {recipient} = defineProps({
   recipient: Object,
 });
 
@@ -23,60 +23,61 @@ const form = useForm({
   name: recipient.name,
 });
 
-const modalRef = ref()
+const quickFormRef = ref()
+
+const close = () => {
+  quickFormRef.value.onClose()
+}
 
 const onSubmit = () => {
   form.put(route('recipients.update', recipient.uuid), {
-    onSuccess: () => modalRef.value.close()
+    onSuccess: () => quickFormRef.value.onClose()
   })
 }
 </script>
 
 <template>
   <GlobalModal
-    :close-button="false"
-    max-width="sm" padding-classes="p-0"
-    panel-classes="rounded-xl overflow-hidden"
-    ref="modalRef" v-slot="{ close }">
+    ref="quickFormRef">
 
-    <Card class="w-full">
-      <CardHeader>
-        <CardTitle>Update {{ form.name }}</CardTitle>
-        <CardDescription>
-          Update basic information for {{ form.name }}.
-        </CardDescription>
-      </CardHeader>
+    <CardHeader class="px-0 pt-0">
+      <CardTitle>Update {{ form.name }}</CardTitle>
+      <CardDescription>
+        Update basic information for {{ form.name }}.
+      </CardDescription>
+    </CardHeader>
 
-      <CardContent>
-        <form>
-          <div class="grid items-center w-full gap-4">
+    <CardContent class="p-0">
+      <form>
+        <div>
+          <FormField
+            label="Name"
+            :error="form.errors.name"
+            v-model="form.name"
+            placeholder="Name of your recipient"
+          />
+        </div>
 
-            <div class="flex flex-col space-y-1.5">
-              <Label for="name">Name</Label>
-              <Input id="name" v-model="form.name" placeholder="Name of your recipient" />
-              <InputError :message="form.errors.name" />
-            </div>
+        <div>
+          <FormField
+            label="Email address"
+            v-model="form.email"
+            :error="form.errors.email"
+            placeholder="Email of your recipient"
+          />
+        </div>
+      </form>
+    </CardContent>
 
-            <div class="flex flex-col space-y-1.5">
-              <Label for="email">Email address</Label>
-              <Input id="email" v-model="form.email" placeholder="Email of your recipient" />
-              <InputError :message="form.errors.email" />
-            </div>
+    <CardFooter class="justify-end flex gap-2 p-0">
 
-          </div>
-        </form>
-      </CardContent>
+      <Button type="button" variant="outline" @click="close">
+        Cancel
+      </Button>
 
-      <CardFooter class="justify-end flex gap-2 px-6 pb-6">
+      <Button @click="onSubmit">Update</Button>
 
-        <Button type="button" variant="outline" @click="close">
-          Cancel
-        </Button>
-
-        <Button @click="onSubmit">Update</Button>
-      </CardFooter>
-
-    </Card>
+    </CardFooter>
 
   </GlobalModal>
 </template>

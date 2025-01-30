@@ -1,131 +1,323 @@
 <script setup lang="ts">
+import {ref, computed} from 'vue';
 import AppLayout from "@/Layouts/AppLayout.vue";
 import {Button} from "@/Components/ui/button";
-import {Link} from "@inertiajs/vue3"
+import {Link} from "@inertiajs/vue3";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/Components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/Components/ui/dialog";
+import {Badge} from "@/Components/ui/badge";
+import {Tabs, TabsContent, TabsList, TabsTrigger} from "@/Components/ui/tabs";
+import {ScrollArea} from "@/Components/ui/scroll-area";
+import {
+  Users,
+  Mail,
+  Calendar,
+  ChevronRight,
+  Settings,
+  Trash2,
+  Edit,
+  UserPlus,
+  MailPlus,
+} from 'lucide-vue-next';
+import {useTabPersistence} from "@/composables/useTabPersistence";
 
-defineProps<{
-  audience: object
-}>()
+interface Recipient {
+  uuid: string;
+  name: string;
+  email: string;
+  created_at: string;
+}
+
+interface Campaign {
+  uuid: string;
+  title: string;
+  subject: string;
+  status: string;
+  created_at: string;
+}
+
+interface Audience {
+  uuid: string;
+  name: string;
+  description: string;
+  created_at: string;
+  recipients: Recipient[];
+  campaigns: Campaign[];
+}
+
+const props = defineProps<{
+  audience: Audience;
+}>();
+
+const {activeTab} = useTabPersistence()
+const showDeleteDialog = ref(false);
+const recipientToRemove = ref<string | null>(null);
+const campaignToDelete = ref<string | null>(null);
+
+const recipientCount = computed(() => props.audience.recipients.length);
+const campaignCount = computed(() => props.audience.campaigns.length);
+
+const formatDate = (dateString: string) => {
+  return new Date(dateString).toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  });
+};
+
+const confirmDelete = (uuid: string) => {
+  showDeleteDialog.value = true;
+};
+
+const confirmRemoveRecipient = (uuid: string) => {
+  recipientToRemove.value = uuid;
+};
+
+const confirmDeleteCampaign = (uuid: string) => {
+  campaignToDelete.value = uuid;
+};
 </script>
 
 <template>
-
   <AppLayout :title="audience.name">
-
     <template #header>
-      <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
-        {{ audience.name }} Audience
-      </h2>
-    </template>
+      <div class="flex items-center space-x-4">
+        <div class="flex flex-col">
+          <div class="flex items-center space-x-2">
+            <h2 class="text-2xl font-bold text-gray-900 dark:text-gray-100">
+              {{ audience.name }}
+            </h2>
+            <Badge variant="secondary" class="text-sm">
+              {{ recipientCount }} Recipients
+            </Badge>
+          </div>
+          <div class="flex items-center space-x-2 text-sm text-gray-500 dark:text-gray-400">
+            <Calendar class="h-4 w-4"/>
+            <span>Created {{ formatDate(audience.created_at) }}</span>
+          </div>
+        </div>
+      </div>
+      <div class="flex items-center space-x-2">
+        <Button variant="outline" as-child>
+          <Link :href="route('audiences.edit', audience.uuid)">
+            <Edit class="h-4 w-4 mr-2"/>
+            Edit Audience
+          </Link>
+        </Button>
 
-    <template #action>
-      <Button as-child :href="route('audiences.edit', audience.uuid)">
-        <GlobalLink as="button">
-          Edit
-        </GlobalLink>
-      </Button>
+        <Button variant="destructive" @click="confirmDelete">
+          <Trash2 class="h-4 w-4 mr-2"/>
+          Delete
+        </Button>
+      </div>
     </template>
 
     <div class="py-12">
-      <!-- Audience Overview -->
-      <div class="bg-white dark:bg-gray-800 shadow sm:rounded-lg p-6 mb-6">
-        <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">Overview</h3>
-        <p class="mt-2 text-gray-600 dark:text-gray-400">{{ audience.description }}</p>
-        <div class="mt-4 flex space-x-4">
-          <Button as-child variant="outline" :href="route('audiences.edit', audience.uuid)">
-            <span>Edit Audience</span>
-          </Button>
-          <Button variant="destructive" @click="() => confirmDelete(audience.uuid)">
-            Delete Audience
-          </Button>
-        </div>
-      </div>
+      <Tabs v-model="activeTab" class="space-y-6">
+        <TabsList class="bg-white dark:bg-gray-800 p-1 rounded-lg">
+          <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="recipients">Recipients</TabsTrigger>
+          <TabsTrigger value="campaigns">Campaigns</TabsTrigger>
+        </TabsList>
 
-      <!-- Recipients -->
-      <div class="bg-white dark:bg-gray-800 shadow sm:rounded-lg p-6 mb-6">
-        <div class="flex justify-between items-center">
-          <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">
-            Recipients
-          </h3>
+        <TabsContent value="overview">
+          <Card>
+            <CardHeader>
+              <CardTitle>Audience Overview</CardTitle>
+              <CardDescription>
+                {{ audience.description || 'No description provided' }}
+              </CardDescription>
+            </CardHeader>
 
-          <Button
-            as-child variant="default"
-            :href="route('audiences.add_recipient', audience.uuid)">
-            <GlobalLink>Add recipients</GlobalLink>
-          </Button>
-        </div>
+            <CardContent>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="space-y-4">
+                  <div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-900 rounded-lg">
+                    <div class="flex items-center space-x-4">
+                      <Users class="h-8 w-8 text-primary"/>
+                      <div>
+                        <p class="text-sm font-medium">Total Recipients</p>
+                        <p class="text-2xl font-bold">{{ recipientCount }}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
 
-        <ul class="mt-4 divide-y divide-gray-200 dark:divide-gray-700">
-          <li
-            v-for="recipient in audience.recipients"
-            :key="recipient.uuid"
-            class="py-4 flex justify-between items-center">
-            <div>
-              <p class="text-sm font-medium text-gray-800 dark:text-gray-200">{{ recipient.name }}</p>
-              <p class="text-sm text-gray-500 dark:text-gray-400">{{ recipient.email }}</p>
-            </div>
-            <div class="flex space-x-2">
-              <Button
-                variant="outline"
-                as-child size="sm"
-                :href="route('recipients.edit', recipient.uuid)">
-                <GlobalLink as="button">
-                  <span>Edit</span>
-                </GlobalLink>
-              </Button>
+                <div class="space-y-4">
+                  <div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-900 rounded-lg">
+                    <div class="flex items-center space-x-4">
+                      <Mail class="h-8 w-8 text-primary"/>
+                      <div>
+                        <p class="text-sm font-medium">Total Campaigns</p>
+                        <p class="text-2xl font-bold">{{ campaignCount }}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
 
-              <Button size="sm" variant="destructive" @click="() => confirmRemoveRecipient(recipient.uuid)">
-                Remove
-              </Button>
-            </div>
-          </li>
-        </ul>
-      </div>
+        <TabsContent value="recipients">
+          <Card>
+            <CardHeader>
+              <div class="flex items-center justify-between">
+                <CardTitle>Recipients</CardTitle>
+                <Button as-child>
+                  <Link :href="route('audiences.add_recipient', audience.uuid)">
+                    <UserPlus class="h-4 w-4 mr-2"/>
+                    Add Recipients
+                  </Link>
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <ScrollArea class="h-[400px]">
+                <div class="space-y-4">
+                  <div
+                    v-for="recipient in audience.recipients"
+                    :key="recipient.uuid"
+                    class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-900 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                  >
+                    <div class="flex items-center space-x-4">
+                      <div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                        <span class="text-primary font-medium">
+                          {{ recipient.name.charAt(0).toUpperCase() }}
+                        </span>
+                      </div>
+                      <div>
+                        <p class="font-medium">{{ recipient.name }}</p>
+                        <p class="text-sm text-gray-500">{{ recipient.email }}</p>
+                      </div>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        as-child
+                      >
+                        <Link :href="route('recipients.edit', recipient.uuid)">
+                          <Edit class="h-4 w-4"/>
+                        </Link>
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        @click="() => confirmRemoveRecipient(recipient.uuid)"
+                      >
+                        <Trash2 class="h-4 w-4"/>
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </ScrollArea>
+            </CardContent>
+          </Card>
+        </TabsContent>
 
-      <!-- Campaigns -->
-      <div class="bg-white dark:bg-gray-800 shadow sm:rounded-lg p-6">
-        <div class="flex justify-between items-center">
-          <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">Campaigns</h3>
-          <Button as-child variant="default" :href="route('campaigns.create', audience.uuid)">
-            <span>Create Campaign</span>
-          </Button>
-        </div>
+        <TabsContent value="campaigns">
+          <Card>
+            <CardHeader>
+              <div class="flex items-center justify-between">
+                <CardTitle>Campaigns</CardTitle>
+                <Button as-child>
+                  <Link :href="route('campaigns.create', audience.uuid)">
+                    <MailPlus class="h-4 w-4 mr-2"/>
+                    Create Campaign
+                  </Link>
+                </Button>
+              </div>
+            </CardHeader>
 
-        <ul class="mt-4 divide-y divide-gray-200 dark:divide-gray-700">
-          <li
-            v-for="campaign in audience.campaigns"
-            :key="campaign.uuid"
-            class="py-4 flex justify-between items-center">
-            <div>
-              <p class="text-sm font-medium text-gray-800 dark:text-gray-200">
-                {{ campaign.title }}
-              </p>
-              <p class="text-sm text-gray-500 dark:text-gray-400">
-                {{ campaign.subject }}
-              </p>
-            </div>
-            <div class="flex space-x-2">
-              <Button
-                as-child
-                size="sm"
-                :href="route('campaigns.show', campaign.uuid)">
-                <Link as="button">
-                  <span>See Campaign</span>
-                </Link>
-              </Button>
-
-              <Button
-                size="sm"
-                variant="destructive"
-                @click="() => confirmDeleteCampaign(campaign.uuid)">
-                Delete
-              </Button>
-            </div>
-          </li>
-        </ul>
-      </div>
+            <CardContent>
+              <ScrollArea class="h-[400px]">
+                <div class="space-y-4">
+                  <div
+                    v-for="campaign in audience.campaigns"
+                    :key="campaign.uuid"
+                    class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-900 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                  >
+                    <div>
+                      <div class="flex items-center space-x-2">
+                        <h4 class="font-medium">{{ campaign.title }}</h4>
+                        <Badge>{{ campaign.status }}</Badge>
+                      </div>
+                      <p class="text-sm text-gray-500">{{ campaign.subject }}</p>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        as-child
+                      >
+                        <Link :href="route('campaigns.show', campaign.uuid)">
+                          View Details
+                          <ChevronRight class="h-4 w-4 ml-2"/>
+                        </Link>
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        @click="() => confirmDeleteCampaign(campaign.uuid)"
+                      >
+                        <Trash2 class="h-4 w-4"/>
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </ScrollArea>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
 
+    <!-- Delete Audience Dialog -->
+    <Dialog v-model:open="showDeleteDialog">
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Delete Audience</DialogTitle>
+          <DialogDescription>
+            Are you sure you want to delete this audience? This action cannot be undone.
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <Button variant="outline" @click="showDeleteDialog = false">
+            Cancel
+          </Button>
+          <Button variant="destructive">
+            Delete Audience
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   </AppLayout>
-
 </template>
+
+<style scoped>
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+</style>

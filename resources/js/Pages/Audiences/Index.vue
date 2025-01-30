@@ -130,26 +130,21 @@ const perform = (action: string, model: string, path: string, args?: object|stri
                 <h3 class="text-sm font-medium text-gray-800 dark:text-gray-200">
                   {{ recipient.name }}
                 </h3>
+
                 <p class="text-xs text-gray-500 dark:text-gray-400">
                   {{ recipient.email }}
                 </p>
               </div>
 
               <div class="gap-1 hidden group-hover:flex">
-                <Button
-                  as-child size="icon"
+                <GlobalLink
+                  as="Button"
+                  size="icon"
                   variant="secondary" class="w-5 h-5"
                   :href="route('recipients.edit', recipient.uuid)"
-                  :close-button="false"
-                  padding-classes="p-0"
-                  preserve-scroll
-                  max-width="md">
-                  <GlobalLink
-                    as="button"
-                    :data="{ modal: true }">
-                    <PenLineIcon/>
-                  </GlobalLink>
-                </Button>
+                  :data="{ modal: true }">
+                  <PenLineIcon/>
+                </GlobalLink>
 
                 <Button
                   variant="ghost" size="icon"
@@ -215,31 +210,27 @@ const perform = (action: string, model: string, path: string, args?: object|stri
                 <DropdownMenuSeparator/>
 
                 <DropdownMenuGroup>
-                  <DropdownMenuItem
-                    as-child class="w-full"
+                  <GlobalLink
+                    as="DropdownMenuItem"
                     :href="route('audiences.add_recipient', audience.uuid)">
-                    <GlobalLink as="button">
-                      <UserPlus class="mr-2 h-4 w-4"/>
-                      <span>Add recipients</span>
-                    </GlobalLink>
-                  </DropdownMenuItem>
+                    <UserPlus />
+                    <span>Add recipients</span>
+                  </GlobalLink>
 
-                  <DropdownMenuSeparator/>
+                  <DropdownMenuSeparator />
 
-                  <DropdownMenuItem
-                    as-child class="w-full"
+                  <GlobalLink
+                    as="DropdownMenuItem"
                     :href="route('audiences.edit', audience.uuid)">
-                    <GlobalLink as="button" :close-button="false" padding-classes="p-6" max-width="md">
-                      <PenIcon class="mr-2 h-4 w-4"/>
-                      <span>Edit audience</span>
-                    </GlobalLink>
-                  </DropdownMenuItem>
+                    <PenIcon />
+                    <span>Edit audience</span>
+                  </GlobalLink>
 
-                  <DropdownMenuItem
-                    as-child class="w-full"
-                    :href="route('audiences.show', audience.uuid)">
-                    <Link as="button">
-                      <FileTextIcon class="mr-2 h-4 w-4"/>
+                  <DropdownMenuItem as-child>
+                    <Link
+                      as="button" class="w-full"
+                      :href="route('audiences.show', audience.uuid)">
+                      <FileTextIcon />
                       <span>See audience</span>
                     </Link>
                   </DropdownMenuItem>
@@ -252,7 +243,7 @@ const perform = (action: string, model: string, path: string, args?: object|stri
                     'delete', 'Audience',
                     'audiences.destroy', audience.uuid
                   )">
-                  <Trash2Icon class="mr-2 h-4 w-4"/>
+                  <Trash2Icon />
                   <span>Delete audience</span>
                 </DropdownMenuItem>
               </DropdownMenuContent>

@@ -5,3 +5,7 @@
 @tailwind utilities;
 
 html body { overflow: auto !important; padding-right: 0 !important; }
+
+.h-px {
+  @apply dark:!bg-gray-600
+}

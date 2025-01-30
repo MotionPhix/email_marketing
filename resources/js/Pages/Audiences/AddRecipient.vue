@@ -34,6 +34,10 @@ const form = useForm({
   selectedRecipients: props.audience.recipients,
 })
 
+const close = () => {
+  addRecipientRef.value.onClose()
+}
+
 const onSubmit = () => {
   form.put(route('audiences.merge_recipients', props.audience.uuid), {
     preserveScroll: true,
@@ -51,72 +55,65 @@ const onSubmit = () => {
     :close-button="false">
 
     <form @submit.prevent="onSubmit">
+      <CardTitle class="capitalize">
+        {{ audience.name }} Recipients
+      </CardTitle>
 
-      <Card class="p-6 dark:bg-gray-700">
-        <CardTitle class="capitalize">
-          {{ audience.name }} Recipients
-        </CardTitle>
+      <CardDescription>
+        Add/remove recipients on <strong>{{ audience.name }}</strong> audience
+      </CardDescription>
 
-        <CardDescription>
-          Add/remove recipients on <strong>{{ audience.name }}</strong> audience
-        </CardDescription>
+      <CardContent class="p-0 py-6">
+        <Command
+          multiple
+          :display-value="(v) => v.name"
+          v-model="form.selectedRecipients"
+          v-model:searchTerm="searchTerm">
 
-        <CardContent class="p-0 py-6">
-          <Command
-            multiple
-            :display-value="(v) => v.name"
-            v-model="form.selectedRecipients"
-            v-model:searchTerm="searchTerm">
+          <CommandInput
+            placeholder="Search recipients..."
+          />
 
-            <CommandInput
-              class="dark:border dark:border-gray-500 dark:!bg-gray-700"
-              placeholder="Search recipients..."/>
-            <CommandEmpty>No recipient found</CommandEmpty>
+          <CommandEmpty>No recipient found</CommandEmpty>
 
-            <CommandList
-              class="h-64 dark:bg-gray-700 overflow-y-auto scrollbar-none scroll-smooth">
-              <CommandGroup>
-                <CommandItem
-                  class="py-3 grid rounded-md somber"
-                  v-for="recipient in filteredRecipients"
-                  :key="recipient.id"
-                  :value="recipient">
+          <CommandList
+            class="h-64 overflow-y-auto scrollbar-none scroll-smooth mt-4">
+            <CommandGroup>
+              <CommandItem
+                class="py-3 grid rounded-md somber"
+                v-for="recipient in filteredRecipients"
+                :key="recipient.id"
+                :value="recipient">
 
-                  <span>{{ recipient.name }}</span>
+                <span>{{ recipient.name }}</span>
 
-                  <ComboboxItemIndicator
-                    class="flex justify-between gap-2 text-muted-foreground">
-                    <span>{{ recipient.email }}</span>
-                    <Check
-                      :class="cn(
+                <ComboboxItemIndicator
+                  class="flex justify-between gap-2 text-muted-foreground">
+                  <span>{{ recipient.email }}</span>
+                  <Check
+                    :class="cn(
                         'mr-2 h-5 w-5',
                       )"
-                    />
-                  </ComboboxItemIndicator>
+                  />
+                </ComboboxItemIndicator>
 
-                </CommandItem>
-              </CommandGroup>
-            </CommandList>
-          </Command>
-        </CardContent>
+              </CommandItem>
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </CardContent>
 
-        <CardFooter class="flex justify-between p-0">
-          <Button @click="close" type="button" variant="outline">
-            Cancel
-          </Button>
+      <CardFooter class="flex justify-end gap-2 p-0">
+        <Button @click="close" type="button" variant="outline">
+          Cancel
+        </Button>
 
-          <Button type="submit">
-            Merge {{ form.selectedRecipients[0]?.name }}
-            <span v-if="form.selectedRecipients.length > 1">{{ `+ ${form.selectedRecipients.length - 1} more` }}</span>
-          </Button>
-        </CardFooter>
-      </Card>
+        <Button type="submit">
+          Merge {{ form.selectedRecipients[0]?.name }}
+          <span v-if="form.selectedRecipients.length > 1">{{ `+ ${form.selectedRecipients.length - 1} more` }}</span>
+        </Button>
+      </CardFooter>
+
     </form>
   </GlobalModal>
 </template>
-
-<style>
-.somber[data-state="checked"] {
-  @apply dark:bg-neutral-500 bg-neutral-200 my-1
-}
-</style>

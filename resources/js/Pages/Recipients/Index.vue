@@ -210,6 +210,7 @@ onUnmounted(() => {
                 <UserPlusIcon class="h-4 w-4"/>
               </GlobalLink>
             </TooltipTrigger>
+
             <TooltipContent>
               <p>Add New Recipient</p>
             </TooltipContent>
@@ -220,12 +221,13 @@ onUnmounted(() => {
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
-              <GlobalLink as="Button"
-                variant="outline"
+              <GlobalLink
+                variant="outline" as="Button"
                 :href="route('recipients.import')" size="icon">
-                <ImportIcon class="h-4 w-4"/>
+                <ImportIcon />
               </GlobalLink>
             </TooltipTrigger>
+
             <TooltipContent>
               <p>Import Recipients</p>
             </TooltipContent>
@@ -285,7 +287,7 @@ onUnmounted(() => {
               :selected-recipients="Array.from(selectedRecipients)"/>
           </div>
 
-          <div class="overflow-hidden">
+          <div class="overflow-hidden sm:border sm:border-gray-200 sm:rounded-lg sm:dark:border-gray-700 sm:p-5">
             <RecipientTable
               :recipients="recipients.data"
               :selected-recipients="selectedRecipients"

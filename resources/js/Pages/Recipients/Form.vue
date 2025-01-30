@@ -3,7 +3,7 @@ import {useForm} from '@inertiajs/vue3';
 import {ref} from "vue";
 import {toast} from "vue-sonner";
 
-const {recipient} = defineProps<{
+const props = defineProps<{
   recipient: {
     email: string
     gender: string
@@ -16,15 +16,15 @@ const {recipient} = defineProps<{
 const recipientsModalRef = ref()
 
 const form = useForm({
-  email: recipient.email,
-  name: recipient.name,
-  gender: recipient.gender,
-  status: recipient.status,
+  email: props.recipient.email,
+  name: props.recipient.name,
+  gender: props.recipient.gender,
+  status: props.recipient.status,
 });
 
 const onSubmit = () => {
-  if (recipient.uuid) {
-    form.put(route('recipients.update', recipient.uuid), {
+  if (props.recipient.uuid) {
+    form.put(route('recipients.update', props.recipient.uuid), {
       onSuccess: () => {
         toast.success('Recipient was updated successfully!')
         recipientsModalRef.value.onClose()
@@ -95,7 +95,6 @@ const close = () => {
         </div>
 
         <div class="mb-4 gap-2">
-          <Label for="status"></Label>
           <FormField
             type="select"
             :error="form.errors.status"

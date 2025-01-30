@@ -96,7 +96,7 @@ const formatFileSize = (size) => { const units = ["B", "KB", "MB", "GB", "TB"]; 
         </div>
       </div>
 
-      <div class="flex items-center justify-end">
+      <div class="flex items-center justify-end gap-x-2">
         <Button
           @click="close"
           type="button" variant="ghost"

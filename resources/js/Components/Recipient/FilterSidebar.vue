@@ -8,7 +8,7 @@ import {
   UserMinus,
   XCircle
 } from "lucide-vue-next"
-import {IconManFilled, IconWomanFilled} from "@tabler/icons-vue"
+import {IconMan, IconWoman} from "@tabler/icons-vue"
 import {
   Command,
   CommandGroup,
@@ -44,12 +44,12 @@ const genderFilters: FilterOption[] = [
   {
     value: 'male',
     label: 'Male',
-    icon: IconManFilled
+    icon: IconMan
   },
   {
     value: 'female',
     label: 'Female',
-    icon: IconWomanFilled
+    icon: IconWoman
   },
   {
     value: 'unspecified',

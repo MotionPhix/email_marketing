@@ -3,9 +3,7 @@
 namespace App\Services;
 
 use App\Models\User;
-use App\Models\Campaign;
 use App\Models\EmailEvent;
-use App\Models\EmailLog;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;

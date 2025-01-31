@@ -60,21 +60,25 @@ const matchedStatus = (status: string) => {
   <div class="hidden sm:block">
     <Table>
       <TableHeader>
-        <TableRow class="hover:bg-muted/50">
+        <TableRow class="hover:bg-muted/5">
           <TableHead class="w-10">
             <label class="relative flex items-center">
-              <input
-                type="checkbox"
-                @change="toggleAll($event.target.checked)"
+              <Checkbox
+                @update:checked="toggleAll($event.target.checked)"
                 :checked="recipients.every(({ id }) => selectedRecipients.has(id))"
-                class="peer h-4 w-4 shrink-0 rounded-sm border border-primary shadow focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground"
+                class="h-5 w-5"
               />
               <span class="sr-only">Select all recipients</span>
             </label>
           </TableHead>
+
           <TableHead>Name</TableHead>
+
           <TableHead>Gender</TableHead>
-          <TableHead class="text-right w-28">Status</TableHead>
+
+          <TableHead class="text-right w-28">
+            Status
+          </TableHead>
         </TableRow>
       </TableHeader>
 
@@ -85,11 +89,10 @@ const matchedStatus = (status: string) => {
           class="group hover:bg-muted/50">
           <TableCell class="w-10">
             <label class="relative flex items-center">
-              <input
-                type="checkbox"
+              <Checkbox
                 :checked="selectedRecipients.has(recipient.id)"
-                @change="$emit('toggle-recipient', recipient.id)"
-                class="peer h-4 w-4 shrink-0 rounded-sm border border-primary shadow focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground"
+                @update:checked="$emit('toggle-recipient', recipient.id)"
+                class="h-5 w-5"
               />
               <span class="sr-only">Select recipient</span>
             </label>

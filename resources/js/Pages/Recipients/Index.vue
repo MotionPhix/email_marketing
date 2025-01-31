@@ -1,16 +1,16 @@
 <script setup lang="ts">
-import {onMounted, onUnmounted, ref, toRaw, watch} from "vue";
+import {onMounted, onUnmounted, ref, toRaw, watch, computed} from "vue";
 import {router, usePage} from "@inertiajs/vue3";
 import SearchBar from "@/Components/Recipient/SearchBar.vue";
-import FilterSidebar from "@/Components/Recipient/FilterSidebar.vue";
 import BatchActions from "@/Components/Recipient/BatchActions.vue";
 import RecipientTable from "@/Components/Recipient/RecipientTable.vue";
 import Pagination from "@/Components/Recipient/Pagination.vue";
 import PageTitle from "@/Components/PageTitle.vue";
 import EmptyState from "@/Components/EmptyState.vue";
-import {useDeviceDetection} from "@/composables/useDeviceDetection";
 import AppLayout from "@/Layouts/AppLayout.vue";
-import {visitModal} from '@inertiaui/modal-vue'
+import {IconUsersMinus} from "@tabler/icons-vue";
+import StatCard from "@/Pages/Recipients/Components/StatCard.vue";
+import FilterModel from "@/Components/FilterModel.vue";
 import {debounce} from "maz-ui";
 import {
   Tooltip,
@@ -23,30 +23,87 @@ import {
   UserX,
   UserXIcon,
   UserPlusIcon,
-  ImportIcon
+  ImportIcon,
+  SortAscIcon,
+  SortDescIcon,
+  DownloadIcon, Users, UserCheck, UserPlus
 } from "lucide-vue-next";
-import {IconUsersMinus} from "@tabler/icons-vue";
+
+// Enhanced Props Interface
+interface Recipient {
+  id: number;
+  name: string;
+  email: string;
+  status: string;
+  created_at: string;
+  last_activity?: string;
+  tags?: string[];
+}
+
+interface RecipientsPagination {
+  data: Recipient[];
+  first_page_url?: string;
+  last_page_url?: string;
+  next_page_url?: string;
+  prev_page_url?: string;
+  current_page: number;
+  last_page: number;
+  per_page: number;
+  links: Array<{ url?: string; label?: string; active: boolean }>;
+  total: number;
+}
 
 const props = defineProps<{
-  recipients: {
-    data: Array<{ id: number; name: string; email: string; status: string }>;
-    first_page_url?: string;
-    last_page_url?: string;
-    next_page_url?: string;
-    prev_page_url?: string;
-    current_page: number;
-    last_page: number;
-    per_page: number;
-    links: Array<{ url?: string; label?: string; active: boolean }>;
+  recipients: RecipientsPagination;
+  stats?: {
     total: number;
+    active: number;
+    unsubscribed: number;
+    recent: number;
   };
+  availableTags?: string[];
 }>();
 
+// Enhanced State Management
 const searchQuery = ref("");
-const filters = ref({status: null});
-const selectedRecipients = ref(new Set<number>());
-const {isMobile} = useDeviceDetection()
+const isExporting = ref(false);
 const page = usePage();
+
+const selectedRecipients = ref(new Set<number>());
+const sortConfig = ref({
+  field: 'name',
+  direction: 'asc'
+});
+
+const filters = ref({
+  status: [] as string[],
+  gender: [] as string[],
+  dateRange: null,
+  tags: [] as string[],
+  activity: null as string | null
+});
+
+// Computed Properties
+const hasActiveFilters = computed(() => {
+  return filters.value.status.length > 0 ||
+    filters.value.gender.length > 0 ||
+    filters.value.dateRange !== null ||
+    filters.value.tags.length > 0 ||
+    filters.value.activity !== null;
+});
+
+const selectedCount = computed(() => selectedRecipients.value.size);
+
+// Enhanced Methods
+const toggleSort = (field: string) => {
+  if (sortConfig.value.field === field) {
+    sortConfig.value.direction = sortConfig.value.direction === 'asc' ? 'desc' : 'asc';
+  } else {
+    sortConfig.value.field = field;
+    sortConfig.value.direction = 'asc';
+  }
+  fetchRecipients();
+};
 
 const toggleRecipient = (id: number) => {
   selectedRecipients.value.has(id)
@@ -60,10 +117,10 @@ const selectAllRecipients = (selectAll: boolean) => {
   });
 };
 
+// Enhanced fetchRecipients with sorting and advanced filtering
 const fetchRecipients = debounce(async (paramsOrUrl: Record<string, any> | string) => {
   if (typeof paramsOrUrl === "string") {
-    // If a URL is provided, visit it directly
-    await router.get(paramsOrUrl, {}, {
+    await router.visit(paramsOrUrl, {
       preserveState: true,
       preserveScroll: true,
       replace: true,
@@ -71,26 +128,33 @@ const fetchRecipients = debounce(async (paramsOrUrl: Record<string, any> | strin
     return;
   }
 
-  const query = {};
+  const query: Record<string, any> = {
+    sort_by: sortConfig.value.field,
+    sort_direction: sortConfig.value.direction
+  };
 
-  // Add search query if present
   if (searchQuery.value) {
     query.search = searchQuery.value;
   }
 
-  // Add filters if any are present
-  if (filters.value.status) {
-    switch (filters.value.status) {
-      case 'male':
-      case 'female':
-      case 'unspecified':
-        query.gender = filters.value.status
-        break;
+  if (filters.value.status.length) {
+    query.status = filters.value.status;
+  }
 
-      default:
-        query.status = filters.value.status
-        break;
-    }
+  if (filters.value.gender.length) {
+    query.gender = filters.value.gender;
+  }
+
+  if (filters.value.dateRange) {
+    query.date_range = filters.value.dateRange;
+  }
+
+  if (filters.value.tags.length) {
+    query.tags = filters.value.tags;
+  }
+
+  if (filters.value.activity) {
+    query.activity = filters.value.activity;
   }
 
   const finalParams = {...query, ...paramsOrUrl};
@@ -102,113 +166,120 @@ const fetchRecipients = debounce(async (paramsOrUrl: Record<string, any> | strin
   });
 }, 300);
 
-// Deselect all recipients
-const deselectAllRecipients = () => {
-  selectedRecipients.value.clear();
-};
-
-// Clear filters and reset the search
+// Enhanced clearFilters
 const clearFilters = () => {
-  filters.value = {status: null}; // Reset filters to their default values
-  searchQuery.value = ""; // Reset the search query
-
-  // Adjust the URL to remove filter parameters and keep the search query if any
-  const params = searchQuery.value ? {search: searchQuery.value} : {};
-
-  fetchRecipients(params); // Fetch recipients with the cleared filters and updated URL
+  filters.value = {
+    status: [],
+    gender: [],
+    dateRange: null,
+    tags: [],
+    activity: null
+  };
+  searchQuery.value = "";
+  sortConfig.value = {field: 'name', direction: 'asc'};
+  fetchRecipients();
 };
 
-const handleAction = (payload: { action: string; recipients: number[] }) => {
+// Enhanced handleAction with more operations
+const handleAction = async (payload: { action: string; recipients: number[] }) => {
   const {action, recipients} = payload;
-  switch (action) {
-    case "delete":
-      // Handle deletion logic
-      router.get(route('recipients.batch', {
-        action: action,
-        recipients: recipients
-      }), {}, {
-        preserveScroll: true,
-        onSuccess: () => {
-          console.log('deleted recipients')
-        },
-        onError: (errors) => {
-          console.log(errors)
+
+  try {
+    switch (action) {
+      case "delete":
+        await router.delete(route('recipients.batch.delete'), {
+          recipients: recipients
+        });
+        selectedRecipients.value.clear();
+        break;
+
+      case "tag":
+        await router.post(route('recipients.batch.tag'), {
+          recipients: recipients,
+          tags: payload.tags
+        });
+        break;
+
+      case "status_update":
+        await router.patch(route('recipients.batch.status'), {
+          recipients: recipients,
+          status: payload.status
+        });
+        break;
+
+      case "export_pdf":
+      case "export_excel":
+      case "export_csv":
+        isExporting.value = true;
+        try {
+          const response = await window.axios.post(route('recipients.batch.export'), {
+            action,
+            recipients,
+            filters: toRaw(filters.value)
+          });
+          window.open(response.data.download_url, '_blank');
+        } finally {
+          isExporting.value = false;
         }
-      });
-      break;
-    case "export_pdf":
-      // Handle export to PDF
-      window.open(route('recipients.batch', {
-        action: action,
-        recipients: recipients,
-      }), '_blank')
-      break;
-    case "export_excel":
-      // Handle export to Excel
-      window.open(route('recipients.batch', {
-        action: action,
-        recipients: recipients,
-      }), '_blank')
-      break;
-    case "export_csv":
-      // Handle export to CSV
-      window.open(route('recipients.batch', {
-        action: action,
-        recipients: recipients,
-      }), '_blank')
-      break;
-    default:
-      console.log('nothing to do')
+        break;
+    }
+  } catch (error) {
+    console.error('Batch action failed:', error);
   }
 };
 
-// Watch for changes in search and filters
-watch([searchQuery, filters], ([newSearchQuery, newFilters]) => {
-  fetchRecipients()
+// Enhanced state persistence
+watch([searchQuery, filters, sortConfig], ([newSearchQuery, newFilters, newSortConfig]) => {
+  fetchRecipients();
 
   localStorage.setItem(
-    "filters",
-    JSON.stringify(toRaw(newFilters))
+    "recipientFilters",
+    JSON.stringify({
+      filters: toRaw(newFilters),
+      sort: toRaw(newSortConfig)
+    })
   );
 });
 
 onMounted(() => {
-  const savedFilters = localStorage.getItem("filters");
+  const saved = localStorage.getItem("recipientFilters");
 
-  if (savedFilters) {
+  if (saved) {
     try {
-      const parsedFilters = JSON.parse(savedFilters);
-      filters.value = {status: null, ...parsedFilters}; // Merge defaults
+      const {filters: savedFilters, sort: savedSort} = JSON.parse(saved);
+      filters.value = {...filters.value, ...savedFilters};
+      sortConfig.value = savedSort;
     } catch (e) {
       console.error("Failed to parse saved filters", e);
     }
   }
-})
+});
 
 onUnmounted(() => {
-  localStorage.removeItem("filters");
+  localStorage.removeItem("recipientFilters");
 });
 </script>
 
 <template>
   <AppLayout title="Explore Recipients">
-    <!-- Header -->
     <template #header>
       <PageTitle title="Explore Recipients"/>
     </template>
 
-    <!-- Action Buttons -->
     <template #action>
       <div class="flex items-center gap-2">
-        <!-- Add Recipient Button -->
         <TooltipProvider>
           <Tooltip>
-            <TooltipTrigger asChild>
-              <GlobalLink as="Button"
-                v-if="recipients.data.length" variant="outline"
-                :href="route('recipients.create')" size="icon">
-                <UserPlusIcon class="h-4 w-4"/>
-              </GlobalLink>
+            <TooltipTrigger>
+              <div>
+                <GlobalLink
+                  as="Button"
+                  v-if="recipients.data.length"
+                  variant="outline" size="icon"
+                  :href="route('recipients.create')">
+                  <UserPlusIcon/>
+                </GlobalLink>
+              </div>
             </TooltipTrigger>
 
             <TooltipContent>
@@ -217,15 +288,17 @@ onUnmounted(() => {
           </Tooltip>
         </TooltipProvider>
 
-        <!-- Import Button -->
         <TooltipProvider>
           <Tooltip>
-            <TooltipTrigger asChild>
-              <GlobalLink
-                variant="outline" as="Button"
-                :href="route('recipients.import')" size="icon">
-                <ImportIcon />
-              </GlobalLink>
+            <TooltipTrigger>
+              <div>
+                <GlobalLink
+                  variant="outline"
+                  as="Button" size="icon"
+                  :href="route('recipients.import')">
+                  <ImportIcon class="h-4 w-4"/>
+                </GlobalLink>
+              </div>
             </TooltipTrigger>
 
             <TooltipContent>
@@ -234,7 +307,6 @@ onUnmounted(() => {
           </Tooltip>
         </TooltipProvider>
 
-        <!-- Search Bar -->
         <SearchBar
           v-model="searchQuery"
           @search="fetchRecipients"
@@ -243,71 +315,108 @@ onUnmounted(() => {
       </div>
     </template>
 
-    <div class="py-0 sm:py-12 px-6">
+    <div class="py-12 px-6">
+      <!-- Stats Section -->
+      <div
+        v-if="stats && recipients.data.length"
+        class="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-6">
+        <StatCard
+          title="Total Recipients"
+          :value="stats.total"
+          :icon="Users"
+        />
+
+        <StatCard
+          title="Active Recipients"
+          :value="stats.active"
+          :icon="UserCheck"
+          class="text-green-600"
+        />
+
+        <StatCard
+          title="Unsubscribed"
+          :value="stats.unsubscribed"
+          :icon="UserX"
+          class="text-red-600"
+        />
+
+        <StatCard
+          title="New (Last 30 Days)"
+          :value="stats.recent"
+          :icon="UserPlus"
+          class="text-blue-600"
+        />
+      </div>
+
       <div class="flex gap-4 flex-col sm:flex-row" v-if="recipients.data.length">
-        <!-- Filter Sidebar -->
-        <div class="flex gap-1 sm:block items-center mt-6 sm:mt-0 min-w-44">
-
+        <div class="flex gap-1 sm:block items-center mt-6 sm:mt-0">
           <div class="flex-1 sm:hidden">
-
             <SearchBar
               v-model="searchQuery"
               @search="fetchRecipients"
             />
-
           </div>
 
-          <FilterSidebar v-model="filters"/>
+          <FilterModel
+            v-model="filters"
+            :available-tags="availableTags"
+            @update:modelValue="(newFilters) => {
+              filters.value = newFilters;
+              fetchRecipients();
+            }"
+          />
         </div>
 
-        <!-- Recipient Table -->
-        <div class="flex-1 grid gap-6">
-          <!-- Deselect All and Clear Filters Buttons -->
+        <div class="flex-1 space-y-4">
           <div class="flex items-center gap-2 pt-5">
             <Button
               size="icon"
               variant="secondary"
-              :disabled="! selectedRecipients.size"
-              @click="deselectAllRecipients">
-              <IconUsersMinus />
+              :disabled="!selectedRecipients.size"
+              @click="() => selectedRecipients.value.clear()">
+              <IconUsersMinus class="h-4 w-4"/>
             </Button>
 
             <Button
               size="icon"
-              :disabled="! filters.status"
+              :disabled="!hasActiveFilters"
               @click="clearFilters"
-              class="bg-lime-500">
-              <FilterXIcon/>
+              variant="outline">
+              <FilterXIcon class="h-4 w-4"/>
             </Button>
 
             <span class="flex-1"/>
 
             <BatchActions
               @perform-action="handleAction"
-              :selected-recipients="Array.from(selectedRecipients)"/>
+              :selected-recipients="Array.from(selectedRecipients)"
+              :is-exporting="isExporting"
+            />
           </div>
 
           <div class="overflow-hidden sm:border sm:border-gray-200 sm:rounded-lg sm:dark:border-gray-700 sm:p-5">
             <RecipientTable
               :recipients="recipients.data"
               :selected-recipients="selectedRecipients"
+              :sort-config="sortConfig"
               @toggle-recipient="toggleRecipient"
               @select-all="selectAllRecipients"
+              @sort="toggleSort"
             />
           </div>
 
           <Pagination
+            v-model:current-page="recipients.current_page"
             :links="recipients.links"
             :per-page="recipients.per_page"
-            :current-page="recipients.current_page"
             :total="recipients.total"
             :first-page-url="recipients.first_page_url"
             :last-page-url="recipients.last_page_url"
             :next-page-url="recipients.next_page_url"
             :prev-page-url="recipients.prev_page_url"
             :last-page="recipients.last_page"
-            @change-page="fetchRecipients"/>
-
+            @change-page="fetchRecipients"
+          />
         </div>
       </div>
 
@@ -317,27 +426,31 @@ onUnmounted(() => {
           title="No Recipients Found"
           description="You currently have no recipients.">
           <template #action>
-            <Button
-              as-child :href="route('recipients.create')">
-              <GlobalLink as="button">
-                Add Recipient
-              </GlobalLink>
-            </Button>
+            <GlobalLink
+              as="Button"
+              :href="route('recipients.create')">
+              Add Recipient
+            </GlobalLink>
           </template>
         </EmptyState>
       </div>
-
     </div>
-
   </AppLayout>
 </template>
 
 <style scoped>
 .bg-card {
-  @apply bg-white;
+  @apply bg-white dark:bg-gray-800;
 }
 
-.bg-card-dark {
-  @apply bg-gray-800;
+.filter-transition-enter-active,
+.filter-transition-leave-active {
+  transition: all 0.3s ease;
+}
+
+.filter-transition-enter-from,
+.filter-transition-leave-to {
+  opacity: 0;
+  transform: translateY(-10px);
 }
 </style>

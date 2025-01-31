@@ -1,36 +1,25 @@
 <script setup lang="ts">
-import {Button} from "@/Components/ui/button";
-import {SearchIcon} from "lucide-vue-next";
-import TextInput from "@/Components/TextInput.vue";
+import { SearchIcon } from "lucide-vue-next"
 
-const { modelValue } = defineProps<{ modelValue: string }>();
-const emit = defineEmits(["update:modelValue", "search"]);
-
-// Emit the updated value whenever the input changes
-const updateValue = (value: string) => {
-  emit("update:modelValue", value);
-};
-
-// Trigger the search action
-const onSearch = () => {
-  emit("search");
-};
+const model = defineModel();
 </script>
 
 <template>
-  <div class="relative flex items-center">
-    <TextInput
-      type="text"
-      class="w-full"
-      :value="modelValue"
-      @input="updateValue($event.target.value)"
-      placeholder="Search recipients..." />
+  <div class="relative flex items-center w-full">
+    <Input
+      v-model="model"
+      placeholder="Search recipients"
+    />
 
-    <Button
-      size="icon"
-      class="absolute top-[0.13rem] right-1"
-      @click="onSearch">
-      <SearchIcon />
-    </Button>
+    <div class="absolute right-1 flex items-center gap-1">
+      <Button
+        disabled
+        type="button"
+        variant="ghost"
+        size="icon"
+        class="h-7 w-7">
+        <SearchIcon class="h-4 w-4" />
+      </Button>
+    </div>
   </div>
 </template>

@@ -1,10 +1,4 @@
 <script setup lang="ts">
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-} from '@/Components/ui/avatar'
-import { Button } from '@/Components/ui/button'
 import {Link} from '@inertiajs/vue3'
 import {
   DropdownMenu,
@@ -27,9 +21,8 @@ import NavLink from "@/Components/NavLink.vue";
       <Button
         size="icon"
         variant="ghost"
-        class="relative h-10 w-10 dark:text-gray-100">
+        class="relative h-10 w-10">
         <svg
-          class="h-[1.2rem] w-[1.2rem]"
           stroke="currentColor"
           fill="none"
           viewBox="0 0 24 24">

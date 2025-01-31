@@ -9,69 +9,26 @@ import {
 } from "@/Components/ui/table";
 import { Badge } from "@/Components/ui/badge";
 import { Link } from '@inertiajs/vue3';
-import { PenLineIcon, FileTextIcon, ArrowUpDown } from 'lucide-vue-next';
-import { IconChartLine, IconGenderFemale, IconGenderMale, IconMail } from "@tabler/icons-vue";
-import { Checkbox } from "@/Components/ui/checkbox";
-
-interface Recipient {
-  id: number;
-  uuid: string;
-  name: string;
-  email: string;
-  gender: string;
-  status: string;
-  created_at: string;
-  last_activity?: string;
-}
-
-interface SortConfig {
-  field: string;
-  direction: 'asc' | 'desc';
-}
-
-interface Column {
-  key: string;
-  label: string;
-  sortable?: boolean;
-  class?: string;
-}
+import { PenLineIcon, FileTextIcon } from 'lucide-vue-next';
+import {IconChartLine, IconGenderFemale, IconGenderMale, IconMail} from "@tabler/icons-vue";
+import {Checkbox} from "@/Components/ui/checkbox";
 
 const props = defineProps<{
-  recipients: Array<Recipient>;
+  recipients: Array<{
+    id: number;
+    uuid: string;
+    name: string;
+    email: string;
+    gender: string;
+    status: string;
+  }>;
   selectedRecipients: Set<number>;
-  sortConfig: SortConfig;
 }>();
 
-const emit = defineEmits<{
-  'toggle-recipient': [id: number];
-  'select-all': [value: boolean];
-  'sort': [field: string];
-}>();
+const emit = defineEmits(["toggle-recipient", "select-all"]);
 
-// Table columns configuration
-const columns: Column[] = [
-  { key: 'name', label: 'Name', sortable: true },
-  { key: 'gender', label: 'Gender', sortable: true },
-  { key: 'status', label: 'Status', sortable: true, class: 'text-right w-28' }
-];
-
-const toggleAll = (checked: boolean) => {
-  emit("select-all", checked);
-};
-
-const handleSort = (column: Column) => {
-  if (column.sortable) {
-    emit('sort', column.key);
-  }
-};
-
-const getSortIcon = (column: Column) => {
-  if (!column.sortable) return null;
-
-  if (props.sortConfig.field === column.key) {
-    return props.sortConfig.direction === 'asc' ? 'asc' : 'desc';
-  }
-  return null;
+const toggleAll = (selectAll: boolean) => {
+  emit("select-all", selectAll);
 };
 
 const matchedStatus = (status: string) => {
@@ -107,32 +64,16 @@ const matchedStatus = (status: string) => {
           <TableHead class="w-10">
             <label class="relative flex items-center">
               <Checkbox
+                @update:checked="toggleAll($event.target.checked)"
                 :checked="recipients.every(({ id }) => selectedRecipients.has(id))"
-                @update:checked="toggleAll"
                 class="h-5 w-5"
               />
               <span class="sr-only">Select all recipients</span>
             </label>
           </TableHead>
-
-          <TableHead
-            v-for="column in columns"
-            :key="column.key"
-            :class="[column.class, column.sortable && 'cursor-pointer']"
-            @click="handleSort(column)"
-          >
-            <div class="flex items-center gap-2">
-              {{ column.label }}
-              <ArrowUpDown
-                v-if="column.sortable"
-                class="h-4 w-4"
-                :class="{
-                  'text-muted-foreground': getSortIcon(column) === null,
-                  'text-primary': getSortIcon(column) !== null
-                }"
-              />
-            </div>
-          </TableHead>
+          <TableHead>Name</TableHead>
+          <TableHead>Gender</TableHead>
+          <TableHead class="text-right w-28">Status</TableHead>
         </TableRow>
       </TableHeader>
 
@@ -145,7 +86,7 @@ const matchedStatus = (status: string) => {
             <label class="relative flex items-center">
               <Checkbox
                 :checked="selectedRecipients.has(recipient.id)"
-                @update:checked="emit('toggle-recipient', recipient.id)"
+                @update:checked="$emit('toggle-recipient', recipient.id)"
                 class="h-5 w-5"
               />
               <span class="sr-only">Select recipient</span>
@@ -179,7 +120,7 @@ const matchedStatus = (status: string) => {
                   :href="route('recipients.edit', recipient.uuid)"
                   class="h-7 w-7"
                   as="Button">
-                  <PenLineIcon class="h-4 w-4" />
+                  <PenLineIcon />
                 </GlobalLink>
 
                 <Button
@@ -189,7 +130,7 @@ const matchedStatus = (status: string) => {
                   :href="route('recipients.show', recipient.uuid)"
                   class="h-7 w-7">
                   <Link as="button">
-                    <FileTextIcon class="h-4 w-4" />
+                    <FileTextIcon />
                   </Link>
                 </Button>
               </div>
@@ -214,7 +155,7 @@ const matchedStatus = (status: string) => {
               <label class="relative flex items-center gap-x-4">
                 <Checkbox
                   :checked="selectedRecipients.has(recipient.id)"
-                  @update:checked="emit('toggle-recipient', recipient.id)"
+                  @update:checked="$emit('toggle-recipient', recipient.id)"
                   class="peer h-5 w-5 shrink-0 rounded-sm border border-primary shadow focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground"
                 />
                 <span class="sr-only">Select recipient</span>
@@ -231,20 +172,19 @@ const matchedStatus = (status: string) => {
                 </div>
 
                 <div class="flex items-center gap-x-4 text-sm pt-2">
-                  <component
-                    :is="recipient.gender === 'male' ? IconGenderMale : IconGenderFemale"
-                    class="h-4 w-4"
-                  />
+                  <component class="h-4 w-4" :is="recipient.gender === 'male' ? IconGenderMale : IconGenderFemale" />
                   <span class="text-muted-foreground capitalize">{{ recipient.gender }}</span>
                 </div>
 
                 <div class="flex items-center gap-x-4 text-sm pt-2">
                   <IconChartLine class="h-4 w-4 text-muted-foreground" />
+
                   <Badge
                     :class="[
                       matchedStatus(recipient.status).class,
                       'rounded-md py-1 px-2 capitalize text-sm'
                     ]">
+
                     {{ matchedStatus(recipient.status).label }}
                   </Badge>
                 </div>
@@ -258,7 +198,7 @@ const matchedStatus = (status: string) => {
               as="Button"
               size="icon"
               :href="route('recipients.edit', recipient.uuid)">
-              <PenLineIcon class="h-4 w-4" />
+              <PenLineIcon />
             </GlobalLink>
 
             <Button

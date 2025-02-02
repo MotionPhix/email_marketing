@@ -2,23 +2,32 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\CampaignStatsUpdated;
+use App\Models\Campaign;
 use App\Models\EmailEvent;
 use App\Models\EmailLog;
+use App\Services\Campaign\CampaignStatsService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use SendGrid\EventWebhook\EventWebhook;
 use SendGrid\EventWebhook\EventWebhookHeader;
 
 class Hook extends Controller
 {
+  public function __construct(protected CampaignStatsService $statsService)
+  {
+  }
+
   /**
    * Handle the incoming request.
    */
   public function __invoke(Request $request)
   {
     // Log the raw incoming event data for debugging purposes
-    \Log::info('Webhook received:', $request->all());
+    Log::info('Webhook received:', $request->all());
 
     $events = $request->all();
+    $processedCampaigns = [];
 
     // Transform event data for batch insertion
     $eventData = array_map(function ($event) {
@@ -59,6 +68,33 @@ class Hook extends Controller
         'status' => $data['status'],
         'url' => $data['url'],
       ]);
+
+      // Track unique campaigns to update
+      if (!in_array($data['campaign_uuid'], $processedCampaigns)) {
+        $processedCampaigns[] = $data['campaign_uuid'];
+      }
+    }
+
+    // Broadcast updates for each affected campaign
+    foreach ($processedCampaigns as $campaignUuid) {
+      $campaign = Campaign::with('emailLogs.events')
+        ->where('uuid', $campaignUuid)
+        ->first();
+
+      if ($campaign) {
+        $stats = $this->statsService->getStats(
+          $campaignUuid,
+          now()->subDays(7),
+          now()
+        );
+
+        event(new CampaignStatsUpdated(
+          $campaign->uuid,
+          $campaign->user_uuid,
+          $stats['stats'],
+          $stats['chart']
+        ));
+      }
     }
 
     return response()->json(['status' => 'success']);

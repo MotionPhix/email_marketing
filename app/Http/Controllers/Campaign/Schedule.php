@@ -13,7 +13,7 @@ class Schedule extends Controller
    */
   public function __invoke(Request $request, Campaign $campaign)
   {
-    return Inertia('Campaigns/Schedule', [
+    return Inertia('Campaigns/Components/Schedule', [
       'campaign' => $campaign
     ]);
   }

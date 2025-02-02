@@ -17,7 +17,8 @@ import {
   AlertTriangle,
   Users,
   Clock,
-  TrendingUp
+  TrendingUp,
+  ExternalLinkIcon,
 } from 'lucide-vue-next'
 import {useTabPersistence} from "@/composables/useTabPersistence";
 
@@ -502,8 +503,7 @@ onBeforeUnmount(() => {
                 <div
                   v-for="audience in recipient.audiences"
                   :key="audience.uuid"
-                  class="flex items-center justify-between p-4 rounded-lg border"
-                >
+                  class="flex items-center justify-between p-4 rounded-lg border">
                   <div class="space-y-1">
                     <p class="text-sm font-medium leading-none">
                       {{ audience.name }}
@@ -512,12 +512,15 @@ onBeforeUnmount(() => {
                       Added {{ new Date(audience.created_at).toLocaleDateString() }}
                     </p>
                   </div>
+
                   <Button
+                    as-child
                     variant="ghost"
-                    size="sm"
-                    :href="route('audiences.show', audience.uuid)"
-                  >
-                    <Link class="flex items-center gap-2">
+                    size="sm">
+                    <Link
+                      :href="route('audiences.show', audience.uuid)"
+                      class="flex items-center gap-2">
+                      <ExternalLinkIcon />
                       View Audience
                     </Link>
                   </Button>

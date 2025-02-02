@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import {Button} from '@/Components/ui/button';
 import {cn} from '@/lib/utils';
 import {Popover, PopoverContent, PopoverTrigger} from '@/Components/ui/popover'
 import {Calendar} from '@/Components/ui/v-calendar';
@@ -33,7 +32,7 @@ const {campaign} = defineProps<{
   };
 }>();
 
-const modalRef = ref()
+const scheduleCampaignModalRef = ref()
 
 const disabledDates = ref([
   {
@@ -126,7 +125,7 @@ const onSubmit = () => {
   form.put(route('campaigns.console', campaign.uuid), {
     preserveScroll: true,
     onSuccess: () => {
-      modalRef.value.close()
+      scheduleCampaignModalRef.value.onClose()
     },
 
     onError: () => {
@@ -150,6 +149,10 @@ watch(() => form.scheduled_at, (newScheduledAt) => {
   );
 });
 
+const close = () => {
+  scheduleCampaignModalRef.value.onClose()
+}
+
 watch(() => form.frequency, (newFrequency) => {
   form.end_date = getEndDateBasedOnFrequency(
     form.scheduled_at,
@@ -159,7 +162,7 @@ watch(() => form.frequency, (newFrequency) => {
 </script>
 
 <template>
-  <GlobalModal v-slot="{ close }" ref="modalRef">
+  <GlobalModal ref="scheduleCampaignModalRef">
     <form class="grid gap-6">
 
       <!-- Date Selector -->
@@ -169,7 +172,9 @@ watch(() => form.frequency, (newFrequency) => {
         <Calendar
           id="scheduled_at"
           :disabled-dates="disabledDates"
-          v-model="form.scheduled_at" />
+          v-model="form.scheduled_at"
+          expanded
+        />
 
         <InputError :message="form.errors.scheduled_at"/>
       </div>

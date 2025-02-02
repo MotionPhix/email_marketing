@@ -5,110 +5,58 @@ namespace App\Http\Controllers\Campaign;
 use App\Http\Controllers\Controller;
 use App\Jobs\ScheduleCampaignJob;
 use App\Models\Campaign;
+use App\Services\Campaign\CampaignSchedulingService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\Rule;
 
 class Console extends Controller
 {
+  public function __construct(
+    private CampaignSchedulingService $schedulingService
+  ) {}
+
   /**
    * Handle the incoming request.
    */
   public function __invoke(Request $request, Campaign $campaign)
   {
     $validated = $request->validate([
-      'scheduled_at' => 'required|array',
-      'frequency' => 'required|in:bi_weekly,weekly,monthly,quarterly',
-      'stop_campaign' => 'nullable|boolean',
-      'end_date' => 'nullable|array',
+      'scheduled_at' => 'required|date|after:now',
+      'frequency' => ['required', Rule::in(array_keys($this->schedulingService::FREQUENCIES))],
+      'end_date' => [
+        'nullable',
+        'date',
+        'after:scheduled_at',
+        Rule::requiredIf(fn() => $request->frequency !== 'once')
+      ],
     ]);
 
-    if (is_array($validated['scheduled_at'])) {
-
-      $validated['scheduled_at'] = Carbon::createFromDate(
-        $validated['scheduled_at']['year'],
-        $validated['scheduled_at']['month'],
-        $validated['scheduled_at']['day']
-      );
-
-    }
-
-    if ((bool)$validated['stop_campaign'] === true) {
-
-      $validated['end_date'] = Carbon::now();
-
-    } else {
-
-      $validated['end_date'] = $validated['scheduled_at']->copy()->addYear();
-
-    }
-
     try {
+      $scheduledAt = Carbon::parse($validated['scheduled_at']);
+      $endDate = isset($validated['end_date']) ? Carbon::parse($validated['end_date']) : null;
 
-      $this->scheduleCampaigns(
+      $this->schedulingService->schedule(
         $campaign,
-        $validated['scheduled_at'],
-        $validated['end_date'],
-        $validated['frequency']
+        $scheduledAt,
+        $validated['frequency'],
+        $endDate
       );
 
-      $campaign->update([
-        'scheduled_at' => $validated['scheduled_at'],
-        'frequency' => $validated['frequency'],
-        'end_date' => $validated['end_date'],
+      return response()->json([
+        'message' => 'Campaign scheduled successfully'
       ]);
 
-      return $this->redirectWithFlash('success', 'Campaign was scheduled successfully!');
-
-    } catch (\Throwable $e) {
-
-      logger()->error('Failed to schedule campaign', [
-        'error' => $e->getMessage(),
-        'campaign_id' => $campaign->id,
+    } catch (\Exception $e) {
+      Log::error('Campaign scheduling failed', [
+        'campaign' => $campaign->uuid,
+        'error' => $e->getMessage()
       ]);
 
-      return $this->redirectWithFlash(
-        'danger',
-        'Failed to schedule campaign. Please try again.'
-      );
-
-    }
-
-  }
-
-  /**
-   * Schedule campaign jobs based on the interval.
-   */
-  private function scheduleCampaigns(
-    Campaign $campaign,
-    Carbon $startDate,
-    ?Carbon $endDate,
-    string $frequency
-  ) {
-    $intervalMethod = match ($frequency) {
-      'weekly' => fn (&$date) => $date->addWeek(),
-      'bi_weekly' => fn (&$date) => $date->addWeeks(2),
-      'monthly' => fn (&$date) => $date->addMonth(),
-      'quarterly' => fn (&$date) => $date->addMonths(3),
-      default => throw new \InvalidArgumentException('Unsupported frequency: ' . $frequency),
-    };
-
-    $currentDate = $startDate;
-
-    while (!$endDate || $currentDate <= $endDate) {
-
-      logger()->info('Scheduling job with timestamp', [
-        'timestamp' => $currentDate->timestamp,
-        'date' => $currentDate->toDateTimeString(),
-      ]);
-
-      if ($currentDate->timestamp > 2147483647) {
-
-        throw new \Exception('Scheduled date exceeds MySQL timestamp range.');
-
-      }
-
-      ScheduleCampaignJob::dispatch($campaign)->delay($currentDate);
-      $intervalMethod($currentDate);
+      return response()->json([
+        'message' => 'Failed to schedule campaign'
+      ], 422);
     }
   }
 

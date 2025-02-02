@@ -262,9 +262,8 @@ const confirmDeleteCampaign = (uuid: string) => {
                     <div class="flex items-center space-x-2">
                       <Button
                         variant="outline"
-                        size="sm"
                         as-child>
-                        <Link :href="route('campaigns.show', campaign.uuid)">
+                        <Link as="button" :href="route('campaigns.show', campaign.uuid)">
                           View Details
                           <ChevronRight class="h-4 w-4 ml-2"/>
                         </Link>
@@ -272,7 +271,7 @@ const confirmDeleteCampaign = (uuid: string) => {
 
                       <Button
                         variant="destructive"
-                        size="sm"
+                        size="icon"
                         @click="() => confirmDeleteCampaign(campaign.uuid)">
                         <Trash2 class="h-4 w-4"/>
                       </Button>

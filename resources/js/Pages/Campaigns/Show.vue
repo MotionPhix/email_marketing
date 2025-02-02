@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import {ref, computed, watch} from 'vue'
-import {router, Link} from '@inertiajs/vue3'
+import {ref, computed, watch, onMounted, onUnmounted} from 'vue'
+import {router, Link, usePage} from '@inertiajs/vue3'
 import AppLayout from '@/Layouts/AppLayout.vue'
 import PageTitle from '@/Components/PageTitle.vue'
 import {Tabs, TabsContent, TabsList, TabsTrigger} from '@/Components/ui/tabs'
@@ -19,12 +19,13 @@ import {
   Eye,
   Trash2,
   ChevronRight,
+  PencilIcon,
 } from 'lucide-vue-next'
 import {format} from 'date-fns'
 import {useTabPersistence} from "@/composables/useTabPersistence";
 import {useDeviceDetection} from "@/composables/useDeviceDetection";
 import {useDark} from "@vueuse/core";
-import PerformanceOverTimeChart from "@/Pages/Campaigns/PerformanceOverTimeChart.vue";
+import PerformanceOverTimeChart from "@/Pages/Campaigns/Components/PerformanceOverTimeChart.vue";
 import {Separator} from "@/Components/ui/separator";
 import {toast} from "vue-sonner";
 
@@ -91,6 +92,13 @@ const {activeTab, handleTabChange} = useTabPersistence()
 const isLoadingStats = ref(false)
 const {isMobile} = useDeviceDetection()
 const isDatePickerOpen = ref(false)
+const page = usePage()
+
+const stats = ref(props.statistics.stats)
+const chartData = ref(props.statistics.chart)
+
+// Initialize Echo listener
+let echoChannel
 
 // Update your date range state
 const dateRange = ref({
@@ -187,6 +195,36 @@ const removeRecipient = async (recipient: Recipient) => {
   )
 }
 
+onMounted(() => {
+  // Subscribe to private channel for this user's campaign updates
+  echoChannel = window.Echo.private(`campaign.stats.${page.props.auth.user.id}`)
+    .listen('.stats.updated', (e) => {
+      console.log(e)
+
+      if (e.campaignId === props.campaign.uuid) {
+        // Only update if it's for the current campaign
+        stats.value = e.stats
+        chartData.value = e.chartData
+
+        // Update the statistics prop to maintain reactivity
+        props.statistics.stats = e.stats
+        props.statistics.chart = e.chartData
+
+        // Show toast notification
+        toast.success('Campaign statistics updated', {
+          description: 'Latest engagement data received'
+        })
+      }
+    })
+})
+
+onUnmounted(() => {
+  // Clean up Echo listener
+  if (echoChannel) {
+    echoChannel.stopListening('.stats.updated')
+  }
+})
+
 watch(dateRange, async (newRange) => {
   if (!newRange.start || !newRange.end) return
 
@@ -242,30 +280,28 @@ watch(dateRange, async (newRange) => {
 
     <template #action>
       <div class="flex items-center gap-2">
-        <Button
+        <GlobalLink
+          as="Button"
+          preseerve-scroll
           v-if="campaign?.template?.id && campaign?.audience?.id && !campaign?.formatted_scheduled_at"
-          as-child>
-          <Link :href="route('campaigns.schedule', campaign.uuid)">
-            <Clock class="h-4 w-4"/>
-            Schedule
-          </Link>
-        </Button>
+          :href="route('campaigns.schedule', campaign.uuid)">
+          <Clock class="h-4 w-4"/>
+          Schedule
+        </GlobalLink>
 
         <Button
           variant="secondary"
           v-if="campaign?.template?.id && campaign?.audience?.id && !campaign?.formatted_scheduled_at"
-          @click="router.post(route('campaigns.send', campaign.uuid))">
+          @click="router.post(route('campaigns.send', campaign.uuid), {}, { preserveScroll: true })">
           <Send class="h-4 w-4"/>
           Send Now
         </Button>
 
         <Button
-          as-child
-          variant="outline">
-          <Link :href="route('campaigns.edit', campaign.uuid)">
-            <Edit class="h-4 w-4"/>
-            Edit
-          </Link>
+          variant="outline"
+          @click="router.get(route('campaigns.edit', campaign.uuid), {}, { replace: true, preserveScroll: true })">
+          <Edit class="h-4 w-4"/>
+          Edit
         </Button>
       </div>
     </template>
@@ -304,7 +340,7 @@ watch(dateRange, async (newRange) => {
                 </p>
               </div>
 
-              <Separator />
+              <Separator/>
 
               <div class="grid gap-1">
                 <h3 class="font-medium">Schedule</h3>
@@ -322,7 +358,7 @@ watch(dateRange, async (newRange) => {
                 </p>
               </div>
 
-              <Separator />
+              <Separator/>
 
               <div class="grid gap-1">
                 <div class="flex items-center justify-between">
@@ -358,7 +394,7 @@ watch(dateRange, async (newRange) => {
                 </p>
               </div>
 
-              <Separator />
+              <Separator/>
 
               <!-- Recipients Section -->
               <div class="space-y-4">
@@ -406,13 +442,23 @@ watch(dateRange, async (newRange) => {
                         </p>
                       </div>
 
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        class="opacity-0 group-hover:opacity-100"
-                        @click="removeRecipient(recipient)">
-                        <Trash2 class="h-4 w-4"/>
-                      </Button>
+                      <div
+                        class="opacity-0 group-hover:opacity-100 gap-2 flex">
+                        <GlobalLink
+                          preserve-scroll
+                          variant="outline"
+                          as="Button" size="icon"
+                          :href="route('recipients.edit', recipient.uuid)">
+                          <PencilIcon class="h-4 w-4"/>
+                        </GlobalLink>
+
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          @click="removeRecipient(recipient)">
+                          <Trash2 class="h-4 w-4"/>
+                        </Button>
+                      </div>
                     </div>
 
                     <div
@@ -480,7 +526,7 @@ watch(dateRange, async (newRange) => {
                 </div>
 
                 <p class="text-xs text-muted-foreground">
-                  {{ statistics.stats.delivered }} of {{ statistics.stats.delivered + statistics.stats.bounced }}
+                  {{ stats.delivered }} of {{ stats.delivered + stats.bounced }}
                   delivered
                 </p>
               </CardContent>
@@ -497,7 +543,7 @@ watch(dateRange, async (newRange) => {
               <CardContent>
                 <div class="text-2xl font-bold">{{ openRate }}%</div>
                 <p class="text-xs text-muted-foreground">
-                  {{ statistics.stats.unique_opened }} unique opens
+                  {{ stats.unique_opened }} unique opens
                 </p>
               </CardContent>
             </Card>
@@ -513,7 +559,7 @@ watch(dateRange, async (newRange) => {
               <CardContent>
                 <div class="text-2xl font-bold">{{ clickRate }}%</div>
                 <p class="text-xs text-muted-foreground">
-                  {{ statistics.stats.unique_clicked }} unique clicks
+                  {{ stats.unique_clicked }} unique clicks
                 </p>
               </CardContent>
             </Card>
@@ -528,7 +574,7 @@ watch(dateRange, async (newRange) => {
 
               <CardContent>
                 <div class="text-2xl font-bold">
-                  {{ statistics.stats.opened }}
+                  {{ stats.opened }}
                 </div>
               </CardContent>
             </Card>
@@ -542,7 +588,7 @@ watch(dateRange, async (newRange) => {
               </CardHeader>
               <CardContent>
                 <div class="text-2xl font-bold">
-                  {{ statistics.stats.clicked }}
+                  {{ stats.clicked }}
                 </div>
               </CardContent>
             </Card>
@@ -556,10 +602,10 @@ watch(dateRange, async (newRange) => {
               </CardHeader>
               <CardContent>
                 <div class="text-2xl font-bold">
-                  {{ statistics.stats.bounced + statistics.stats.spam_report }}
+                  {{ stats.bounced + stats.spam_report }}
                 </div>
                 <p class="text-xs text-muted-foreground">
-                  {{ statistics.stats.bounced }} bounces, {{ statistics.stats.spam_report }} spam reports
+                  {{ stats.bounced }} bounces, {{ stats.spam_report }} spam reports
                 </p>
               </CardContent>
             </Card>
@@ -572,7 +618,7 @@ watch(dateRange, async (newRange) => {
             </CardHeader>
 
             <CardContent>
-              <PerformanceOverTimeChart :data="statistics.chart"/>
+              <PerformanceOverTimeChart :data="chartData"/>
             </CardContent>
           </Card>
         </TabsContent>

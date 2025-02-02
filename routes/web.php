@@ -183,7 +183,7 @@ Route::middleware([
     )->name('audiences.merge_recipients');
 
     Route::get(
-      '/audience/{audience:uuid}',
+      '/s/{audience:uuid}',
       \App\Http\Controllers\Audience\Show::class
     )->name('audiences.show');
 

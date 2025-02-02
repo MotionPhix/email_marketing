@@ -42,6 +42,7 @@ class Show extends Controller
         'uuid' => $campaign->uuid,
         'title' => $campaign->title,
         'subject' => $campaign->subject,
+        'description' => $campaign->description,
         'status' => $campaign->status,
         'template' => $campaign->template,
         'audience' => $campaign->audience,

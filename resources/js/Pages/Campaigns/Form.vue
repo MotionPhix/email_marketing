@@ -1,10 +1,6 @@
 <script setup lang="ts">
 import {Head, Link, router, useForm} from '@inertiajs/vue3';
 import AppLayout from "@/Layouts/AppLayout.vue";
-import InputError from "@/Components/InputError.vue";
-import {Label} from "@/Components/ui/label";
-import {Input} from "@/Components/ui/input";
-import {Button} from '@/Components/ui/button'
 import {PlusIcon, ArrowRightIcon, ArrowLeftIcon} from "@radix-icons/vue";
 import {
   Select,
@@ -16,8 +12,8 @@ import {
 import {onBeforeUnmount, onMounted, ref, watch} from "vue";
 import {useCampaignStore} from "@/Stores/campaignStore";
 import TemplateSelector from "@/Components/TemplateSelector.vue";
-import MazTextarea from 'maz-ui/components/MazTextarea'
-import { useToast } from 'maz-ui'
+import {toast} from "vue-sonner";
+import InputError from "@/Components/InputError.vue";
 
 const {campaign} = defineProps<{
   campaign: object,
@@ -26,7 +22,6 @@ const {campaign} = defineProps<{
 }>();
 
 const campaignStore = useCampaignStore()
-const toast = useToast()
 
 if (campaign.uuid) campaignStore.setCampaign(campaign)
 
@@ -120,9 +115,8 @@ const onSubmit = () => {
 
         toast.success("Campaign created.", {
           action: {
-            func: () => show(),
-            text: 'Show',
-            closeToast: true
+            label: 'Go to campaign',
+            onClick: () => show()
           }
         })
 
@@ -179,7 +173,7 @@ onBeforeUnmount(() => {
 
     <template #header>
       <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
-        {{ `${campaign.uuid ? 'Edit' : 'Create'} campaign` }}
+        {{ `${campaign.uuid ? 'Edit' : 'New'} campaign` }}
       </h2>
     </template>
 
@@ -220,43 +214,32 @@ onBeforeUnmount(() => {
         <section v-if="step === 1">
 
           <div class="mb-4">
-            <Label for="title">
-              Name
-            </Label>
-
-            <Input
+            <FormField
               v-model="form.title"
-              type="text"
-              id="title"
+              label="Name" :error="form.errors.title"
               placeholder="Enter campaign name"
             />
-
-            <InputError :message="form.errors.title"/>
           </div>
 
           <div class="mb-4">
-            <Label for="content">
-              Subject
-            </Label>
-
-            <Input
+            <FormField
               v-model="form.subject"
-              type="text"
-              id="subject"
-              placeholder="Campaign subject to be used in email"/>
-
-            <InputError :message="form.errors.subject"/>
+              label="Subject"
+              :error="form.errors.subject"
+              placeholder="Campaign subject to be used in email"
+            />
           </div>
 
           <div class="mb-4">
             <Label for="description">
-              Description
+
             </Label>
 
-            <MazTextarea
+            <FormField
+              type="textarea"
               v-model="form.description"
               placeholder="Describe what the campaign is about"
-              id="description"
+              label="Description"
             />
 
             <InputError :message="form.errors.description"/>
@@ -301,8 +284,8 @@ onBeforeUnmount(() => {
             :message="
               form.errors.audience_id ??
               form.errors.title ??
-              form.errors.subject??
-              form.errors.template_id??
+              form.errors.subject ??
+              form.errors.template_id ??
               form.errors.scheduled_at
             "/>
         </div>

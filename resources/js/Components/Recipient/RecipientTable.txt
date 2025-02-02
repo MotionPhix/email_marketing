@@ -9,91 +9,26 @@ import {
 } from "@/Components/ui/table";
 import { Badge } from "@/Components/ui/badge";
 import { Link } from '@inertiajs/vue3';
-import { PenLineIcon, FileTextIcon, ArrowUpDown } from 'lucide-vue-next';
-import { IconChartLine, IconGenderFemale, IconGenderMale, IconMail } from "@tabler/icons-vue";
-import { Checkbox } from "@/Components/ui/checkbox";
-import {computed} from "vue";
-
-interface Recipient {
-  id: number;
-  uuid: string;
-  name: string;
-  email: string;
-  gender: string;
-  current_status: string;
-  created_at: string;
-  last_activity?: string;
-}
-
-interface SortConfig {
-  field: string;
-  direction: 'asc' | 'desc';
-}
-
-interface Column {
-  key: string;
-  label: string;
-  sortable?: boolean;
-  class?: string;
-}
+import { PenLineIcon, FileTextIcon } from 'lucide-vue-next';
+import {IconChartLine, IconGenderFemale, IconGenderMale, IconMail} from "@tabler/icons-vue";
+import {Checkbox} from "@/Components/ui/checkbox";
 
 const props = defineProps<{
-  recipients: Array<Recipient>;
+  recipients: Array<{
+    id: number;
+    uuid: string;
+    name: string;
+    email: string;
+    gender: string;
+    status: string;
+  }>;
   selectedRecipients: Set<number>;
-  sortConfig: SortConfig;
-  totalRecipients: number;
-  isGlobalSelection: boolean;
 }>();
 
-const emit = defineEmits<{
-  'toggle-recipient': [id: number];
-  'select-all': [value: boolean];
-  'select-all-global': [];
-  'clear-global-selection': [];
-  'sort': [field: string];
-}>();
+const emit = defineEmits(["toggle-recipient", "select-all"]);
 
-// Table columns configuration
-const columns: Column[] = [
-  { key: 'name', label: 'Name', sortable: true },
-  { key: 'gender', label: 'Gender', sortable: true },
-  { key: 'current_status', label: 'Status', sortable: true, class: 'text-right w-28' }
-];
-
-// Computed properties for selection states
-const allCurrentPageSelected = computed(() =>
-  props.recipients.length > 0 && props.recipients.every(({ id }) => props.selectedRecipients.has(id))
-);
-
-const hasPartialGlobalSelection = computed(() =>
-  props.selectedRecipients.size > 0 && props.selectedRecipients.size < props.totalRecipients
-);
-
-const handleClearGlobalSelection = () => {
-  emit('clear-global-selection');
-};
-
-const toggleAll = (checked: boolean) => {
-  emit("select-all", checked);
-};
-
-const handleGlobalSelection = () => {
-  emit("select-all-global");
-};
-
-const handleSort = (column: Column) => {
-  if (column.sortable) {
-    emit('sort', column.key);
-  }
-};
-
-const getSortIcon = (column: Column) => {
-  if (!column.sortable) return null;
-
-  if (props.sortConfig.field === column.key) {
-    return props.sortConfig.direction === 'asc' ? 'asc' : 'desc';
-  }
-  return null;
+const toggleAll = (selectAll: boolean) => {
+  emit("select-all", selectAll);
 };
 
 const matchedStatus = (status: string) => {
@@ -114,14 +49,6 @@ const matchedStatus = (status: string) => {
       label: 'Opted out',
       class: 'bg-orange-500/20 text-warning dark:bg-orange-500/30'
     },
-    bounced: {
-      label: 'Bounced',
-      class: 'bg-rose-500/20 text-destructive dark:bg-rose-500/30'
-    },
-    new: {
-      label: 'New',
-      class: 'bg-blue-500/20 text-blue-700 dark:bg-blue-500/30'
-    }
   };
 
   return statusMap[status] || { label: 'Unknown', class: 'bg-muted' };
@@ -133,75 +60,20 @@ const matchedStatus = (status: string) => {
   <div class="hidden sm:block">
     <Table>
       <TableHeader>
-        <TableRow class="hover:bg-muted/5">
+        <TableRow class="hover:bg-muted/50">
           <TableHead class="w-10">
             <label class="relative flex items-center">
               <Checkbox
-                :checked="allCurrentPageSelected"
-                @update:checked="toggleAll"
+                @update:checked="toggleAll($event.target.checked)"
+                :checked="recipients.every(({ id }) => selectedRecipients.has(id))"
                 class="h-5 w-5"
               />
-              <span class="sr-only">
-                Select all recipients
-              </span>
+              <span class="sr-only">Select all recipients</span>
             </label>
           </TableHead>
-
-          <TableHead
-            v-for="column in columns"
-            :key="column.key"
-            :class="[column.class, column.sortable && 'cursor-pointer']"
-            @click="handleSort(column)">
-            <div class="flex items-center gap-2">
-              {{ column.label }}
-              <ArrowUpDown
-                v-if="column.sortable"
-                class="h-4 w-4"
-                :class="{
-                  'text-muted-foreground': getSortIcon(column) === null,
-                  'text-primary': getSortIcon(column) !== null
-                }"
-              />
-            </div>
-          </TableHead>
-        </TableRow>
-
-        <!-- Global Selection Banner -->
-        <TableRow v-if="hasPartialGlobalSelection && !isGlobalSelection" class="bg-muted/10">
-          <TableCell :colspan="columns.length + 1" class="py-2">
-            <div class="flex items-center justify-between px-4">
-              <span class="text-sm">
-                {{ selectedRecipients.size }} of {{ totalRecipients }} recipients selected
-              </span>
-
-              <Button
-                variant="link"
-                size="sm"
-                @click="handleGlobalSelection"
-                class="text-primary hover:text-primary/80">
-                Select all {{ totalRecipients }} recipients
-              </Button>
-            </div>
-          </TableCell>
-        </TableRow>
-
-        <!-- Global Selection Active Banner -->
-        <TableRow v-if="isGlobalSelection" class="bg-primary/10">
-          <TableCell :colspan="columns.length + 1" class="py-2">
-            <div class="flex items-center justify-between px-4">
-              <span class="text-sm">
-                All {{ totalRecipients }} recipients are selected
-              </span>
-
-              <Button
-                size="sm"
-                variant="link"
-                @click="handleClearGlobalSelection"
-                class="text-primary hover:text-primary/80">
-                Clear selection
-              </Button>
-            </div>
-          </TableCell>
+          <TableHead>Name</TableHead>
+          <TableHead>Gender</TableHead>
+          <TableHead class="text-right w-28">Status</TableHead>
         </TableRow>
       </TableHeader>
 
@@ -214,7 +86,7 @@ const matchedStatus = (status: string) => {
             <label class="relative flex items-center">
               <Checkbox
                 :checked="selectedRecipients.has(recipient.id)"
-                @update:checked="emit('toggle-recipient', recipient.id)"
+                @update:checked="$emit('toggle-recipient', recipient.id)"
                 class="h-5 w-5"
               />
               <span class="sr-only">Select recipient</span>
@@ -236,10 +108,10 @@ const matchedStatus = (status: string) => {
             <div class="flex items-center justify-end space-x-2">
               <Badge
                 :class="[
-                  matchedStatus(recipient.current_status).class,
+                  matchedStatus(recipient.status).class,
                   'group-hover:hidden rounded-md px-2 py-1'
                 ]">
-                {{ matchedStatus(recipient.current_status).label }}
+                {{ matchedStatus(recipient.status).label }}
               </Badge>
 
               <div class="hidden group-hover:inline-flex items-center space-x-2">
@@ -248,7 +120,7 @@ const matchedStatus = (status: string) => {
                   :href="route('recipients.edit', recipient.uuid)"
                   class="h-7 w-7"
                   as="Button">
-                  <PenLineIcon class="h-4 w-4" />
+                  <PenLineIcon />
                 </GlobalLink>
 
                 <Button
@@ -258,7 +130,7 @@ const matchedStatus = (status: string) => {
                   :href="route('recipients.show', recipient.uuid)"
                   class="h-7 w-7">
                   <Link as="button">
-                    <FileTextIcon class="h-4 w-4" />
+                    <FileTextIcon />
                   </Link>
                 </Button>
               </div>
@@ -283,7 +155,7 @@ const matchedStatus = (status: string) => {
               <label class="relative flex items-center gap-x-4">
                 <Checkbox
                   :checked="selectedRecipients.has(recipient.id)"
-                  @update:checked="emit('toggle-recipient', recipient.id)"
+                  @update:checked="$emit('toggle-recipient', recipient.id)"
                   class="peer h-5 w-5 shrink-0 rounded-sm border border-primary shadow focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground"
                 />
                 <span class="sr-only">Select recipient</span>
@@ -300,21 +172,20 @@ const matchedStatus = (status: string) => {
                 </div>
 
                 <div class="flex items-center gap-x-4 text-sm pt-2">
-                  <component
-                    :is="recipient.gender === 'male' ? IconGenderMale : IconGenderFemale"
-                    class="h-4 w-4"
-                  />
+                  <component class="h-4 w-4" :is="recipient.gender === 'male' ? IconGenderMale : IconGenderFemale" />
                   <span class="text-muted-foreground capitalize">{{ recipient.gender }}</span>
                 </div>
 
                 <div class="flex items-center gap-x-4 text-sm pt-2">
                   <IconChartLine class="h-4 w-4 text-muted-foreground" />
+
                   <Badge
                     :class="[
-                      matchedStatus(recipient.current_status).class,
+                      matchedStatus(recipient.status).class,
                       'rounded-md py-1 px-2 capitalize text-sm'
                     ]">
-                    {{ matchedStatus(recipient.current_status).label }}
+
+                    {{ matchedStatus(recipient.status).label }}
                   </Badge>
                 </div>
               </section>
@@ -327,7 +198,7 @@ const matchedStatus = (status: string) => {
               as="Button"
               size="icon"
               :href="route('recipients.edit', recipient.uuid)">
-              <PenLineIcon class="h-4 w-4" />
+              <PenLineIcon />
             </GlobalLink>
 
             <Button

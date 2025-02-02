@@ -65,7 +65,7 @@ defineProps<{
           <div class="mt-2 flex gap-2 p-2 justify-end">
             <Button
               as-child
-              :href="route('templates.preview', template.id)">
+              :href="route('templates.preview', template.uuid)">
               <GlobalLink
                 as="button">
                 Preview

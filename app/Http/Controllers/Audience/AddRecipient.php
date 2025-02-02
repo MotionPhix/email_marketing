@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Audience;
 use App\Http\Controllers\Controller;
 use App\Models\Audience;
 use Illuminate\Http\Request;
-use Inertia\Inertia;
 
 class AddRecipient extends Controller
 {
@@ -22,12 +21,12 @@ class AddRecipient extends Controller
 
     $audience->load('recipients');
 
-    return Inertia::modal('Audiences/AddRecipient', [
+    return Inertia('Audiences/AddRecipient', [
       'audience' => [
         'id' => $audience->id,
         'uuid' => $audience->uuid,
         'name' => $audience->name,
-        'recipients' => $audience->recipients->map(fn ($recipient) => [
+        'recipients_on_audience' => $audience->recipients->map(fn ($recipient) => [
           'id' => $recipient->id,
           'uuid' => $recipient->uuid,
           'name' => $recipient->name,
@@ -35,6 +34,6 @@ class AddRecipient extends Controller
         ]),
       ],
       'recipients' => fn() => $request->user()->recipients->map(fn($recipient) => $recipient->only('id', 'uuid', 'name', 'email')),
-    ])->baseRoute('audiences.index');
+    ]);
   }
 }

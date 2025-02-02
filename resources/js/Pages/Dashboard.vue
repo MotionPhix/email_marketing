@@ -27,6 +27,7 @@ import {Button} from '@/Components/ui/button'
 import {Progress} from '@/Components/ui/progress'
 import {format} from "date-fns";
 import {router} from "@inertiajs/vue3";
+import PageTitle from "@/Components/PageTitle.vue";
 
 // Types
 interface EmailEvent {
@@ -215,9 +216,7 @@ const formatDisplaydDate = (date: Date | null) => {
 <template>
   <AppLayout title="Dashboard">
     <template #header>
-      <h2 class="text-xl font-semibold leading-tight">
-        Dashboard
-      </h2>
+      <PageTitle title="Dashboard" />
     </template>
 
     <div class="mt-12 mb-6 px-6 lg:px-0">

@@ -11,6 +11,9 @@ import {createPinia} from "pinia";
 import {installToaster} from 'maz-ui'
 import VueApexCharts from "vue3-apexcharts";
 
+import { setupCalendar, Calendar as VCalendar, DatePicker } from 'v-calendar';
+import 'v-calendar/style.css';
+
 // components
 import {
   Card,
@@ -67,6 +70,9 @@ createInertiaApp({
       .use(pinia)
       .use(VueApexCharts)
       .use(installToaster, toasterOptions)
+      .use(setupCalendar, {})
+      .component('VCalendar', VCalendar)
+      .component('VDatePicker', DatePicker)
       .component('GlobalModal', GlobalModal)
       .component('GlobalLink', ModalLink)
       .component('Card', Card)

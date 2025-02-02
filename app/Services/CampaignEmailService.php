@@ -6,6 +6,7 @@ use App\Models\Campaign;
 use App\Models\EmailLog;
 use App\Models\Recipient;
 use App\Models\User;
+use Illuminate\Support\Facades\Log;
 use SendGrid\Mail\Mail;
 
 class CampaignEmailService
@@ -19,25 +20,24 @@ class CampaignEmailService
   public function sendEmails(Campaign $campaign, $recipients, User $user)
   {
     if (!$campaign->template) {
-      \Log::error("Campaign [{$campaign->id}] has no template assigned.");
+      Log::error("Campaign [{$campaign->id}] has no template assigned.");
       return;
     }
 
-    foreach ($recipients as $recipient) {
-      // Check if the recipient has unsubscribed from the campaign
-      if ($recipient->unsubscribedFromCampaign($campaign)) {
-        \Log::info("Recipient [{$recipient->email}] has unsubscribed from Campaign [{$campaign->id}]. Skipping email.");
-        continue; // Skip sending the email
-      }
+    // Filter out unsubscribed recipients before sending
+    $activeRecipients = $recipients->reject(function ($recipient) {
+      return $recipient->unsubscribed()->exists();
+    });
 
+    foreach ($activeRecipients as $recipient) {
       $email = $this->prepareEmail($campaign, $recipient, $user);
       $sendgrid = new \SendGrid(config('services.sendgrid.api_key'));
 
       try {
         $response = $sendgrid->send($email);
-        \Log::info($response->body());
+        Log::info($response->body());
       } catch (\Exception $e) {
-        \Log::error('SendGrid Error: ' . $e->getMessage());
+        Log::error('SendGrid Error: ' . $e->getMessage());
       }
     }
 
@@ -106,12 +106,12 @@ class CampaignEmailService
   {
     $template = $campaign->template->content; // Retrieve template content from DB
 
-    \Log::debug('before', [$template]);
+    Log::debug('before', [$template]);
 
     // Decode HTML entities
     $decodedTemplate = html_entity_decode($template);
 
-    \Log::debug('after', [$decodedTemplate]);
+    Log::debug('after', [$decodedTemplate]);
 
     // Match placeholders in the template
     preg_match_all('/{{\s*(.*?)\s*}}/', $decodedTemplate, $matches);
@@ -123,7 +123,7 @@ class CampaignEmailService
     // Encode HTML entities
     //$encodedTemplate = htmlentities($decodedTemplate);
 
-    \Log::debug('back', [$decodedTemplate]);
+    Log::debug('back', [$decodedTemplate]);
 
     return $decodedTemplate;
   }

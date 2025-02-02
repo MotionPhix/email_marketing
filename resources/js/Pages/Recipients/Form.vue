@@ -8,7 +8,7 @@ const props = defineProps<{
     email: string
     gender: string
     name: string
-    status: string
+    current_status: string
     uuid?: string
   },
 }>();
@@ -19,7 +19,7 @@ const form = useForm({
   email: props.recipient.email,
   name: props.recipient.name,
   gender: props.recipient.gender,
-  status: props.recipient.status,
+  status: props.recipient.current_status,
 });
 
 const onSubmit = () => {
@@ -97,6 +97,7 @@ const close = () => {
         <div class="mb-4 gap-2">
           <FormField
             type="select"
+            disabled
             :error="form.errors.status"
             placeholder="Set status"
             v-model="form.status"
@@ -105,7 +106,8 @@ const close = () => {
               { value: 'active', label: 'Active' },
               { value: 'inactive', label: 'Dormant' },
               { value: 'banned', label: 'Blacklisted' },
-              { value: 'unsubscribed', label: 'Opted out' }
+              { value: 'unsubscribed', label: 'Opted out' },
+              { value: 'new', label: 'New' }
             ]"
           />
         </div>

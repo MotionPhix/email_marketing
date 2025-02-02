@@ -241,11 +241,6 @@ Route::middleware([
       \App\Http\Controllers\Template\Update::class
     )->name('templates.update');
 
-    Route::get(
-      '/p/{template}',
-      \App\Http\Controllers\Template\Preview::class
-    )->name('templates.preview');
-
     Route::delete(
       '/d/{template:uuid}',
       \App\Http\Controllers\Template\Trash::class

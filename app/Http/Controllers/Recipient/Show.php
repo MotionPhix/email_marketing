@@ -120,7 +120,7 @@ class Show extends Controller
 
     return Inertia('Recipients/Show', [
       'recipient' => array_merge(
-        $recipient->only(['id', 'uuid', 'name', 'email']),
+        $recipient->only(['id', 'uuid', 'name', 'email', 'created_at']),
         ['audiences' => $recipient->audiences]
       ),
       'stats' => $summaryStatsWithPercentages,

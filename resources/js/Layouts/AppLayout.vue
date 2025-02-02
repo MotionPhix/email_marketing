@@ -17,7 +17,7 @@ defineProps({
   <div>
     <Head :title="title"/>
 
-    <Toaster />
+    <Toaster rich-colors />
 
     <Banner/>
 

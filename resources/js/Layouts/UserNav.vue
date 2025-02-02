@@ -30,11 +30,11 @@ import {getInitials} from "@/lib/stringUtils";
 
           <AvatarImage
             :src="$page.props.auth.user.profile_photo_url"
-            :alt="$page.props.auth.user.first_name"
+            :alt="$page.props.auth.user.name"
           />
 
           <AvatarFallback>
-            {{ $page.props.auth.user.first_name }}
+            {{ $page.props.auth.user.name }}
           </AvatarFallback>
 
         </Avatar>
@@ -45,7 +45,7 @@ import {getInitials} from "@/lib/stringUtils";
       <DropdownMenuLabel class="font-normal flex">
         <div class="flex flex-col space-y-1">
           <p class="font-medium leading-none">
-            {{ `${$page.props.auth.user.first_name} ${$page.props.auth.user.last_name}` }}
+            {{ $page.props.auth.user.name }}
           </p>
 
           <p class="text-xs leading-none text-muted-foreground">

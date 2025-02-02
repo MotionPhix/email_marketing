@@ -25,13 +25,12 @@ class Update extends Controller
 
     $validated = $request->validate([
       'email' => [
-        'required', 'email',
+        'required', 'email:dns,rfc',
         Rule::unique('recipients')
           ->where(fn($query) => $query->where('user_id', $request->user()->id))
           ->ignore($recipient->id ?? null),
       ],
       'gender' => 'nullable|in:male,female,unspecified',
-      'status' => 'nullable|in:active,inactive,banned,unsubscribed',
       'name' => 'required',
     ], [
       'email.required' => 'Provide an email for the recipient',
@@ -40,7 +39,7 @@ class Update extends Controller
       'name.required' => 'Provide a name for the recipient'
     ]);
 
-    $recipient->update($request->only(['email', 'name', 'gender', 'status']));
+    $recipient->update($validated);
 
     return redirect()->back();
   }

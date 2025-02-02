@@ -7,7 +7,6 @@ import {
   Card,
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/Components/ui/card";
@@ -18,7 +17,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/Components/ui/dialog";
 import {Badge} from "@/Components/ui/badge";
 import {Tabs, TabsContent, TabsList, TabsTrigger} from "@/Components/ui/tabs";
@@ -28,7 +26,6 @@ import {
   Mail,
   Calendar,
   ChevronRight,
-  Settings,
   Trash2,
   Edit,
   UserPlus,
@@ -64,7 +61,7 @@ const props = defineProps<{
   audience: Audience;
 }>();
 
-const {activeTab} = useTabPersistence()
+const {activeTab, handleTabChange} = useTabPersistence()
 const showDeleteDialog = ref(false);
 const recipientToRemove = ref<string | null>(null);
 const campaignToDelete = ref<string | null>(null);
@@ -113,12 +110,12 @@ const confirmDeleteCampaign = (uuid: string) => {
         </div>
       </div>
       <div class="flex items-center space-x-2">
-        <Button variant="outline" as-child>
-          <Link :href="route('audiences.edit', audience.uuid)">
-            <Edit class="h-4 w-4 mr-2"/>
-            Edit Audience
-          </Link>
-        </Button>
+        <GlobalLink
+          variant="outline" as="Button"
+          :href="route('audiences.edit', audience.uuid)">
+          <Edit class="h-4 w-4 mr-2"/>
+          Edit Audience
+        </GlobalLink>
 
         <Button variant="destructive" @click="confirmDelete">
           <Trash2 class="h-4 w-4 mr-2"/>
@@ -128,7 +125,7 @@ const confirmDeleteCampaign = (uuid: string) => {
     </template>
 
     <div class="py-12">
-      <Tabs v-model="activeTab" class="space-y-6">
+      <Tabs v-model="activeTab" class="space-y-6" @change="handleTabChange">
         <TabsList class="bg-white dark:bg-gray-800 p-1 rounded-lg">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="recipients">Recipients</TabsTrigger>
@@ -187,6 +184,7 @@ const confirmDeleteCampaign = (uuid: string) => {
                 </Button>
               </div>
             </CardHeader>
+
             <CardContent>
               <ScrollArea class="h-[400px]">
                 <div class="space-y-4">
@@ -201,26 +199,26 @@ const confirmDeleteCampaign = (uuid: string) => {
                           {{ recipient.name.charAt(0).toUpperCase() }}
                         </span>
                       </div>
+
                       <div>
                         <p class="font-medium">{{ recipient.name }}</p>
                         <p class="text-sm text-gray-500">{{ recipient.email }}</p>
                       </div>
                     </div>
+
                     <div class="flex items-center space-x-2">
-                      <Button
+                      <GlobalLink
+                        as="Button"
                         variant="outline"
-                        size="sm"
-                        as-child
-                      >
-                        <Link :href="route('recipients.edit', recipient.uuid)">
-                          <Edit class="h-4 w-4"/>
-                        </Link>
-                      </Button>
+                        size="icon"
+                        :href="route('recipients.edit', recipient.uuid)">
+                        <Edit class="h-4 w-4"/>
+                      </GlobalLink>
+
                       <Button
+                        size="icon"
                         variant="destructive"
-                        size="sm"
-                        @click="() => confirmRemoveRecipient(recipient.uuid)"
-                      >
+                        @click="() => confirmRemoveRecipient(recipient.uuid)">
                         <Trash2 class="h-4 w-4"/>
                       </Button>
                     </div>
@@ -260,22 +258,22 @@ const confirmDeleteCampaign = (uuid: string) => {
                       </div>
                       <p class="text-sm text-gray-500">{{ campaign.subject }}</p>
                     </div>
+
                     <div class="flex items-center space-x-2">
                       <Button
                         variant="outline"
                         size="sm"
-                        as-child
-                      >
+                        as-child>
                         <Link :href="route('campaigns.show', campaign.uuid)">
                           View Details
                           <ChevronRight class="h-4 w-4 ml-2"/>
                         </Link>
                       </Button>
+
                       <Button
                         variant="destructive"
                         size="sm"
-                        @click="() => confirmDeleteCampaign(campaign.uuid)"
-                      >
+                        @click="() => confirmDeleteCampaign(campaign.uuid)">
                         <Trash2 class="h-4 w-4"/>
                       </Button>
                     </div>
@@ -290,7 +288,7 @@ const confirmDeleteCampaign = (uuid: string) => {
 
     <!-- Delete Audience Dialog -->
     <Dialog v-model:open="showDeleteDialog">
-      <DialogContent>
+      <DialogContent class="max-w-sm">
         <DialogHeader>
           <DialogTitle>Delete Audience</DialogTitle>
           <DialogDescription>

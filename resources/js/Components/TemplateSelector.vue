@@ -1,82 +1,114 @@
 <script setup lang="ts">
-defineProps<{
-  modelValue?: number,
-  templates: Array<{
-    value: number;
-    label: string;
-    description: string;
-    preview: string;
-  }>;
-}>()
+import {PlusIcon, CheckCircleIcon, FrameIcon} from "lucide-vue-next";
+import EmptyState from "@/Components/EmptyState.vue";
+import {Link} from "@inertiajs/vue3"
+import {computed} from "vue";
 
+interface Template {
+  value: number;
+  label: string;
+  description: string;
+  preview: string;
+}
+
+interface Props {
+  modelValue?: number;
+  templates: Template[];
+}
+
+const props = defineProps<Props>();
 const emits = defineEmits(["update:modelValue"]);
+
+const hasTemplates = computed(() => props.templates?.length > 0);
 </script>
 
 <template>
-  <div class="grid grid-cols-3 gap-6">
-    <label
-      v-for="template in templates"
-      :key="template.value"
-      class="w-full cursor-pointer rounded-md shadow-sm bg-white border-2 hover:shadow-lg transition-all"
-      :class="{
-        'border-gray-300': modelValue !== template.value,
-        'border-green-500 ring-2 ring-green-300': modelValue === template.value,
-      }"
-    >
-      <input
-        type="radio"
-        class="sr-only"
-        :value="template.value"
-        :checked="modelValue === template.value"
-        @change="$emit('update:modelValue', template.value)"
-      />
+  <div>
+    <EmptyState
+      v-if="!hasTemplates"
+      title="No templates found"
+      description="You haven't created any templates yet. Start by creating one."
+      :icon="FrameIcon">
+      <template #action>
+        <Button
+          size="sm"
+          as-child
+          class="inline-flex items-center">
+          <Link as="button" class="gap-2" :href="route('templates.create')">
+            <PlusIcon class="h-4 w-4"/>
+            Create template
+          </Link>
+        </Button>
+      </template>
+    </EmptyState>
 
-      <section class="flex flex-col gap-3">
+    <div v-else class="grid grid-cols-1 gap-6 sm:grid-cols-2">
+      <label
+        v-for="template in templates"
+        :key="template.value"
+        class="group relative flex cursor-pointer flex-col rounded-lg border-2 bg-white shadow-sm transition-all hover:shadow-md"
+        :class="{
+          'border-gray-200': modelValue !== template.value,
+          'border-primary ring-2 ring-primary/30': modelValue === template.value,
+        }">
+        <input
+          type="radio"
+          class="sr-only"
+          :value="template.value"
+          :checked="modelValue === template.value"
+          @change="$emit('update:modelValue', template.value)"
+        />
+
         <!-- Preview Section -->
-        <div class="h-64 bg-gray-100 rounded-md overflow-hidden flex items-center justify-center">
+        <div class="relative h-72 mb-4 aspect-video w-full overflow-hidden rounded-md bg-muted">
           <img
             v-if="template.preview.startsWith('http')"
             :src="template.preview"
-            alt="Template preview"
-            class="h-full w-full object-cover"
+            :alt="template.label"
+            class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
           />
 
           <div
+            v-else
             v-html="template.preview"
-            class="w-full h-full p-2 overflow-auto bg-gray-50 text-sm text-gray-800 rounded" />
+            class="h-full scroll-smooth scrollbar-none w-full overflow-auto bg-muted p-2 text-sm text-muted-foreground"
+          />
         </div>
 
         <!-- Template Info -->
-        <div class="px-4 flex justify-between items-center">
-          <span class="font-bold text-lg">{{ template.label }}</span>
-          <svg
-            v-show="modelValue === template.value"
-            class="w-6 h-6 text-green-500"
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke-width="2"
-            stroke="currentColor"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+        <div class="flex flex-1 flex-col px-4">
+          <div class="mb-2 flex items-center justify-between">
+            <h3 class="text-base font-medium">{{ template.label }}</h3>
+            <CheckCircleIcon
+              v-show="modelValue === template.value"
+              class="h-5 w-5 text-primary"
             />
-          </svg>
+          </div>
+          <p class="text-sm text-muted-foreground">{{ template.description }}</p>
         </div>
-        <p class="text-sm text-gray-600">{{ template.description }}</p>
-      </section>
-    </label>
+
+        <!-- Selected Overlay -->
+        <div
+          v-if="modelValue === template.value"
+          class="absolute inset-0 rounded-lg ring-2 ring-primary"
+          aria-hidden="true"
+        />
+      </label>
+    </div>
   </div>
 </template>
 
 <style scoped>
-/* Optional: Add custom styles for consistent height and hover effects */
-label {
-  transition: all 0.3s ease-in-out;
+.group {
+  transition: all 0.2s ease-in-out;
 }
-label:hover {
-  transform: scale(1.02);
+
+.group:hover {
+  transform: translateY(-2px);
+}
+
+/* Ensure consistent aspect ratio for preview images */
+.aspect-video {
+  aspect-ratio: 16 / 9;
 }
 </style>

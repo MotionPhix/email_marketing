@@ -19,10 +19,16 @@ class Campaign extends Model
   public const STATUS_SENT = 'sent';
   public const STATUS_FAILED = 'failed';
 
+  // Add step constants
+  public const STEP_DETAILS = 1;
+  public const STEP_TEMPLATE = 2;
+  public const STEP_AUDIENCE = 3;
+
   protected $fillable = [
     'title',
     'subject',
     'status',
+    'step',
     'scheduled_at',
     'user_id',
     'audience_id',
@@ -36,6 +42,10 @@ class Campaign extends Model
     'scheduled_at' => 'datetime',
     'send_at' => 'datetime',
     'end_date' => 'datetime'
+  ];
+
+  protected $attributes = [
+    'step' => self::STEP_DETAILS, // Default to first step
   ];
 
   public function user()
@@ -83,6 +93,28 @@ class Campaign extends Model
     );
   }
 
+  // Add new step-related methods
+  public function nextStep(): void
+  {
+    if ($this->step < self::STEP_AUDIENCE) {
+      $this->increment('step');
+    }
+  }
+
+  public function previousStep(): void
+  {
+    if ($this->step > self::STEP_DETAILS) {
+      $this->decrement('step');
+    }
+  }
+
+  public function setStep(int $step): void
+  {
+    if ($step >= self::STEP_DETAILS && $step <= self::STEP_AUDIENCE) {
+      $this->update(['step' => $step]);
+    }
+  }
+
   // Add scope for active campaigns
   public function scopeActive($query) {
     return $query->whereIn('status', [
@@ -96,6 +128,10 @@ class Campaign extends Model
     static::creating(function ($campaign) {
       if (!$campaign->status) {
         $campaign->status = self::STATUS_DRAFT;
+      }
+
+      if (!$campaign->step) {
+        $campaign->step = self::STEP_DETAILS;
       }
     });
   }

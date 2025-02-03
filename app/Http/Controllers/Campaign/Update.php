@@ -32,6 +32,12 @@ class Update extends Controller
       'template_id' => 'nullable|exists:templates,id',
       'audience_id' => 'nullable|exists:audiences,id',
       'description' => 'nullable',
+      'step' => [
+        'nullable',
+        'integer',
+        'min:' . Campaign::STEP_DETAILS,
+        'max:' . Campaign::STEP_AUDIENCE
+      ],
     ]);
 
     if (
@@ -40,10 +46,11 @@ class Update extends Controller
       $request->description !== $campaign->description ||
       $request->subject !== $campaign->subject ||
       $request->template_id !== $campaign->template_id ||
-      $request->audience_id !== $campaign->audience_id
+      $request->audience_id !== $campaign->audience_id ||
+      $request->step !== $campaign->step
     ) {
 
-      $campaign->update([
+      $updateData = [
         'title' => $validated['title'],
         'template_id' => $validated['template_id'],
         'subject' => $validated['subject'],
@@ -51,7 +58,14 @@ class Update extends Controller
         'description' => $validated['description'],
         'status' => $validated['scheduled_at'] ? 'scheduled' : 'draft',
         'scheduled_at' => $validated['scheduled_at'],
-      ]);
+      ];
+
+      // Only update step if it's provided and different
+      if (isset($validated['step']) && $validated['step'] !== $campaign->step) {
+        $updateData['step'] = $validated['step'];
+      }
+
+      $campaign->update($updateData);
     }
 
     return redirect()->back();

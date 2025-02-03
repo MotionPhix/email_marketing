@@ -197,7 +197,7 @@ const toggleSort = (field: typeof sortBy.value) => {
         <div
           v-for="audience in filteredAudiences"
           :key="audience.id"
-          class="group relative shadow-sm transition-all hover:shadow-md">
+          class="group relative transition-all">
           <!-- Audience Header -->
           <div class="mb-4">
             <div class="flex items-start justify-between">
@@ -221,7 +221,7 @@ const toggleSort = (field: typeof sortBy.value) => {
                   </Button>
                 </DropdownMenuTrigger>
 
-                <DropdownMenuContent align="end">
+                <DropdownMenuContent align="end" side-offset="-3">
                   <DropdownMenuGroup>
                     <GlobalLink
                       as="DropdownMenuItem"

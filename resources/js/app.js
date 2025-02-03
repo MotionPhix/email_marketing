@@ -7,9 +7,11 @@ import {createInertiaApp} from '@inertiajs/vue3';
 import {resolvePageComponent} from 'laravel-vite-plugin/inertia-helpers';
 import {ZiggyVue} from '../../vendor/tightenco/ziggy';
 import {ModalLink, renderApp} from '@inertiaui/modal-vue'
+import ToastPlugin from 'vue-toast-notification';
+import VueApexCharts from "vue3-apexcharts";
 import {createPinia} from "pinia";
 import {installToaster} from 'maz-ui'
-import VueApexCharts from "vue3-apexcharts";
+import 'vue-toast-notification/dist/theme-default.css';
 
 import { setupCalendar, Calendar as VCalendar, DatePicker } from 'v-calendar';
 import 'v-calendar/style.css';
@@ -68,6 +70,7 @@ createInertiaApp({
       .use(plugin)
       .use(ZiggyVue)
       .use(pinia)
+      .use(ToastPlugin)
       .use(VueApexCharts)
       .use(installToaster, toasterOptions)
       .use(setupCalendar, {})

@@ -4,14 +4,15 @@ namespace App\Services\Campaign;
 
 use App\Models\Campaign;
 use App\Jobs\ScheduleCampaignJob;
+use App\Events\CampaignScheduled;
+use App\Events\CampaignScheduleCancelled;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 
 class CampaignSchedulingService
 {
-  /**
-   * Available scheduling frequencies and their interval methods
-   */
   public const FREQUENCIES = [
     'once' => null,
     'daily' => 'addDay',
@@ -21,9 +22,6 @@ class CampaignSchedulingService
     'quarterly' => 'addMonths'
   ];
 
-  /**
-   * Default duration in days for each frequency if no end date is provided
-   */
   private const DEFAULT_DURATIONS = [
     'daily' => 30,    // 30 days
     'weekly' => 90,   // ~3 months
@@ -32,40 +30,91 @@ class CampaignSchedulingService
     'quarterly' => 730 // 2 years
   ];
 
-  /**
-   * Schedule a campaign with the specified parameters
-   *
-   * @param Campaign $campaign
-   * @param Carbon $startDate
-   * @param string $frequency
-   * @param Carbon|null $endDate
-   * @throws \InvalidArgumentException
-   * @throws \Exception
-   */
+  private const MAX_SCHEDULED_JOBS = 1000;
+  private const CACHE_KEY_PREFIX = 'campaign_schedule:';
+
   public function schedule(Campaign $campaign, Carbon $startDate, string $frequency, ?Carbon $endDate = null): void
   {
     $this->validateFrequency($frequency);
     $this->validateDates($startDate, $endDate);
+    $this->validateConcurrentCampaigns($campaign, $startDate);
 
-    // For one-time campaigns, just schedule a single job
-    if ($frequency === 'once') {
-      $this->scheduleJob($campaign, $startDate);
-      return;
+    DB::beginTransaction();
+
+    try {
+      if ($frequency === 'once') {
+        $this->scheduleJob($campaign, $startDate);
+      } else {
+        $endDate = $endDate ?? $this->calculateDefaultEndDate($startDate, $frequency);
+        $this->validateJobCount($startDate, $endDate, $frequency);
+        $this->scheduleRecurringJobs($campaign, $startDate, $frequency, $endDate);
+        $this->updateCampaignStatus($campaign, $startDate, $endDate, $frequency);
+      }
+
+      DB::commit();
+
+      $this->cacheScheduleInfo($campaign, $startDate, $frequency, $endDate);
+      event(new CampaignScheduled($campaign));
+
+    } catch (\Exception $e) {
+      DB::rollBack();
+      Log::error('Campaign scheduling failed', [
+        'campaign_uuid' => $campaign->uuid,
+        'error' => $e->getMessage()
+      ]);
+
+      throw $e;
     }
-
-    // Calculate end date if not provided
-    $endDate = $endDate ?? $this->calculateDefaultEndDate($startDate, $frequency);
-
-    // Schedule recurring jobs
-    $this->scheduleRecurringJobs($campaign, $startDate, $frequency, $endDate);
   }
 
-  /**
-   * Validate the scheduling frequency
-   *
-   * @param string $frequency
-   * @throws \InvalidArgumentException
-   */
+  private function validateJobCount(Carbon $startDate, Carbon $endDate, string $frequency): void
+  {
+    $jobCount = $this->calculateJobCount($startDate, $endDate, $frequency);
+
+    if ($jobCount > self::MAX_SCHEDULED_JOBS) {
+      throw new \Exception("Schedule would create too many jobs ({$jobCount}). Maximum allowed: " . self::MAX_SCHEDULED_JOBS);
+    }
+  }
+
+  private function calculateJobCount(Carbon $startDate, Carbon $endDate, string $frequency): int
+  {
+    $interval = match($frequency) {
+      'daily' => 'P1D',
+      'weekly' => 'P1W',
+      'bi_weekly' => 'P2W',
+      'monthly' => 'P1M',
+      'quarterly' => 'P3M',
+      default => throw new \InvalidArgumentException("Invalid frequency: {$frequency}")
+    };
+
+    $period = new \DatePeriod($startDate, new \DateInterval($interval), $endDate);
+    return iterator_count($period) + 1;
+  }
+
+  public function cancelScheduledJobs(Campaign $campaign): void
+  {
+    DB::transaction(function () use ($campaign) {
+      // Update campaign status
+      $campaign->update([
+        'status' => Campaign::STATUS_DRAFT,
+        'scheduled_at' => null,
+        'frequency' => null,
+        'end_date' => null,
+      ]);
+
+      // Clear cache
+      Cache::forget(self::CACHE_KEY_PREFIX . $campaign->uuid);
+
+      // Log cancellation
+      Log::info('Campaign schedule cancelled', [
+        'campaign_uuid' => $campaign->uuid
+      ]);
+
+      // Dispatch cancellation event
+      event(new CampaignScheduleCancelled($campaign));
+    });
+  }
+
   private function validateFrequency(string $frequency): void
   {
     if (!array_key_exists($frequency, self::FREQUENCIES)) {
@@ -73,13 +122,6 @@ class CampaignSchedulingService
     }
   }
 
-  /**
-   * Validate start and end dates
-   *
-   * @param Carbon $startDate
-   * @param Carbon|null $endDate
-   * @throws \Exception
-   */
   private function validateDates(Carbon $startDate, ?Carbon $endDate): void
   {
     if ($startDate->isPast()) {
@@ -89,49 +131,25 @@ class CampaignSchedulingService
     if ($endDate && $endDate->isBefore($startDate)) {
       throw new \Exception('End date must be after start date');
     }
+  }
 
-    if ($startDate->timestamp > 2147483647 || ($endDate && $endDate->timestamp > 2147483647)) {
-      throw new \Exception('Scheduled date exceeds maximum allowed timestamp');
+  private function validateConcurrentCampaigns(Campaign $campaign, Carbon $startDate): void
+  {
+    $concurrentCampaigns = Campaign::where('user_id', $campaign->user_id)
+      ->where('uuid', '!=', $campaign->uuid)
+      ->where('scheduled_at', $startDate->format('Y-m-d'))
+      ->count();
+
+    if ($concurrentCampaigns >= 5) {
+      throw new \Exception('Maximum concurrent campaigns limit reached for this date');
     }
   }
 
-  /**
-   * Calculate default end date based on frequency
-   *
-   * @param Carbon $startDate
-   * @param string $frequency
-   * @return Carbon
-   */
-  private function calculateDefaultEndDate(Carbon $startDate, string $frequency): Carbon
-  {
-    $duration = self::DEFAULT_DURATIONS[$frequency] ?? 30;
-    return $startDate->copy()->addDays($duration);
-  }
-
-  /**
-   * Schedule a single campaign job
-   *
-   * @param Campaign $campaign
-   * @param Carbon $date
-   */
   private function scheduleJob(Campaign $campaign, Carbon $date): void
   {
-    Log::info('Scheduling campaign job', [
-      'campaign_uuid' => $campaign->uuid,
-      'scheduled_for' => $date->toDateTimeString(),
-    ]);
-
     ScheduleCampaignJob::dispatch($campaign)->delay($date);
   }
 
-  /**
-   * Schedule recurring campaign jobs
-   *
-   * @param Campaign $campaign
-   * @param Carbon $startDate
-   * @param string $frequency
-   * @param Carbon $endDate
-   */
   private function scheduleRecurringJobs(Campaign $campaign, Carbon $startDate, string $frequency, Carbon $endDate): void
   {
     $currentDate = $startDate->copy();
@@ -141,7 +159,6 @@ class CampaignSchedulingService
     while ($currentDate->lte($endDate)) {
       $this->scheduleJob($campaign, $currentDate);
 
-      // Handle special cases for bi-weekly and quarterly
       if (in_array($frequency, ['bi_weekly', 'quarterly'])) {
         $currentDate->{$method}($interval);
       } else {
@@ -150,17 +167,32 @@ class CampaignSchedulingService
     }
   }
 
-  /**
-   * Cancel all scheduled jobs for a campaign
-   *
-   * @param Campaign $campaign
-   */
-  public function cancelScheduledJobs(Campaign $campaign): void
+  private function updateCampaignStatus(Campaign $campaign, Carbon $startDate, ?Carbon $endDate, string $frequency): void
   {
-    // Implementation depends on your queue driver
-    // For database queue:
-    // Queue::where('payload->command', 'like', '%ScheduleCampaignJob%')
-    //     ->where('payload', 'like', "%{$campaign->uuid}%")
-    //     ->delete();
+    $campaign->update([
+      'status' => Campaign::STATUS_SCHEDULED,
+      'frequency' => $frequency,
+      'scheduled_at' => $startDate,
+      'end_date' => $endDate,
+    ]);
+  }
+
+  private function calculateDefaultEndDate(Carbon $startDate, string $frequency): Carbon
+  {
+    $duration = self::DEFAULT_DURATIONS[$frequency] ?? 30;
+    return $startDate->copy()->addDays($duration);
+  }
+
+  private function cacheScheduleInfo(Campaign $campaign, Carbon $startDate, string $frequency, ?Carbon $endDate): void
+  {
+    $cacheKey = self::CACHE_KEY_PREFIX . $campaign->uuid;
+    $scheduleInfo = [
+      'start_date' => $startDate->toDateTimeString(),
+      'frequency' => $frequency,
+      'end_date' => $endDate?->toDateTimeString(),
+      'last_updated' => now()->toDateTimeString(),
+    ];
+
+    Cache::put($cacheKey, $scheduleInfo, now()->addDays(90));
   }
 }

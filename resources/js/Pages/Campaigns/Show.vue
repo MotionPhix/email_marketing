@@ -19,6 +19,7 @@ import {
   Eye,
   Trash2,
   ChevronRight,
+  XIcon,
   PencilIcon,
 } from 'lucide-vue-next'
 import {format} from 'date-fns'
@@ -28,58 +29,51 @@ import {useDark} from "@vueuse/core";
 import PerformanceOverTimeChart from "@/Pages/Campaigns/Components/PerformanceOverTimeChart.vue";
 import {Separator} from "@/Components/ui/separator";
 import {toast} from "vue-sonner";
-
-// Types
-interface Template {
-  id?: number
-  uuid: string
-  name: string
-}
-
-interface Recipient {
-  recipient_id?: number
-  uuid: string
-  name: string
-  email: string
-}
-
-interface Audience {
-  id?: number
-  uuid: string
-  name: string
-  recipients?: Recipient[]
-}
+import ScheduledState from "@/Pages/Campaigns/Components/ScheduledState.vue";
 
 interface Campaign {
-  id?: number
   uuid: string
   title: string
   status: string
   subject?: string
-  frequency?: string
   description?: string
   formatted_scheduled_at?: string
   formatted_end_date?: string
-  template?: Template
-  audience?: Audience
-}
-
-interface Statistics {
-  stats: {
-    bounced: number
-    clicked: number
-    unique_clicked: number
-    unique_opened: number
-    spam_report: number
-    delivered: number
-    opened: number
+  frequency?: string
+  template?: {
+    id: number
+    uuid: string
+    name: string
   }
-  chart: Record<string, Record<string, number>>
+  audience?: {
+    id: number
+    uuid: string
+    name: string
+    recipients?: Array<{
+      uuid: string
+      name: string
+      email: string
+    }>
+  }
+  can_edit: boolean
+  can_schedule: boolean
+  can_send: boolean
 }
 
 interface Props {
   campaign: Campaign
-  statistics: Statistics
+  statistics: {
+    stats: {
+      bounced: number
+      clicked: number
+      unique_clicked: number
+      unique_opened: number
+      spam_report: number
+      delivered: number
+      opened: number
+    }
+    chart: Record<string, Record<string, number>>
+  }
   startDate: string
   endDate: string
 }
@@ -97,16 +91,31 @@ const page = usePage()
 const stats = ref(props.statistics.stats)
 const chartData = ref(props.statistics.chart)
 
-// Initialize Echo listener
-let echoChannel
+// Method to handle schedule cancellation
+const handleCancelSchedule = async () => {
+  try {
+    await router.post(
+      route('campaigns.cancel_schedule', props.campaign.uuid),
+      {},
+      {
+        preserveScroll: true,
+        onSuccess: () => {
+          toast.success('Campaign schedule cancelled successfully')
+        },
+        onError: (errors) => {
+          toast.error('Failed to cancel schedule', {
+            description: errors.message || 'An error occurred'
+          })
+        }
+      }
+    )
+  } catch (error) {
+    toast.error('Error cancelling schedule', {
+      description: 'Please try again later'
+    })
+  }
+}
 
-// Update your date range state
-const dateRange = ref({
-  start: new Date(props.startDate),
-  end: new Date(props.endDate)
-})
-
-// Computed
 const displayedRecipients = computed(() =>
   props.campaign.audience?.recipients?.slice(0, 5) || []
 )
@@ -117,71 +126,53 @@ const remainingRecipients = computed(() =>
     : 0
 )
 
+// Statistics calculations
 const deliveryRate = computed(() => {
-  const total = props.statistics.stats.delivered + props.statistics.stats.bounced
+  const total = stats.value.delivered + stats.value.bounced
   return total > 0
-    ? ((props.statistics.stats.delivered / total) * 100).toFixed(1)
+    ? ((stats.value.delivered / total) * 100).toFixed(1)
     : 0
 })
 
 const openRate = computed(() => {
-  const total = props.statistics.stats.delivered
+  const total = stats.value.delivered
   return total > 0
-    ? ((props.statistics.stats.unique_opened / total) * 100).toFixed(1)
+    ? ((stats.value.unique_opened / total) * 100).toFixed(1)
     : 0
 })
 
 const clickRate = computed(() => {
-  const total = props.statistics.stats.delivered
+  const total = stats.value.delivered
   return total > 0
-    ? ((props.statistics.stats.unique_clicked / total) * 100).toFixed(1)
+    ? ((stats.value.unique_clicked / total) * 100).toFixed(1)
     : 0
 })
 
-// Update your method
-const updateDateRange = (range: { start: Date | null; end: Date | null }) => {
-  if (!range.start || !range.end) return
-
-  router.get(
-    route('campaigns.show', props.campaign.uuid),
-    {
-      start_date: format(range.start, 'yyyy-MM-dd'),
-      end_date: format(range.end, 'yyyy-MM-dd')
-    },
-    {
-      preserveState: true,
-      preserveScroll: true
-    }
-  )
-}
-
-const getStatusBadge = (status: string) => {
-  const statusConfig = {
-    draft: {
-      label: 'Draft',
-      class: 'bg-muted text-muted-foreground'
-    },
-    scheduled: {
-      label: 'Scheduled',
-      class: 'bg-blue-500/20 text-blue-700'
-    },
-    sending: {
-      label: 'Sending',
-      class: 'bg-yellow-500/20 text-yellow-700'
-    },
-    sent: {
-      label: 'Sent',
-      class: 'bg-green-500/20 text-green-700'
-    },
-    failed: {
-      label: 'Failed',
-      class: 'bg-red-500/20 text-red-700'
-    }
+// Status badge configuration
+const getStatusBadge = (status: string) => ({
+  draft: {
+    label: 'Draft',
+    class: 'bg-muted text-muted-foreground'
+  },
+  scheduled: {
+    label: 'Scheduled',
+    class: 'bg-blue-500/20 text-blue-700'
+  },
+  sending: {
+    label: 'Sending',
+    class: 'bg-yellow-500/20 text-yellow-700'
+  },
+  sent: {
+    label: 'Sent',
+    class: 'bg-green-500/20 text-green-700'
+  },
+  failed: {
+    label: 'Failed',
+    class: 'bg-red-500/20 text-red-700'
   }
-  return statusConfig[status] || statusConfig.draft
-}
+}[status] || {label: 'Draft', class: 'bg-muted text-muted-foreground'})
 
-const removeRecipient = async (recipient: Recipient) => {
+const removeRecipient = async (recipient) => {
   if (!props.campaign.audience) return
 
   await router.delete(
@@ -195,34 +186,29 @@ const removeRecipient = async (recipient: Recipient) => {
   )
 }
 
+// Real-time updates setup
+let echoChannel
 onMounted(() => {
-  // Subscribe to private channel for this user's campaign updates
   echoChannel = window.Echo.private(`campaign.stats.${page.props.auth.user.id}`)
     .listen('.stats.updated', (e) => {
-      console.log(e)
-
       if (e.campaignId === props.campaign.uuid) {
-        // Only update if it's for the current campaign
         stats.value = e.stats
         chartData.value = e.chartData
-
-        // Update the statistics prop to maintain reactivity
-        props.statistics.stats = e.stats
-        props.statistics.chart = e.chartData
-
-        // Show toast notification
-        toast.success('Campaign statistics updated', {
-          description: 'Latest engagement data received'
-        })
+        toast.success('Campaign statistics updated')
       }
     })
 })
 
 onUnmounted(() => {
-  // Clean up Echo listener
   if (echoChannel) {
     echoChannel.stopListening('.stats.updated')
   }
+})
+
+// Date range handling
+const dateRange = ref({
+  start: new Date(props.startDate),
+  end: new Date(props.endDate)
 })
 
 watch(dateRange, async (newRange) => {
@@ -241,23 +227,15 @@ watch(dateRange, async (newRange) => {
         preserveState: true,
         preserveScroll: true,
         onSuccess: () => {
-          // Update URL without page reload
           const url = new URL(window.location.href)
           url.searchParams.set('start_date', format(newRange.start, 'yyyy-MM-dd'))
           url.searchParams.set('end_date', format(newRange.end, 'yyyy-MM-dd'))
           window.history.pushState({}, '', url.toString())
-        },
-        onError: (errors) => {
-          toast.error('Failed to fetch statistics:', {
-            description: errors
-          })
         }
       }
     )
   } catch (error) {
-    toast.error('Error updating statistics:', {
-      description: error
-    })
+    toast.error('Error updating statistics')
   } finally {
     isLoadingStats.value = false
   }
@@ -283,7 +261,7 @@ watch(dateRange, async (newRange) => {
         <GlobalLink
           as="Button"
           preseerve-scroll
-          v-if="campaign?.template?.id && campaign?.audience?.id && !campaign?.formatted_scheduled_at"
+          v-if="campaign.can_schedule"
           :href="route('campaigns.schedule', campaign.uuid)">
           <Clock class="h-4 w-4"/>
           Schedule
@@ -291,16 +269,27 @@ watch(dateRange, async (newRange) => {
 
         <Button
           variant="secondary"
-          v-if="campaign?.template?.id && campaign?.audience?.id && !campaign?.formatted_scheduled_at"
+          v-if="campaign.can_send"
           @click="router.post(route('campaigns.send', campaign.uuid), {}, { preserveScroll: true })">
           <Send class="h-4 w-4"/>
           Send Now
         </Button>
 
         <Button
+          variant="destructive"
+          v-if="campaign.status === 'scheduled'"
+          @click="router.post(route('campaigns.send', campaign.uuid), {}, {
+            preserveScroll: true
+          })">
+          <XIcon class="h-4 w-4"/>
+          Cancel Schedule
+        </Button>
+
+        <Button
           variant="outline"
+          :disabled="!campaign.can_edit"
           @click="router.get(route('campaigns.edit', campaign.uuid), {}, { replace: true, preserveScroll: true })">
-          <Edit class="h-4 w-4"/>
+          <PencilIcon class="h-4 w-4"/>
           Edit
         </Button>
       </div>
@@ -342,21 +331,7 @@ watch(dateRange, async (newRange) => {
 
               <Separator/>
 
-              <div class="grid gap-1">
-                <h3 class="font-medium">Schedule</h3>
-                <div class="flex items-center gap-2 text-muted-foreground">
-                  <CalendarIcon class="h-4 w-4"/>
-                  <span>
-                    {{ campaign.formatted_scheduled_at || 'Not scheduled' }}
-                    <template v-if="campaign.formatted_end_date">
-                      until {{ campaign.formatted_end_date }}
-                    </template>
-                  </span>
-                </div>
-                <p v-if="campaign.frequency" class="text-sm text-muted-foreground">
-                  Running {{ campaign.frequency }}
-                </p>
-              </div>
+              <ScheduledState :campaign="campaign"/>
 
               <Separator/>
 
@@ -376,15 +351,12 @@ watch(dateRange, async (newRange) => {
 
                     <Button
                       size="sm"
-                      as-child>
-                      <Link
-                        as="button"
-                        :href="campaign?.template?.id
-                          ? route('templates.edit', campaign.template.uuid)
-                          : route('templates.create', { campaign: campaign.uuid })">
-                        <Edit class="h-4 w-4"/>
-                        {{ campaign?.template?.id ? 'Edit' : 'Add Template' }}
-                      </Link>
+                      :disabled="campaign.status === 'scheduled'"
+                      @click="campaign?.template?.id
+                        ? router.visit(route('templates.edit', campaign.template.uuid), { replace: true })
+                        : router.visit(route('templates.create', { campaign: campaign.uuid }), { replace: true })">
+                      <Edit class="h-4 w-4"/>
+                      {{ campaign?.template?.id ? 'Edit' : 'Add Template' }}
                     </Button>
                   </div>
                 </div>
@@ -410,9 +382,8 @@ watch(dateRange, async (newRange) => {
                   <div class="flex items-center gap-2">
                     <GlobalLink
                       v-if="campaign.audience"
-                      variant="outline"
-                      size="sm"
-                      as="Button"
+                      variant="outline" size="sm" as="Button"
+                      :disabled="campaign.status === 'scheduled'"
                       :href="route('audiences.add_recipient', campaign.audience.uuid)">
                       <Users class="h-4 w-4"/>
                       Add Recipients

@@ -9,6 +9,7 @@ use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Auth;
 
 class ScheduleCampaignJob implements ShouldQueue
 {
@@ -28,6 +29,6 @@ class ScheduleCampaignJob implements ShouldQueue
   public function handle(): void
   {
     $recipients = $this->campaign->audience->recipients;
-    $this->campaignEmailService->sendEmails($this->campaign, $recipients);
+    $this->campaignEmailService->sendEmails($this->campaign, $recipients, Auth::user());
   }
 }

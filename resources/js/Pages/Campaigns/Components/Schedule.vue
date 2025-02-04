@@ -21,7 +21,7 @@ interface Campaign {
   end_date: Date | null
 }
 
-type FrequencyType = 'once' | 'daily' | 'weekly' | 'monthly'
+type FrequencyType = 'daily' | 'weekly' | 'bi_weekly' | 'monthly' | 'quarterly'
 
 interface FrequencyOption {
   value: FrequencyType
@@ -36,15 +36,16 @@ const props = defineProps<{
 const isDark = useDark()
 const scheduleCampaignRef = ref()
 const scheduledDate = ref<Date | null>(null)
-const frequency = ref<FrequencyType>('once')
+const frequency = ref<FrequencyType>('daily')
 const endDate = ref<Date | null>(null)
 const isSubmitting = ref(false)
 
 const frequencies: FrequencyOption[] = [
-  {value: 'once', label: 'Once', duration: 0},
   {value: 'daily', label: 'Daily', duration: 30},
   {value: 'weekly', label: 'Weekly', duration: 90},
+  {value: 'bi_weekly', label: 'Fortnight', duration: 120},
   {value: 'monthly', label: 'Monthly', duration: 180},
+  {value: 'quarterly', label: 'Quarterly', duration: 360},
 ]
 
 // Helper function to ensure valid Date objects
@@ -61,7 +62,7 @@ const ensureValidDate = (date: Date | string | null): Date | null => {
 // Calculate end date based on frequency
 const calculateEndDate = (startDate: Date, selectedFrequency: FrequencyType): Date | null => {
   const frequency = frequencies.find(f => f.value === selectedFrequency)
-  if (!frequency || frequency.value === 'once') return null
+  if (!frequency) return null
 
   const validStartDate = ensureValidDate(startDate)
   if (!validStartDate) return null
@@ -78,7 +79,7 @@ watch(frequency, (newFrequency) => {
 
 // Watch for scheduled date changes
 watch(scheduledDate, (newDate) => {
-  if (newDate && frequency.value !== 'once') {
+  if (newDate && frequency.value) {
     endDate.value = calculateEndDate(newDate, frequency.value)
   }
 })
@@ -97,7 +98,7 @@ const handleSchedule = async () => {
   isSubmitting.value = true
 
   try {
-    await router.post(route('campaigns.schedule', props.campaign.uuid), {
+    await router.put(route('campaigns.console', props.campaign.uuid), {
       scheduled_at: formatDateForAPI(scheduledDate.value),
       frequency: frequency.value,
       end_date: formatDateForAPI(endDate.value)
@@ -106,7 +107,7 @@ const handleSchedule = async () => {
       onSuccess: () => {
         scheduleCampaignRef.value.onClose()
         toast.success('Campaign scheduled successfully', {
-          description: `Campaign will ${frequency.value === 'once' ? 'be sent' : 'start sending'} on ${format(scheduledDate.value!, 'PPP')}`
+          description: `Campaign will start sending on ${format(scheduledDate.value!, 'PPP')}`
         })
       },
       onError: (errors) => {
@@ -124,7 +125,7 @@ const handleSchedule = async () => {
 onMounted(() => {
   if (props.campaign.scheduled_at) {
     scheduledDate.value = ensureValidDate(props.campaign.scheduled_at)
-    frequency.value = props.campaign.frequency as FrequencyType || 'once'
+    frequency.value = props.campaign.frequency as FrequencyType || 'daily'
     endDate.value = props.campaign.end_date ? ensureValidDate(props.campaign.end_date) : null
   }
 })

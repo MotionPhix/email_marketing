@@ -82,14 +82,18 @@ class Campaign extends Model
   public function formattedScheduledAt(): Attribute
   {
     return Attribute::make(
-      get: fn () => $this->scheduled_at ? Carbon::parse($this->scheduled_at)->format('D, d M, Y') : null,
+      get: fn () => $this->getAttribute('scheduled_at')
+        ? Carbon::parse($this->getAttribute('scheduled_at'))->format('D, d M, Y')
+        : null,
     );
   }
 
   public function formattedEndDate(): Attribute
   {
     return Attribute::make(
-      get: fn () => $this->end_date ? Carbon::parse($this->end_date)->format('D, d M, Y') : null,
+      get: fn () => $this->getAttribute('end_date')
+        ? Carbon::parse($this->getAttribute('end_date'))->format('D, d M, Y')
+        : null,
     );
   }
 

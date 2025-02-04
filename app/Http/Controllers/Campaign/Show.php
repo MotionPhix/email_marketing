@@ -7,6 +7,7 @@ use App\Models\Campaign;
 use App\Models\EmailEvent;
 use App\Services\Campaign\CampaignStatsService;
 use App\Services\SendGridService;
+use App\Transformers\Campaign\CampaignDataTransformer;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
@@ -44,18 +45,7 @@ class Show extends Controller
 
     // Return to Inertia with campaign and stats
     return Inertia::render('Campaigns/Show', [
-      'campaign' => [
-        'id' => $campaign->id,
-        'uuid' => $campaign->uuid,
-        'title' => $campaign->title,
-        'subject' => $campaign->subject,
-        'description' => $campaign->description,
-        'status' => $campaign->status,
-        'template' => $campaign->template,
-        'audience' => $campaign->audience,
-        'formatted_scheduled_at' => $campaign->formatted_scheduled_at,
-        'formatted_end_date' => $campaign->formatted_end_date,
-      ],
+      'campaign' => CampaignDataTransformer::toArray($campaign),
       'startDate' => Carbon::parse($startDate)->toDateString(),
       'endDate' => Carbon::parse($endDate)->toDateString(),
       'statistics' => $campaignStats,

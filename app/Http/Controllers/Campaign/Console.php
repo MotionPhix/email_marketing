@@ -44,9 +44,10 @@ class Console extends Controller
         $endDate
       );
 
-      return response()->json([
-        'message' => 'Campaign scheduled successfully'
-      ]);
+      return $this->redirectWithFlash(
+        'success',
+        'Campaign scheduled successfully'
+      );
 
     } catch (\Exception $e) {
       Log::error('Campaign scheduling failed', [
@@ -54,7 +55,7 @@ class Console extends Controller
         'error' => $e->getMessage()
       ]);
 
-      return response()->json([
+      return back()->with([
         'message' => 'Failed to schedule campaign'
       ], 422);
     }

@@ -278,9 +278,7 @@ watch(dateRange, async (newRange) => {
         <Button
           variant="destructive"
           v-if="campaign.status === 'scheduled'"
-          @click="router.post(route('campaigns.send', campaign.uuid), {}, {
-            preserveScroll: true
-          })">
+          @click="handleCancelSchedule">
           <XIcon class="h-4 w-4"/>
           Cancel Schedule
         </Button>
@@ -329,11 +327,7 @@ watch(dateRange, async (newRange) => {
                 </p>
               </div>
 
-              <Separator/>
-
               <ScheduledState :campaign="campaign"/>
-
-              <Separator/>
 
               <div class="grid gap-1">
                 <div class="flex items-center justify-between">
@@ -414,6 +408,7 @@ watch(dateRange, async (newRange) => {
                       </div>
 
                       <div
+                        v-if="campaign.can_edit"
                         class="opacity-0 group-hover:opacity-100 gap-2 flex">
                         <GlobalLink
                           preserve-scroll

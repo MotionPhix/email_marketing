@@ -30,6 +30,7 @@ class Campaign extends Model
     'status',
     'step',
     'scheduled_at',
+    'end_date',
     'user_id',
     'audience_id',
     'template_id',

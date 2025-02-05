@@ -35,7 +35,7 @@ class CampaignDataTransformer
         'id' => $campaign->audience->id,
         'uuid' => $campaign->audience->uuid,
         'name' => $campaign->audience->name,
-        'recipients_count' => $campaign->audience->recipients_count ?? 0,
+        'recipients' => $campaign->audience->recipients,
       ] : null,
 
       // Meta information

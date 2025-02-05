@@ -247,7 +247,7 @@ const toggleSort = (field: typeof sortBy.value) => {
               <TableHead>Status</TableHead>
               <TableHead>Schedule</TableHead>
               <TableHead>Recipients</TableHead>
-              <TableHead class="w-[100px]" align="end"></TableHead>
+              <TableHead class="w-[100px]" align="end" />
             </TableRow>
           </TableHeader>
 
@@ -269,7 +269,10 @@ const toggleSort = (field: typeof sortBy.value) => {
 
               <TableCell>
                 <div class="flex flex-col">
-                  <span class="font-medium">{{ campaign.title }}</span>
+                  <span class="font-medium">
+                    {{ campaign.title }}
+                  </span>
+
                   <span
                     v-if="campaign.audience_name"
                     class="text-sm text-muted-foreground">
@@ -322,7 +325,7 @@ const toggleSort = (field: typeof sortBy.value) => {
                         </Link>
                       </DropdownMenuItem>
 
-                      <DropdownMenuItem asChild>
+                      <DropdownMenuItem asChild :disabled="campaign.scheduled_at">
                         <Link :href="route('campaigns.edit', campaign.uuid)">
                           <PenIcon class="h-4 w-4 mr-2"/>
                           Edit campaign

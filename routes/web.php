@@ -104,8 +104,8 @@ Route::middleware([
       \App\Http\Controllers\Campaign\Unsubscribe::class
     )->name('campaigns.unsubscribe');
 
-    Route::post('/{campaign}/cancel-schedule',
-//      \App\Http\Controllers\Campaign\CancelSchedule::class
+    Route::post('/cancel-schedule/{campaign:uuid}',
+      \App\Http\Controllers\Campaign\CancelSchedule::class
     )->name('campaigns.cancel_schedule');
 
   });

@@ -58,6 +58,7 @@ class CampaignSchedulingService
 
     } catch (\Exception $e) {
       DB::rollBack();
+
       Log::error('Campaign scheduling failed', [
         'campaign_uuid' => $campaign->uuid,
         'error' => $e->getMessage()
@@ -171,9 +172,9 @@ class CampaignSchedulingService
   {
     $campaign->update([
       'status' => Campaign::STATUS_SCHEDULED,
+      'scheduled_at' => $startDate->toDateTimeString(),
+      'end_date' => $endDate->toDateTimeString(),
       'frequency' => $frequency,
-      'scheduled_at' => $startDate,
-      'end_date' => $endDate,
     ]);
   }
 

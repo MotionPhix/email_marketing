@@ -27,7 +27,7 @@ const props = defineProps<Props>()
 const frequencies: FrequencyOption[] = [
   {value: 'daily', label: 'Daily', duration: 30},
   {value: 'weekly', label: 'Weekly', duration: 90},
-  {value: 'bi_weekly', label: 'Fortnight', duration: 120},
+  {value: 'bi_weekly', label: 'every two weeks', duration: 120},
   {value: 'monthly', label: 'Monthly', duration: 180},
   {value: 'quarterly', label: 'Quarterly', duration: 360},
 ]
@@ -48,10 +48,24 @@ const scheduleStatus = computed(() => {
         : ''
     }`,
     frequency: props.campaign.frequency
-      ? `Running ${props.campaign.frequency}`
+      ? `Running ${getFrequency(props.campaign.frequency).label}`
       : 'One-time send'
   }
 })
+
+/**
+ * Gets the frequency details for a given frequency value
+ * @param frequency - The frequency value to look up
+ * @returns The frequency option object or null if not found
+ */
+const getFrequency = (frequency: FrequencyType | string): FrequencyOption | null => {
+  // Handle undefined or null input
+  if (!frequency) return null
+
+  // Find the matching frequency option
+  const foundFrequency = frequencies.find(f => f.value === frequency)
+  return foundFrequency || null
+}
 
 const handleCancelSchedule = async () => {
   try {

@@ -6,11 +6,13 @@ use App\Events\CampaignStatsUpdated;
 use App\Models\Campaign;
 use App\Models\EmailEvent;
 use App\Models\EmailLog;
+use App\Models\CampaignOpen;
+use App\Models\CampaignClick;
+use App\Models\CampaignUnsubscribe;
 use App\Services\Campaign\CampaignStatsService;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
-use SendGrid\EventWebhook\EventWebhook;
-use SendGrid\EventWebhook\EventWebhookHeader;
 
 class Hook extends Controller
 {
@@ -18,65 +20,106 @@ class Hook extends Controller
   {
   }
 
-  /**
-   * Handle the incoming request.
-   */
   public function __invoke(Request $request)
   {
-    // Log the raw incoming event data for debugging purposes
     Log::info('Webhook received:', $request->all());
 
     $events = $request->all();
     $processedCampaigns = [];
 
-    // Transform event data for batch insertion
-    $eventData = array_map(function ($event) {
-      return [
-        'email' => $event['email'] ?? null,
-        'event' => $event['event'] ?? null,
-        'campaign_uuid' => $event['campaign_uuid'] ?? $event['unique_args']['campaign_id'] ?? null,
-        'user_uuid' => $event['user_uuid'] ?? null,
-        'timestamp' => \Carbon\Carbon::createFromTimestamp($event['timestamp'])->toDateTimeString(),
-        'ip' => $event['ip'] ?? null,
-        'user_agent' => $event['useragent'] ?? null,
-        'sg_message_id' => $event['sg_message_id'] ?? null,
-        'url' => $event['url'] ?? null,
-        'reason' => $event['reason'] ?? null,
-        'status' => $event['status'] ?? null,
-      ];
-    }, $events);
+    foreach ($events as $event) {
+      // Create or update EmailLog
+      $emailLog = $this->processEmailLog($event);
 
-    // Process each event
-    foreach ($eventData as $data) {
+      // Create EmailEvent
+      $this->processEmailEvent($emailLog, $event);
 
-      $emailLog = EmailLog::firstOrCreate(
-        ['sg_message_id' => $data['sg_message_id']],
-        [
-          'campaign_uuid' => $data['campaign_uuid'],
-          'email' => $data['email'],
-          'user_uuid' => $data['user_uuid']
-        ]
-      );
+      // Update high-level stats
+      $this->updateCampaignStats($event);
 
-      EmailEvent::insert([
-        'ip' => $data['ip'],
-        'event' => $data['event'],
-        'email_log_id' => $emailLog->id,
-        'timestamp' => $data['timestamp'],
-        'user_agent' => $data['user_agent'],
-        'reason' => $data['reason'],
-        'status' => $data['status'],
-        'url' => $data['url'],
-      ]);
-
-      // Track unique campaigns to update
-      if (!in_array($data['campaign_uuid'], $processedCampaigns)) {
-        $processedCampaigns[] = $data['campaign_uuid'];
+      // Track unique campaigns
+      $campaignUuid = $event['campaign_uuid'] ?? $event['unique_args']['campaign_id'] ?? null;
+      if ($campaignUuid && !in_array($campaignUuid, $processedCampaigns)) {
+        $processedCampaigns[] = $campaignUuid;
       }
     }
 
-    // Broadcast updates for each affected campaign
-    foreach ($processedCampaigns as $campaignUuid) {
+    // Broadcast updates
+    $this->broadcastUpdates($processedCampaigns);
+
+    return response()->json(['status' => 'success']);
+  }
+
+  protected function processEmailLog(array $event): EmailLog
+  {
+    return EmailLog::firstOrCreate(
+      ['sg_message_id' => $event['sg_message_id']],
+      [
+        'campaign_uuid' => $event['campaign_uuid'] ?? $event['unique_args']['campaign_id'] ?? null,
+        'email' => $event['email'],
+        'user_uuid' => $event['user_uuid'] ?? null
+      ]
+    );
+  }
+
+  protected function processEmailEvent(EmailLog $emailLog, array $event): void
+  {
+    EmailEvent::create([
+      'email_log_id' => $emailLog->id,
+      'event' => $event['event'],
+      'ip' => $event['ip'] ?? null,
+      'user_agent' => $event['useragent'] ?? null,
+      'url' => $event['url'] ?? null,
+      'reason' => $event['reason'] ?? null,
+      'status' => $event['status'] ?? null,
+      'timestamp' => Carbon::createFromTimestamp($event['timestamp'])
+    ]);
+  }
+
+  protected function updateCampaignStats(array $event): void
+  {
+    $campaign = Campaign::where('uuid', $event['campaign_uuid'] ?? $event['unique_args']['campaign_id'] ?? null)->first();
+    if (!$campaign) return;
+
+    $recipient = $campaign->recipients()->where('email', $event['email'])->first();
+    if (!$recipient) return;
+
+    switch ($event['event']) {
+      case 'open':
+        CampaignOpen::firstOrCreate([
+          'campaign_id' => $campaign->id,
+          'recipient_id' => $recipient->id,
+          'ip_address' => $event['ip'] ?? null,
+          'user_agent' => $event['useragent'] ?? null
+        ]);
+        break;
+
+      case 'click':
+        CampaignClick::firstOrCreate([
+          'campaign_id' => $campaign->id,
+          'recipient_id' => $recipient->id,
+          'url' => $event['url'],
+          'ip_address' => $event['ip'] ?? null,
+          'user_agent' => $event['useragent'] ?? null
+        ]);
+        break;
+
+      case 'unsubscribe':
+        CampaignUnsubscribe::firstOrCreate([
+          'campaign_id' => $campaign->id,
+          'recipient_id' => $recipient->id,
+          'reason' => $event['reason'] ?? null,
+          'ip_address' => $event['ip'] ?? null,
+          'user_agent' => $event['useragent'] ?? null
+        ]);
+        $recipient->update(['is_subscribed' => false]);
+        break;
+    }
+  }
+
+  protected function broadcastUpdates(array $campaignUuids): void
+  {
+    foreach ($campaignUuids as $campaignUuid) {
       $campaign = Campaign::with('emailLogs.events')
         ->where('uuid', $campaignUuid)
         ->first();
@@ -96,7 +139,5 @@ class Hook extends Controller
         ));
       }
     }
-
-    return response()->json(['status' => 'success']);
   }
 }

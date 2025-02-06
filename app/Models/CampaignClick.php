@@ -5,14 +5,14 @@ namespace App\Models;
 use App\Traits\BootUuid;
 use Illuminate\Database\Eloquent\Model;
 
-class CampaignUnsubscribe extends Model
+class CampaignClick extends Model
 {
   use BootUuid;
 
   protected $fillable = [
     'campaign_id',
     'recipient_id',
-    'reason',
+    'url',
     'ip_address',
     'user_agent'
   ];

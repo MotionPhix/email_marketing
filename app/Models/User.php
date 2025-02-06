@@ -105,6 +105,10 @@ class User extends Authenticatable implements MustVerifyEmail
     return $this->hasOne(Setting::class);
   }
 
+  /**
+   * Get the user's subscription.
+   * A user can only have one active subscription at a time.
+   */
   public function subscription()
   {
     return $this->hasOne(Subscription::class)->latest();
@@ -119,7 +123,10 @@ class User extends Authenticatable implements MustVerifyEmail
       ->exists();
   }
 
-  public function activeSubscription()
+  /**
+   * Check if user has an active subscription
+   */
+  public function hasActiveSubscription(): bool
   {
     return $this->subscription()
       ->where('status', Subscription::STATUS_ACTIVE)
@@ -128,5 +135,38 @@ class User extends Authenticatable implements MustVerifyEmail
           ->orWhere('ends_at', '>', now());
       })
       ->exists();
+  }
+
+  /**
+   * Get user's pending subscription that will take effect after current subscription ends
+   */
+  public function pendingSubscription()
+  {
+    return $this->hasOne(Subscription::class)
+      ->where('status', Subscription::STATUS_PENDING)
+      ->where('starts_at', '>', now())
+      ->latest();
+  }
+
+  /**
+   * Get the user's active subscription if any.
+   */
+  public function activeSubscription()
+  {
+    return $this->subscription()
+      ->where('status', Subscription::STATUS_ACTIVE)
+      ->where(function ($query) {
+        $query->whereNull('ends_at')
+          ->orWhere('ends_at', '>', now());
+      })
+      ->first();
+  }
+
+  /**
+   * Check if user can change their subscription
+   */
+  public function canChangeSubscription(): bool
+  {
+    return !$this->pendingSubscription()->exists();
   }
 }

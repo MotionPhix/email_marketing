@@ -11,7 +11,7 @@ use App\Services\Subscription\SubscriptionService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 
-class SubscriptionController extends Controller
+class OldSubscriptionController extends Controller
 {
   public function __construct(
     private SubscriptionService $subscriptionService,
@@ -22,10 +22,22 @@ class SubscriptionController extends Controller
   {
     try {
       $user = $request->user();
-      $billingPeriod = $request->input('billing_period', 'monthly');
 
-      // Create subscription through service
-      $subscription = $this->subscriptionService->subscribe($user, $plan, $billingPeriod);
+      // Check if user already has an active subscription
+      $activeSubscription = $user->subscriptions()
+        ->where('status', Subscription::STATUS_ACTIVE)
+        ->first();
+
+      if ($activeSubscription) {
+        return back()->with('error', 'You already have an active subscription.');
+      }
+
+      // Create pending subscription
+      $subscription = Subscription::create([
+        'user_id' => $user->id,
+        'plan_id' => $plan->id,
+        'status' => Subscription::STATUS_PENDING,
+      ]);
 
       // Initiate payment
       $payment = $this->paychanguService->initiatePayment(
@@ -56,7 +68,19 @@ class SubscriptionController extends Controller
       $subscription = Subscription::where('paychangu_reference', $reference)->firstOrFail();
 
       if ($payment['status'] === 'success') {
-        $this->subscriptionService->activateSubscription($subscription, $reference);
+        $now = Carbon::now();
+
+        $subscription->update([
+          'status' => Subscription::STATUS_ACTIVE,
+          'starts_at' => $now,
+          'ends_at' => $now->addMonth(),
+          'last_payment_at' => $now,
+        ]);
+
+        // Update user settings with new plan
+        $subscription->user->settings()->update([
+          'plan_id' => $subscription->plan_id
+        ]);
 
         return redirect()->route('dashboard')
           ->with('success', 'Subscription activated successfully!');
@@ -87,12 +111,10 @@ class SubscriptionController extends Controller
 
     switch ($request->get('event')) {
       case 'payment.successful':
-        $this->subscriptionService->activateSubscription($subscription, $reference);
+        $this->handleSuccessfulPayment($subscription);
         break;
       case 'payment.failed':
-        $subscription->update([
-          'status' => Subscription::STATUS_EXPIRED
-        ]);
+        $this->handleFailedPayment($subscription);
         break;
     }
 

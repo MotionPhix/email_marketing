@@ -4,20 +4,37 @@ namespace App\Http\Controllers;
 
 use App\Models\Plan;
 use App\Services\PayChanguService;
+use App\Services\Subscription\SubscriptionService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 
 class BillingController extends Controller
 {
+  public function __construct(private SubscriptionService $subscriptionService)
+  {}
+
   public function index(Request $request)
   {
     $user = $request->user();
+    $activeSubscription = $user->activeSubscription();
+    $pendingSubscription = $user->pendingSubscription;
 
     return Inertia::render('Billing', [
-      'subscription' => $user->activeSubscription()?->load('renewals')->append('formatted_features'),
+      'subscription' => $activeSubscription
+        ? $activeSubscription->load('renewals')->append('formatted_features')
+        : null,
+
+      'pendingSubscription' => $pendingSubscription
+        ? $pendingSubscription->load('plan')->append('formatted_features')
+        : null,
+
       'plans' => Plan::active()->ordered()->get(),
-      'currentPlan' => $user->settings?->plan
+
+      'currentPlan' => $user->settings?->plan,
+
+      'canChangeSubscription' => $user->canChangeSubscription()
     ]);
   }
 
@@ -84,6 +101,66 @@ class BillingController extends Controller
       return redirect($payment['payment_url']);
     } catch (\Exception $e) {
       return back()->with('error', 'Failed to process plan change: ' . $e->getMessage());
+    }
+  }
+
+  public function subscribe(Request $request)
+  {
+    $validated = $request->validate([
+      'plan_id' => 'required|exists:plans,id',
+      'billing_period' => 'required|in:monthly,yearly'
+    ]);
+
+    try {
+      $subscription = $this->subscriptionService->subscribe(
+        $request->user(),
+        Plan::findOrFail($validated['plan_id']),
+        $validated['billing_period']
+      );
+
+      return back()->with('success', 'Successfully subscribed to plan.');
+    } catch (\Exception $e) {
+      throw ValidationException::withMessages([
+        'subscription' => 'Failed to process subscription: ' . $e->getMessage()
+      ]);
+    }
+  }
+
+  public function cancel(Request $request)
+  {
+    try {
+      $this->subscriptionService->cancel($request->user());
+      return back()->with('success', 'Subscription cancelled successfully.');
+    } catch (\Exception $e) {
+      throw ValidationException::withMessages([
+        'subscription' => 'Failed to cancel subscription: ' . $e->getMessage()
+      ]);
+    }
+  }
+
+  public function upgrade(Request $request)
+  {
+    $validated = $request->validate([
+      'plan_id' => 'required|exists:plans,id'
+    ]);
+
+    $subscription = $request->user()->activeSubscription();
+    if (!$subscription) {
+      throw ValidationException::withMessages([
+        'subscription' => 'No active subscription found.'
+      ]);
+    }
+
+    try {
+      $this->subscriptionService->upgrade(
+        $subscription,
+        Plan::findOrFail($validated['plan_id'])
+      );
+      return back()->with('success', 'Plan upgraded successfully.');
+    } catch (\Exception $e) {
+      throw ValidationException::withMessages([
+        'subscription' => 'Failed to upgrade plan: ' . $e->getMessage()
+      ]);
     }
   }
 

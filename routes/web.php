@@ -40,14 +40,31 @@ Route::middleware([
 
     // Billing & Subscription Management
     Route::prefix('billing')->group(function () {
-      Route::get('/', [BillingController::class, 'index'])
-        ->name('billing');
-      Route::patch('/auto-renew', [BillingController::class, 'toggleAutoRenew'])
-        ->name('subscription.auto-renew');
-      Route::post('/change-plan', [BillingController::class, 'changePlan'])
-        ->name('subscription.change-plan');
-      Route::get('/invoice/{reference?}', [BillingController::class, 'downloadInvoice'])
-        ->name('billing.invoice');
+      Route::get(
+        '/',
+        [BillingController::class, 'index']
+      )->name('billing');
+
+      Route::patch(
+        '/auto-renew',
+        [BillingController::class, 'toggleAutoRenew']
+      )->name('subscription.auto-renew');
+
+      Route::post(
+        '/change-plan',
+        [BillingController::class, 'changePlan']
+      )->name('subscription.change-plan');
+
+      Route::get(
+        '/invoice/{reference?}',
+        [BillingController::class, 'downloadInvoice']
+      )->name('billing.invoice');
+
+
+      Route::post('/subscribe', [BillingController::class, 'subscribe'])->name('billing.subscribe');
+      Route::delete('/cancel', [BillingController::class, 'cancel'])->name('billing.cancel');
+      Route::post('/upgrade', [BillingController::class, 'upgrade'])->name('billing.upgrade');
+
     });
 
     // Subscription routes

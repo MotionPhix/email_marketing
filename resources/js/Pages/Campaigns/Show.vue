@@ -1,594 +1,658 @@
 <script setup lang="ts">
-import {ref, computed, watch, onMounted, onUnmounted} from 'vue'
-import {router, Link, usePage} from '@inertiajs/vue3'
+import { ref, computed } from 'vue'
+import { Head } from '@inertiajs/vue3'
 import AppLayout from '@/Layouts/AppLayout.vue'
-import PageTitle from '@/Components/PageTitle.vue'
-import {Tabs, TabsContent, TabsList, TabsTrigger} from '@/Components/ui/tabs'
-import {ScrollArea} from '@/Components/ui/scroll-area'
-import {Badge} from '@/Components/ui/badge'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/Components/ui/card'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/Components/ui/tabs'
+import { Badge } from '@/Components/ui/badge'
+import { Separator } from '@/Components/ui/separator'
 import {
-  Send,
-  Calendar as CalendarIcon,
-  Users,
-  Mail,
-  MousePointer,
-  AlertTriangle,
-  CheckCircle,
-  Clock,
-  Edit,
-  Eye,
-  Trash2,
-  ChevronRight,
-  XIcon,
-  PencilIcon,
-} from 'lucide-vue-next'
-import {format} from 'date-fns'
-import {useTabPersistence} from "@/composables/useTabPersistence";
-import {useDeviceDetection} from "@/composables/useDeviceDetection";
-import {useDark} from "@vueuse/core";
-import PerformanceOverTimeChart from "@/Pages/Campaigns/Components/PerformanceOverTimeChart.vue";
-import {Separator} from "@/Components/ui/separator";
-import {toast} from "vue-sonner";
-import ScheduledState from "@/Pages/Campaigns/Components/ScheduledState.vue";
-
-interface Campaign {
-  uuid: string
-  title: string
-  status: string
-  subject?: string
-  description?: string
-  formatted_scheduled_at?: string
-  formatted_end_date?: string
-  frequency?: string
-  template?: {
-    id: number
-    uuid: string
-    name: string
-  }
-  audience?: {
-    id: number
-    uuid: string
-    name: string
-    recipients?: Array<{
-      uuid: string
-      name: string
-      email: string
-    }>
-  }
-  can_edit: boolean
-  can_schedule: boolean
-  can_send: boolean
-}
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/Components/ui/table'
+import VueApexCharts from 'vue3-apexcharts'
+import { formatDistanceToNow, format } from 'date-fns'
 
 interface Props {
-  campaign: Campaign
-  statistics: {
-    stats: {
-      bounced: number
-      clicked: number
-      unique_clicked: number
-      unique_opened: number
-      spam_report: number
-      delivered: number
-      opened: number
+  campaign: {
+    title: string
+    status: string
+    template: {
+      name: string
     }
-    chart: Record<string, Record<string, number>>
+    audience: {
+      name: string
+      recipient_count: number
+    }
+    created_at: string
+    scheduled_at: string | null
+    sent_at: string | null
   }
-  startDate: string
-  endDate: string
+  stats: {
+    summary: {
+      total_recipients: number
+      sent: number
+      opened: number
+      clicked: number
+      bounced: number
+      spam_reports: number
+      unsubscribed: number
+    }
+    rates: {
+      open_rate: number
+      click_rate: number
+      bounce_rate: number
+      unsubscribe_rate: number
+    }
+    email_clients: Record<string, number>
+    locations: Record<string, number>
+    clicks: Record<string, {
+      count: number
+      last_clicked: string
+    }>
+    timeline: Record<string, {
+      opens: number
+      clicks: number
+      bounces: number
+      unsubscribes: number
+    }>
+  }
+  filters: {
+    start_date: string
+    end_date: string
+  }
+  recent_events: Array<{
+    type: string
+    timestamp: string
+    email: string
+    ip: string
+    user_agent: string
+    url?: string
+    reason?: string
+  }>
 }
 
 const props = defineProps<Props>()
 
-// State
-const isDark = useDark()
-const {activeTab, handleTabChange} = useTabPersistence()
-const isLoadingStats = ref(false)
-const {isMobile} = useDeviceDetection()
-const isDatePickerOpen = ref(false)
-const page = usePage()
+const activeTab = ref('overview')
 
-const stats = ref(props.statistics.stats)
-const chartData = ref(props.statistics.chart)
-
-// Method to handle schedule cancellation
-const handleCancelSchedule = async () => {
-  try {
-    await router.post(
-      route('campaigns.cancel_schedule', props.campaign.uuid),
-      {},
-      {
-        preserveScroll: true,
-        onSuccess: () => {
-          toast.success('Campaign schedule cancelled successfully')
-        },
-        onError: (errors) => {
-          toast.error('Failed to cancel schedule', {
-            description: errors.message || 'An error occurred'
-          })
-        }
-      }
-    )
-  } catch (error) {
-    toast.error('Error cancelling schedule', {
-      description: 'Please try again later'
-    })
-  }
-}
-
-const displayedRecipients = computed(() =>
-  props.campaign.audience?.recipients?.slice(0, 5) || []
-)
-
-const remainingRecipients = computed(() =>
-  props.campaign.audience?.recipients
-    ? Math.max(0, props.campaign.audience.recipients.length - 5)
-    : 0
-)
-
-// Statistics calculations
-const deliveryRate = computed(() => {
-  const total = stats.value.delivered + stats.value.bounced
-  return total > 0
-    ? ((stats.value.delivered / total) * 100).toFixed(1)
-    : 0
-})
-
-const openRate = computed(() => {
-  const total = stats.value.delivered
-  return total > 0
-    ? ((stats.value.unique_opened / total) * 100).toFixed(1)
-    : 0
-})
-
-const clickRate = computed(() => {
-  const total = stats.value.delivered
-  return total > 0
-    ? ((stats.value.unique_clicked / total) * 100).toFixed(1)
-    : 0
-})
-
-// Status badge configuration
-const getStatusBadge = (status: string) => ({
-  draft: {
-    label: 'Draft',
-    class: 'bg-muted text-muted-foreground'
-  },
-  scheduled: {
-    label: 'Scheduled',
-    class: 'bg-blue-500/20 text-blue-700'
-  },
-  sending: {
-    label: 'Sending',
-    class: 'bg-yellow-500/20 text-yellow-700'
-  },
-  sent: {
-    label: 'Sent',
-    class: 'bg-green-500/20 text-green-700'
-  },
-  failed: {
-    label: 'Failed',
-    class: 'bg-red-500/20 text-red-700'
-  }
-}[status] || {label: 'Draft', class: 'bg-muted text-muted-foreground'})
-
-const removeRecipient = async (recipient) => {
-  if (!props.campaign.audience) return
-
-  await router.delete(
-    route('audiences.remove_recipient', {
-      audience: props.campaign.audience.uuid,
-      recipient: recipient.uuid
-    }),
-    {
-      preserveScroll: true
+// Timeline Chart Options
+const timelineChartOptions = computed(() => ({
+  chart: {
+    type: 'area',
+    height: 350,
+    toolbar: {
+      show: false
+    },
+    zoom: {
+      enabled: false
     }
-  )
-}
-
-// Real-time updates setup
-let echoChannel
-onMounted(() => {
-  echoChannel = window.Echo.private(`campaign.stats.${page.props.auth.user.id}`)
-    .listen('.stats.updated', (e) => {
-      if (e.campaignId === props.campaign.uuid) {
-        stats.value = e.stats
-        chartData.value = e.chartData
-        toast.success('Campaign statistics updated')
-      }
-    })
-})
-
-onUnmounted(() => {
-  if (echoChannel) {
-    echoChannel.stopListening('.stats.updated')
-  }
-})
-
-// Date range handling
-const dateRange = ref({
-  start: new Date(props.startDate),
-  end: new Date(props.endDate)
-})
-
-watch(dateRange, async (newRange) => {
-  if (!newRange.start || !newRange.end) return
-
-  isLoadingStats.value = true
-
-  try {
-    await router.get(
-      route('campaigns.show', props.campaign.uuid),
-      {
-        start_date: format(newRange.start, 'yyyy-MM-dd'),
-        end_date: format(newRange.end, 'yyyy-MM-dd')
+  },
+  // Make the chart more responsive
+  responsive: [{
+    breakpoint: 640,
+    options: {
+      legend: {
+        position: 'bottom',
+        offsetY: 0,
+        height: 50
       },
-      {
-        preserveState: true,
-        preserveScroll: true,
-        onSuccess: () => {
-          const url = new URL(window.location.href)
-          url.searchParams.set('start_date', format(newRange.start, 'yyyy-MM-dd'))
-          url.searchParams.set('end_date', format(newRange.end, 'yyyy-MM-dd'))
-          window.history.pushState({}, '', url.toString())
+      xaxis: {
+        labels: {
+          rotate: -45,
+          maxHeight: 60
         }
       }
-    )
-  } catch (error) {
-    toast.error('Error updating statistics')
-  } finally {
-    isLoadingStats.value = false
+    }
+  }],
+  dataLabels: {
+    enabled: false
+  },
+  stroke: {
+    curve: 'smooth',
+    width: 2
+  },
+  colors: ['#22c55e', '#3b82f6', '#ef4444', '#f59e0b'],
+  fill: {
+    type: 'gradient',
+    gradient: {
+      opacityFrom: 0.6,
+      opacityTo: 0.1
+    }
+  },
+  xaxis: {
+    categories: Object.keys(props.stats.timeline).map(date =>
+      format(new Date(date), 'MMM dd')
+    ),
+    type: 'datetime'
+  },
+  yaxis: {
+    labels: {
+      formatter: (value: number) => Math.round(value)
+    }
+  },
+  legend: {
+    position: 'top'
+  },
+  series: [
+    {
+      name: 'Opens',
+      data: Object.values(props.stats.timeline).map(day => day.opens)
+    },
+    {
+      name: 'Clicks',
+      data: Object.values(props.stats.timeline).map(day => day.clicks)
+    },
+    {
+      name: 'Bounces',
+      data: Object.values(props.stats.timeline).map(day => day.bounces)
+    },
+    {
+      name: 'Unsubscribes',
+      data: Object.values(props.stats.timeline).map(day => day.unsubscribes)
+    }
+  ]
+}))
+
+// Email Clients Donut Chart Options
+const emailClientsChartOptions = computed(() => ({
+  chart: {
+    type: 'donut',
+    height: 350
+  },
+  responsive: [{
+    breakpoint: 640,
+    options: {
+      legend: {
+        position: 'bottom',
+        offsetY: 0,
+        height: 50
+      },
+      plotOptions: {
+        pie: {
+          donut: {
+            size: '65%'
+          }
+        }
+      }
+    }
+  }],
+  colors: ['#22c55e', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6'],
+  labels: Object.keys(props.stats.email_clients),
+  series: Object.values(props.stats.email_clients),
+  legend: {
+    position: 'bottom'
+  },
+  plotOptions: {
+    pie: {
+      donut: {
+        size: '70%'
+      }
+    }
   }
-}, {deep: true})
+}))
+
+// Click Distribution Chart Options
+const clickDistributionChartOptions = computed(() => ({
+  chart: {
+    type: 'bar',
+    height: 350,
+    toolbar: {
+      show: false
+    }
+  },
+  responsive: [{
+    breakpoint: 640,
+    options: {
+      plotOptions: {
+        bar: {
+          horizontal: false,
+          borderRadius: 2
+        }
+      },
+      xaxis: {
+        labels: {
+          rotate: -45,
+          maxHeight: 60
+        }
+      }
+    }
+  }],
+  plotOptions: {
+    bar: {
+      borderRadius: 4,
+      horizontal: true
+    }
+  },
+  colors: ['#3b82f6'],
+  xaxis: {
+    categories: Object.keys(props.stats.clicks).map(url =>
+      url.length > 40 ? url.substring(0, 40) + '...' : url
+    )
+  },
+  series: [{
+    name: 'Clicks',
+    data: Object.values(props.stats.clicks).map(data => data.count)
+  }]
+}))
+
+const getStatusColor = (status: string) => {
+  switch (status.toLowerCase()) {
+    case 'draft': return 'bg-gray-500'
+    case 'scheduled': return 'bg-blue-500'
+    case 'sending': return 'bg-yellow-500'
+    case 'sent': return 'bg-green-500'
+    case 'failed': return 'bg-red-500'
+    default: return 'bg-gray-500'
+  }
+}
+
+const getEventIcon = (type: string) => {
+  switch (type) {
+    case 'open': return '👁️'
+    case 'click': return '🔗'
+    case 'bounce': return '↩️'
+    case 'unsubscribe': return '✖️'
+    case 'spam': return '⚠️'
+    default: return '📧'
+  }
+}
 </script>
 
 <template>
-  <AppLayout :title="campaign.title">
+  <AppLayout>
+    <Head :title="campaign.title" />
+
     <template #header>
-      <div class="flex flex-col gap-2">
-        <div class="flex items-center gap-2 text-muted-foreground">
-          <Link :href="route('campaigns.index')">Campaigns</Link>
-          <ChevronRight class="h-4 w-4"/>
-          <span class="font-medium text-foreground">{{ campaign.title }}</span>
+      <div class="flex items-center justify-between">
+        <div>
+          <h2 class="text-xl font-semibold text-gray-800 dark:text-gray-200">
+            {{ campaign.title }}
+          </h2>
+          <p class="text-sm text-gray-500 dark:text-gray-400">
+            Created {{ formatDistanceToNow(new Date(campaign.created_at), { addSuffix: true }) }}
+          </p>
+        </div>
+        <Badge :class="getStatusColor(campaign.status)">
+          {{ campaign.status }}
+        </Badge>
+      </div>
+    </template>
+
+    <div class="py-12">
+      <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+        <!-- Campaign Info Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Template</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p>{{ campaign.template.name }}</p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Audience</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p>{{ campaign.audience.name }}</p>
+              <p class="text-sm text-gray-500">{{ campaign.audience.recipient_count }} recipients</p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Schedule</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p v-if="campaign.scheduled_at">
+                Scheduled for {{ format(new Date(campaign.scheduled_at), 'PPP') }}
+              </p>
+              <p v-else-if="campaign.sent_at">
+                Sent {{ formatDistanceToNow(new Date(campaign.sent_at), { addSuffix: true }) }}
+              </p>
+              <p v-else>Not scheduled</p>
+            </CardContent>
+          </Card>
         </div>
 
-        <PageTitle :title="campaign.title"/>
-      </div>
-    </template>
+        <!-- Stats Tabs -->
+        <Card>
+          <CardContent class="p-6">
+            <Tabs v-model="activeTab">
+              <TabsList class="mb-6">
+                <TabsTrigger value="overview">Overview</TabsTrigger>
+                <TabsTrigger value="engagement">Engagement</TabsTrigger>
+                <TabsTrigger value="clicks">Click Analysis</TabsTrigger>
+                <TabsTrigger value="events">Recent Events</TabsTrigger>
+              </TabsList>
 
-    <template #action>
-      <div class="flex items-center gap-2">
-        <GlobalLink
-          as="Button"
-          preseerve-scroll
-          v-if="campaign.can_schedule"
-          :href="route('campaigns.schedule', campaign.uuid)">
-          <Clock class="h-4 w-4"/>
-          Schedule
-        </GlobalLink>
-
-        <Button
-          variant="secondary"
-          v-if="campaign.can_send"
-          @click="router.post(route('campaigns.send', campaign.uuid), {}, { preserveScroll: true })">
-          <Send class="h-4 w-4"/>
-          Send Now
-        </Button>
-
-        <Button
-          variant="destructive"
-          v-if="campaign.status === 'scheduled'"
-          @click="handleCancelSchedule">
-          <XIcon class="h-4 w-4"/>
-          Cancel Schedule
-        </Button>
-
-        <Button
-          variant="outline"
-          :disabled="!campaign.can_edit"
-          @click="router.get(route('campaigns.edit', campaign.uuid), {}, { replace: true, preserveScroll: true })">
-          <PencilIcon class="h-4 w-4"/>
-          Edit
-        </Button>
-      </div>
-    </template>
-
-    <div class="mt-12 pb-12">
-      <Tabs v-model="activeTab" class="space-y-6" @change="handleTabChange">
-        <TabsList class="grid w-full grid-cols-2 lg:w-[400px]">
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="statistics">Statistics</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="overview" class="space-y-6">
-          <!-- Campaign Details -->
-          <Card>
-            <CardHeader>
-              <CardTitle>Campaign Details</CardTitle>
-              <CardDescription>
-                <Badge :class="getStatusBadge(campaign.status).class">
-                  {{ getStatusBadge(campaign.status).label }}
-                </Badge>
-              </CardDescription>
-            </CardHeader>
-
-            <CardContent class="space-y-6">
-              <div class="grid gap-1">
-                <h3 class="font-medium">Subject</h3>
-                <p class="text-muted-foreground">
-                  {{ campaign.subject }}
-                </p>
-              </div>
-
-              <div class="grid gap-1">
-                <h3 class="font-medium">Description</h3>
-                <p class="text-muted-foreground">
-                  {{ campaign.description || 'No description provided.' }}
-                </p>
-              </div>
-
-              <ScheduledState :campaign="campaign"/>
-
-              <div class="grid gap-1">
-                <div class="flex items-center justify-between">
-                  <h3 class="font-medium">Template</h3>
-                  <div class="flex items-center gap-2">
-                    <GlobalLink
-                      as="Button"
-                      v-if="campaign?.template?.id"
-                      :href="route('templates.preview', campaign.template.uuid)"
-                      variant="outline"
-                      size="sm">
-                      <Eye class="h-4 w-4"/>
-                      Preview
-                    </GlobalLink>
-
-                    <Button
-                      size="sm"
-                      :disabled="campaign.status === 'scheduled'"
-                      @click="campaign?.template?.id
-                        ? router.visit(route('templates.edit', campaign.template.uuid), { replace: true })
-                        : router.visit(route('templates.create', { campaign: campaign.uuid }), { replace: true })">
-                      <Edit class="h-4 w-4"/>
-                      {{ campaign?.template?.id ? 'Edit' : 'Add Template' }}
-                    </Button>
-                  </div>
+              <TabsContent value="overview">
+                <!-- Summary Stats -->
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-6 mb-6">
+                  <Card v-for="(value, key) in stats.summary" :key="key">
+                    <CardHeader>
+                      <CardTitle class="capitalize">{{ key.replace('_', ' ') }}</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div class="text-2xl font-bold">{{ value }}</div>
+                      <div v-if="stats.rates[`${key}_rate`]" class="text-sm text-gray-500">
+                        {{ stats.rates[`${key}_rate`] }}% Rate
+                      </div>
+                    </CardContent>
+                  </Card>
                 </div>
 
-                <p class="text-muted-foreground">
-                  {{ campaign.template?.name || 'No template assigned.' }}
-                </p>
-              </div>
+                <!-- Email Clients Chart -->
+                <Card class="mb-6">
+                  <CardHeader>
+                    <CardTitle>Email Clients</CardTitle>
+                    <CardDescription>Distribution of email clients used</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <VueApexCharts
+                      type="donut"
+                      height="350"
+                      :options="emailClientsChartOptions"
+                      :series="emailClientsChartOptions.series"
+                    />
+                  </CardContent>
+                </Card>
+              </TabsContent>
 
-              <Separator/>
+              <TabsContent value="engagement">
+                <!-- Engagement Timeline Chart -->
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Engagement Timeline</CardTitle>
+                    <CardDescription>Campaign performance over time</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <VueApexCharts
+                      type="area"
+                      height="350"
+                      :options="timelineChartOptions"
+                      :series="timelineChartOptions.series"
+                    />
+                  </CardContent>
+                </Card>
+              </TabsContent>
 
-              <!-- Recipients Section -->
-              <div class="space-y-4">
-                <div class="flex items-center justify-between">
-                  <div class="space-y-1">
-                    <h3 class="font-medium">Recipients</h3>
+              <TabsContent value="clicks">
+                <!-- Click Distribution Chart -->
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Click Distribution</CardTitle>
+                    <CardDescription>Most clicked links in your campaign</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <VueApexCharts
+                      type="bar"
+                      height="350"
+                      :options="clickDistributionChartOptions"
+                      :series="clickDistributionChartOptions.series"
+                    />
+                  </CardContent>
+                </Card>
+              </TabsContent>
 
-                    <p class="text-sm text-muted-foreground">
-                      From {{ campaign.audience?.name }} audience
-                    </p>
-                  </div>
+              <TabsContent value="events">
+                <!-- Recent Events Table -->
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Recent Events</CardTitle>
+                    <CardDescription>Latest activity from your campaign</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Event</TableHead>
+                          <TableHead>Email</TableHead>
+                          <TableHead>Time</TableHead>
+                          <TableHead>Details</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        <TableRow v-for="event in recent_events" :key="`${event.email}-${event.timestamp}`">
+                          <TableCell>
+                            <span class="flex items-center gap-2">
+                              {{ getEventIcon(event.type) }}
+                              <span class="capitalize">{{ event.type }}</span>
+                            </span>
+                          </TableCell>
+                          <TableCell>{{ event.email }}</TableCell>
+                          <TableCell>
+                            {{ formatDistanceToNow(new Date(event.timestamp), { addSuffix: true }) }}
+                          </TableCell>
+                          <TableCell>
+                            <span v-if="event.url" class="text-sm text-blue-500 truncate max-w-xs block">
+                              {{ event.url }}
+                            </span>
+                            <span v-if="event.reason" class="text-sm text-red-500">
+                              {{ event.reason }}
+                            </span>
+                          </TableCell>
+                        </TableRow>
+                      </TableBody>
+                    </Table>
+                  </CardContent>
+                </Card>
+              </TabsContent>
 
-                  <div class="flex items-center gap-2">
-                    <GlobalLink
-                      v-if="campaign.audience"
-                      variant="outline" size="sm" as="Button"
-                      :disabled="campaign.status === 'scheduled'"
-                      :href="route('audiences.add_recipient', campaign.audience.uuid)">
-                      <Users class="h-4 w-4"/>
-                      Add Recipients
-                    </GlobalLink>
+              <TabsContent value="events">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Recent Events</CardTitle>
+                    <CardDescription>Latest activity from your campaign</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <!-- Table for large screens -->
+                    <div class="hidden md:block">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Event</TableHead>
+                            <TableHead>Email</TableHead>
+                            <TableHead>Time</TableHead>
+                            <TableHead>Details</TableHead>
+                          </TableRow>
+                        </TableHeader>
 
-                    <Button
-                      v-if="campaign.audience"
-                      size="sm"
-                      as-child>
-                      <Link :href="route('audiences.show', campaign.audience.uuid)">
-                        View All
-                      </Link>
-                    </Button>
-                  </div>
-                </div>
-
-                <ScrollArea v-if="displayedRecipients.length" class="h-[300px] rounded-md border p-4">
-                  <div class="space-y-4">
-                    <div
-                      v-for="recipient in displayedRecipients"
-                      :key="recipient.uuid"
-                      class="group flex items-center justify-between rounded-lg border p-3">
-                      <div class="grid gap-1">
-                        <h4 class="font-medium">{{ recipient.name }}</h4>
-                        <p class="text-sm text-muted-foreground">
-                          {{ recipient.email }}
-                        </p>
-                      </div>
-
-                      <div
-                        v-if="campaign.can_edit"
-                        class="opacity-0 group-hover:opacity-100 gap-2 flex">
-                        <GlobalLink
-                          preserve-scroll
-                          variant="outline"
-                          as="Button" size="icon"
-                          :href="route('recipients.edit', recipient.uuid)">
-                          <PencilIcon class="h-4 w-4"/>
-                        </GlobalLink>
-
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          @click="removeRecipient(recipient)">
-                          <Trash2 class="h-4 w-4"/>
-                        </Button>
-                      </div>
+                        <TableBody>
+                          <TableRow v-for="event in recent_events" :key="`${event.email}-${event.timestamp}`">
+                            <TableCell>
+                              <span class="flex items-center gap-2">
+                                {{ getEventIcon(event.type) }}
+                                <span class="capitalize">{{ event.type }}</span>
+                              </span>
+                            </TableCell>
+                            <TableCell>{{ event.email }}</TableCell>
+                            <TableCell>
+                              {{ formatDistanceToNow(new Date(event.timestamp), { addSuffix: true }) }}
+                            </TableCell>
+                            <TableCell>
+                              <span v-if="event.url" class="text-sm text-blue-500 truncate max-w-xs block">
+                                {{ event.url }}
+                              </span>
+                              <span v-if="event.reason" class="text-sm text-red-500">
+                                {{ event.reason }}
+                              </span>
+                            </TableCell>
+                          </TableRow>
+                        </TableBody>
+                      </Table>
                     </div>
 
-                    <div
-                      v-if="remainingRecipients"
-                      class="text-center text-sm text-muted-foreground">
-                      + {{ remainingRecipients }} more recipients
+                    <!-- Cards for mobile screens -->
+                    <div class="md:hidden space-y-4">
+                      <Card v-for="event in recent_events" :key="`${event.email}-${event.timestamp}`" class="bg-muted/50">
+                        <CardContent class="p-4">
+                          <div class="flex items-center justify-between mb-2">
+                            <span class="flex items-center gap-2">
+                              {{ getEventIcon(event.type) }}
+                              <span class="capitalize font-medium">{{ event.type }}</span>
+                            </span>
+                            <span class="text-sm text-muted-foreground">
+                              {{ formatDistanceToNow(new Date(event.timestamp), { addSuffix: true }) }}
+                            </span>
+                          </div>
+
+                          <div class="space-y-1">
+                            <p class="text-sm">
+                              <span class="text-muted-foreground">Email:</span>
+                              <span class="font-medium">{{ event.email }}</span>
+                            </p>
+
+                            <p v-if="event.url" class="text-sm text-blue-500 break-all">
+                              {{ event.url }}
+                            </p>
+
+                            <p v-if="event.reason" class="text-sm text-red-500">
+                              {{ event.reason }}
+                            </p>
+                          </div>
+                        </CardContent>
+                      </Card>
                     </div>
-                  </div>
-                </ScrollArea>
+                  </CardContent>
+                </Card>
+              </TabsContent>
 
-                <div
-                  v-else
-                  class="flex h-[200px] items-center justify-center rounded-lg border">
-                  <div class="text-center">
-                    <Users class="mx-auto h-8 w-8 text-muted-foreground"/>
-                    <h3 class="mt-2 font-medium">No recipients</h3>
-                    <p class="text-sm text-muted-foreground">
-                      Add recipients to start sending emails
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="statistics" class="space-y-6">
-          <!-- Date Range Picker -->
-          <Card>
-            <CardHeader>
-              <div class="flex items-center justify-between">
-                <CardTitle>Statistics</CardTitle>
-                <Button
-                  variant="outline"
-                  @click="isDatePickerOpen = true">
-                  <CalendarIcon class="h-4 w-4"/>
-                  {{ format(dateRange.start, 'PP') }} - {{ format(dateRange.end, 'PP') }}
-                </Button>
-              </div>
-            </CardHeader>
-
-            <CardContent>
-              <VDatePicker
-                v-model.range="dateRange"
-                mode="date" expanded
-                :columns="isMobile ? 1 : 2"
-                :is-dark="isDark"
-              />
-            </CardContent>
-          </Card>
-
-          <!-- Statistics Grid -->
-          <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            <Card>
-              <CardHeader>
-                <CardTitle class="flex items-center justify-between text-sm font-medium">
-                  Delivery Rate
-                  <CheckCircle class="h-4 w-4 text-muted-foreground"/>
-                </CardTitle>
-              </CardHeader>
-
-              <CardContent>
-                <div class="text-2xl font-bold">
-                  {{ deliveryRate }}%
+              <!-- Let's also make the stats cards more responsive -->
+              <TabsContent value="overview">
+                <!-- Summary Stats -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-6">
+                  <Card v-for="(value, key) in stats.summary" :key="key">
+                    <CardHeader class="p-4 md:p-6">
+                      <CardTitle class="text-sm md:text-base capitalize">
+                        {{ key.replace('_', ' ') }}
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent class="p-4 pt-0 md:p-6 md:pt-0">
+                      <div class="text-xl md:text-2xl font-bold">{{ value }}</div>
+                      <div v-if="stats.rates[`${key}_rate`]" class="text-xs md:text-sm text-muted-foreground">
+                        {{ stats.rates[`${key}_rate`] }}% Rate
+                      </div>
+                    </CardContent>
+                  </Card>
                 </div>
 
-                <p class="text-xs text-muted-foreground">
-                  {{ stats.delivered }} of {{ stats.delivered + stats.bounced }}
-                  delivered
-                </p>
-              </CardContent>
-            </Card>
+                <!-- Charts need to be responsive too -->
+                <Card class="mb-6">
+                  <CardHeader>
+                    <CardTitle class="text-base md:text-lg">Email Clients</CardTitle>
+                    <CardDescription class="text-sm">Distribution of email clients used</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div class="h-[300px] md:h-[350px]">
+                      <VueApexCharts
+                        type="donut"
+                        :height="'100%'"
+                        :options="emailClientsChartOptions"
+                        :series="emailClientsChartOptions.series"
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
 
-            <Card>
-              <CardHeader>
-                <CardTitle class="flex items-center justify-between text-sm font-medium">
-                  Open Rate
-                  <Mail class="h-4 w-4 text-muted-foreground"/>
-                </CardTitle>
-              </CardHeader>
+              <TabsContent value="engagement">
+                <Card>
+                  <CardHeader>
+                    <CardTitle class="text-base md:text-lg">Engagement Timeline</CardTitle>
+                    <CardDescription class="text-sm">Campaign performance over time</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div class="h-[300px] md:h-[350px] mt-4">
+                      <VueApexCharts
+                        type="area"
+                        :height="'100%'"
+                        :options="timelineChartOptions"
+                        :series="timelineChartOptions.series"
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
 
-              <CardContent>
-                <div class="text-2xl font-bold">{{ openRate }}%</div>
-                <p class="text-xs text-muted-foreground">
-                  {{ stats.unique_opened }} unique opens
-                </p>
-              </CardContent>
-            </Card>
+              <TabsContent value="clicks">
+                <Card>
+                  <CardHeader>
+                    <CardTitle class="text-base md:text-lg">Click Distribution</CardTitle>
+                    <CardDescription class="text-sm">Most clicked links in your campaign</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div class="h-[300px] md:h-[350px]">
+                      <VueApexCharts
+                        type="bar"
+                        :height="'100%'"
+                        :options="clickDistributionChartOptions"
+                        :series="clickDistributionChartOptions.series"
+                      />
+                    </div>
 
-            <Card>
-              <CardHeader>
-                <CardTitle class="flex items-center justify-between text-sm font-medium">
-                  Click Rate
-                  <MousePointer class="h-4 w-4 text-muted-foreground"/>
-                </CardTitle>
-              </CardHeader>
-
-              <CardContent>
-                <div class="text-2xl font-bold">{{ clickRate }}%</div>
-                <p class="text-xs text-muted-foreground">
-                  {{ stats.unique_clicked }} unique clicks
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle class="flex items-center justify-between text-sm font-medium">
-                  Total Opens
-                  <Mail class="h-4 w-4 text-muted-foreground"/>
-                </CardTitle>
-              </CardHeader>
-
-              <CardContent>
-                <div class="text-2xl font-bold">
-                  {{ stats.opened }}
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle class="flex items-center justify-between text-sm font-medium">
-                  Total Clicks
-                  <MousePointer class="h-4 w-4 text-muted-foreground"/>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div class="text-2xl font-bold">
-                  {{ stats.clicked }}
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle class="flex items-center justify-between text-sm font-medium">
-                  Bounces & Spam
-                  <AlertTriangle class="h-4 w-4 text-muted-foreground"/>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div class="text-2xl font-bold">
-                  {{ stats.bounced + stats.spam_report }}
-                </div>
-                <p class="text-xs text-muted-foreground">
-                  {{ stats.bounced }} bounces, {{ stats.spam_report }} spam reports
-                </p>
-              </CardContent>
-            </Card>
-          </div>
-
-          <!-- Chart -->
-          <Card>
-            <CardHeader>
-              <CardTitle>Performance Over Time</CardTitle>
-            </CardHeader>
-
-            <CardContent>
-              <PerformanceOverTimeChart :data="chartData"/>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+                    <!-- Mobile-friendly link list -->
+                    <div class="mt-6 md:hidden">
+                      <div class="space-y-4">
+                        <div v-for="(data, url) in stats.clicks" :key="url"
+                             class="p-4 rounded-lg bg-muted/50">
+                          <div class="flex items-center justify-between mb-1">
+                            <span class="font-medium">{{ data.count }} clicks</span>
+                            <span class="text-sm text-muted-foreground">
+                              {{ formatDistanceToNow(new Date(data.last_clicked), { addSuffix: true }) }}
+                            </span>
+                          </div>
+                          <a :href="url"
+                             target="_blank"
+                             class="text-sm text-blue-500 break-all">
+                            {{ url }}
+                          </a>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+            </Tabs>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   </AppLayout>
 </template>
+
+<style scoped>
+/* Add some responsive styles */
+@media (max-width: 640px) {
+  :deep(.apexcharts-legend-series) {
+    margin: 2px 5px !important;
+  }
+
+  :deep(.apexcharts-legend) {
+    padding: 0 !important;
+  }
+
+  :deep(.apexcharts-text) {
+    font-size: 11px !important;
+  }
+}
+
+/* Ensure tabs are scrollable on mobile */
+:deep(.tabs-list) {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+:deep(.tabs-list::-webkit-scrollbar) {
+  display: none;
+}
+</style>

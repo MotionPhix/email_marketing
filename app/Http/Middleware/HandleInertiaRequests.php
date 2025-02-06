@@ -42,7 +42,11 @@ class HandleInertiaRequests extends Middleware
           'last_name' => $request->user()?->last_name
         ]
       ],*/
-      'appName' => fn() => env('APP_NAME')
+      'appName' => fn() => env('APP_NAME'),
+
+      'notifications' => $request->user()
+        ? $request->user()->notifications()->latest()->take(5)->get()
+        : [],
     ]);
   }
 }

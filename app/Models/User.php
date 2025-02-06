@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Traits\HasSubscription;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use App\Traits\BootUuid;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -15,7 +16,7 @@ use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable implements MustVerifyEmail
 {
-  use HasApiTokens, BootUuid, HasRoles;
+  use HasApiTokens, BootUuid, HasRoles, HasSubscription;
 
   /** @use HasFactory<\Database\Factories\UserFactory> */
   use HasFactory;
@@ -96,5 +97,21 @@ class User extends Authenticatable implements MustVerifyEmail
   public function settings()
   {
     return $this->hasOne(Setting::class);
+  }
+
+  public function subscriptions()
+  {
+    return $this->hasMany(Subscription::class);
+  }
+
+  public function activeSubscription()
+  {
+    return $this->subscriptions()
+      ->where('status', Subscription::STATUS_ACTIVE)
+      ->where(function ($query) {
+        $query->whereNull('ends_at')
+          ->orWhere('ends_at', '>', now());
+      })
+      ->first();
   }
 }

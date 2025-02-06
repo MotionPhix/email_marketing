@@ -3,10 +3,10 @@
 namespace App\Models;
 
 use App\Traits\BootUuid;
-use Carbon\Carbon;
-use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Str;
 
 class Plan extends Model
 {
@@ -14,30 +14,155 @@ class Plan extends Model
 
   protected $fillable = [
     'name',
-    'uuid',
-    'features'
+    'slug',
+    'description',
+    'price',
+    'currency',
+    'trial_days',
+    'is_active',
+    'is_featured',
+    'sort_order',
+    'features',
+    'metadata'
   ];
 
   protected $casts = [
     'features' => 'array',
+    'metadata' => 'array',
+    'price' => 'integer',
+    'is_active' => 'boolean',
+    'is_featured' => 'boolean',
+    'trial_days' => 'integer',
+    'sort_order' => 'integer',
   ];
 
-  public function formattedFeatures(): Attribute
+  protected static function boot()
   {
-    $features = $this->features;
+    parent::boot();
 
-    return Attribute::make(
-      get: fn() => [
-        'campaign_limit' => "Up to {$features['campaign_limit']} campaigns",
-        'recipient_limit' => "Up to {$features['recipient_limit']} recipients",
-        'email_limit' => "Up to {$features['email_limit']} emails per month",
-        'segment_limit' => "Up to {$features['segment_limit']} segments",
-        'can_schedule_campaigns' => $features['can_schedule_campaigns'] ? 'Scheduled campaigns' : 'No campaign scheduling',
-        'support_type' => $features['support_type'],
-        'analytics' => $features['analytics'],
-        'personalisation' => $features['personalisation'] ? 'Personalisation, including custom logo' : 'No personalisation',
-      ],
-    );
+    static::creating(function ($plan) {
+      if (empty($plan->slug)) {
+        $plan->slug = Str::slug($plan->name);
+      }
+    });
   }
 
+  // Scopes
+  public function scopeActive(Builder $query): Builder
+  {
+    return $query->where('is_active', true);
+  }
+
+  public function scopeFeatured(Builder $query): Builder
+  {
+    return $query->where('is_featured', true);
+  }
+
+  public function scopeOrdered(Builder $query): Builder
+  {
+    return $query->orderBy('sort_order')->orderBy('price');
+  }
+
+  // Feature helper methods
+  public function getCampaignLimit(): int
+  {
+    return (int) $this->features['campaign_limit'] ?? 0;
+  }
+
+  public function getEmailLimit(): int
+  {
+    return (int) preg_replace('/[^0-9]/', '', $this->features['email_limit'] ?? '0');
+  }
+
+  public function getRecipientLimit(): int
+  {
+    return (int) preg_replace('/[^0-9]/', '', $this->features['recipient_limit'] ?? '0');
+  }
+
+  public function getSegmentLimit(): int
+  {
+    return (int) preg_replace('/[^0-9]/', '', $this->features['segment_limit'] ?? '0');
+  }
+
+  public function canScheduleCampaigns(): bool
+  {
+    return !empty($this->features['can_schedule_campaigns']);
+  }
+
+  public function hasPersonalisation(): bool
+  {
+    return !empty($this->features['personalisation']);
+  }
+
+  public function getAnalyticsLevel(): string
+  {
+    return $this->features['analytics'] ?? 'No analytics';
+  }
+
+  public function getSupportType(): string
+  {
+    return $this->features['support_type'] ?? 'No support';
+  }
+
+  // Formatted features for display
+  public function getFormattedFeatures(): array
+  {
+    return [
+      'campaign_limit' => "Up to {$this->getCampaignLimit()} campaigns",
+      'recipient_limit' => "Up to {$this->getRecipientLimit()} recipients",
+      'email_limit' => $this->features['email_limit'] ?? 'No emails',
+      'segment_limit' => $this->features['segment_limit'] ?? 'No segments',
+      'can_schedule_campaigns' => $this->canScheduleCampaigns() ? 'Scheduled campaigns' : 'No campaign scheduling',
+      'support_type' => $this->getSupportType(),
+      'analytics' => $this->getAnalyticsLevel(),
+      'personalisation' => $this->hasPersonalisation() ? 'Full personalisation' : 'Basic personalisation',
+    ];
+  }
+
+  // Price formatting
+  public function getFormattedPrice(): string
+  {
+    return number_format($this->price, 2) . ' ' . $this->currency;
+  }
+
+  // Relationships
+  public function subscriptions()
+  {
+    return $this->hasMany(Subscription::class);
+  }
+
+  public function activeSubscriptions()
+  {
+    return $this->subscriptions()
+      ->where('status', Subscription::STATUS_ACTIVE)
+      ->where(function ($query) {
+        $query->whereNull('ends_at')
+          ->orWhere('ends_at', '>', now());
+      });
+  }
+
+  // Compare features with another plan
+  public function compareWith(Plan $plan): array
+  {
+    $differences = [];
+    $thisFeatures = $this->getFormattedFeatures();
+    $otherFeatures = $plan->getFormattedFeatures();
+
+    foreach ($thisFeatures as $key => $value) {
+      if ($value !== $otherFeatures[$key]) {
+        $differences[$key] = [
+          'current' => $value,
+          'other' => $otherFeatures[$key]
+        ];
+      }
+    }
+
+    return $differences;
+  }
+
+  // Check if this plan is an upgrade from another plan
+  public function isUpgradeFrom(Plan $plan): bool
+  {
+    return $this->price > $plan->price;
+  }
 }

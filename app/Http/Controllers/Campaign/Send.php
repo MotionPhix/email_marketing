@@ -20,6 +20,10 @@ class Send extends Controller
    */
   public function __invoke(Request $request, Campaign $campaign = null)
   {
+    if (!$request->user()->canSendEmails()) {
+      return back()->with('error', 'You have reached your campaign limit. Please upgrade your plan.');
+    }
+
     if (!$campaign) {
       if (!$request->template_id) {
         return back()->with('flash', [

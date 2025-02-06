@@ -40,4 +40,10 @@ return [
     ],
   ],
 
+  'paychangu' => [
+    'url' => env('PAYCHANGU_URL'),
+    'key' => env('PAYCHANGU_KEY'),
+    'secret' => env('PAYCHANGU_SECRET'),
+  ],
+
 ];

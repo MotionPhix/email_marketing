@@ -1,11 +1,12 @@
 <?php
 
+use App\Http\Controllers\BillingController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
 Route::get('/', function () {
-  return Inertia::render('Welcome', [
+  return Inertia::render('Home/Index', [
     'canLogin' => Route::has('login'),
     'canRegister' => Route::has('register'),
     'plans' => \App\Models\Plan::all(),
@@ -17,6 +18,11 @@ Route::middleware([
   config('jetstream.auth_session'),
   'verified',
 ])->group(function () {
+
+  Route::patch('notifications/{id}/read', function ($id) {
+    auth()->user()->notifications()->findOrFail($id)->markAsRead();
+    return back();
+  })->name('notifications.mark-as-read');
 
   Route::get(
     '/dashboard',
@@ -77,7 +83,8 @@ Route::middleware([
     Route::post(
       '/send/{campaign:uuid?}',
       \App\Http\Controllers\Campaign\Send::class
-    )->name('campaigns.send');
+    )->name('campaigns.send')
+      ->middleware('subscription');
 
     Route::get(
       '/e/{campaign:uuid}',
@@ -252,6 +259,32 @@ Route::middleware([
 
   });
 
+  Route::prefix('subscription')->group(function () {
+
+    Route::post(
+      '/s/{plan}',
+      [\App\Http\Controllers\Payment\SubscriptionController::class, 'subscribe']
+    )->name('subscription.create');
+
+    Route::get(
+      '/p/callback',
+      [\App\Http\Controllers\Payment\SubscriptionController::class, 'callback']
+    )->name('subscription.callback');
+
+    Route::post(
+      '/r/callback/{subscription}',
+      [\App\Http\Controllers\Payment\SubscriptionController::class, 'handleRenewalCallback']
+    )->name('subscription.renewal.callback');
+
+  });
+
+  Route::prefix('billing')->group(function () {
+    Route::get('/', [BillingController::class, 'index'])->name('billing');
+    Route::patch('/auto-renew', [BillingController::class, 'toggleAutoRenew'])->name('subscription.auto-renew');
+    Route::post('/change-plan', [BillingController::class, 'changePlan'])->name('subscription.change-plan');
+    Route::get('/invoice/{reference?}', [BillingController::class, 'downloadInvoice'])->name('billing.invoice');
+  });
+
 });
 
 // realtime analytics
@@ -260,3 +293,9 @@ Route::post(
   \App\Http\Controllers\Hook::class,
 )->middleware(['throttle:60,1'])
   ->name('analytics');
+
+// pay changu webhooks
+Route::post(
+  'webhooks/paychangu',
+  [\App\Http\Controllers\Payment\SubscriptionController::class, 'webhook']
+)->name('webhooks.paychangu');

@@ -7,6 +7,7 @@ import MainNav from "@/Layouts/MainNav.vue";
 import ThemeToggle from "@/Layouts/ThemeToggle.vue"
 import MobileNav from "@/Layouts/MobileNav.vue";
 import {Toaster} from "vue-sonner";
+import Notifications from "@/Components/Notifications.vue";
 
 defineProps({
   title: String,
@@ -46,6 +47,10 @@ defineProps({
               <ThemeToggle />
               <!-- Settings Dropdown -->
               <UserNav />
+
+              <Notifications
+                :notifications="$page.props.notifications"
+              />
             </div>
 
             <!-- Hamburger -->

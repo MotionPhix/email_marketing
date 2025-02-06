@@ -1,10 +1,10 @@
 <script setup lang="js">
 import {Head, Link, useForm} from '@inertiajs/vue3';
 import AuthenticationCard from '@/Components/AuthenticationCard.vue';
-import AuthenticationCardLogo from '@/Components/AuthenticationCardLogo.vue';
-import Checkbox from '@/Components/Checkbox.vue';
+import ApplicationMark from "@/Components/ApplicationMark.vue";
 import InputError from '@/Components/InputError.vue';
 import InputLabel from '@/Components/InputLabel.vue';
+import {Checkbox} from '@/Components/ui/checkbox';
 
 const form = useForm({
   first_name: '',
@@ -26,8 +26,9 @@ const submit = () => {
   <Head title="Register"/>
 
   <AuthenticationCard>
+
     <template #logo>
-      <AuthenticationCardLogo/>
+      <ApplicationMark class="h-14" />
     </template>
 
     <form @submit.prevent="submit">
@@ -98,7 +99,12 @@ const submit = () => {
               <div v-if="$page.props.jetstream.hasTermsAndPrivacyPolicyFeature">
                 <InputLabel for="terms">
                   <div class="flex items-center">
-                    <Checkbox id="terms" v-model:checked="form.terms" name="terms" required/>
+
+                    <Checkbox
+                      id="terms"
+                      @update:checked="form.terms = !form.terms"
+                      :checked="form.terms" name="terms" required
+                    />
 
                     <div class="ms-2">
                       I agree to the <a target="_blank" :href="route('terms.show')"

@@ -1,13 +1,8 @@
 <script setup lang="ts">
 import AuthenticationCard from "@/Components/AuthenticationCard.vue";
+import ApplicationMark from "@/Components/ApplicationMark.vue";
 import {Head, Link, useForm} from '@inertiajs/vue3';
 import {Checkbox} from "@/Components/ui/checkbox";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle
-} from "@/Components/ui/card";
 
 defineProps({
   canResetPassword: Boolean,
@@ -29,6 +24,10 @@ const submit = () => {
   <Head title="Login" />
 
   <AuthenticationCard>
+
+    <template #logo>
+      <ApplicationMark class="h-14" />
+    </template>
 
     <form @submit.prevent="submit" class="w-full max-w-md">
       <Card class="mx-auto max-w-md">

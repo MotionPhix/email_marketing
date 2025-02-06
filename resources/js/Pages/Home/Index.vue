@@ -148,7 +148,7 @@ const formatFeatureList = (features: Feature) => {
             as-child
             class="hidden sm:inline-block">
             <Link as="button" :href="route('register')">
-              Sign in
+              Sign Up
             </Link>
           </Button>
 
@@ -250,6 +250,7 @@ const formatFeatureList = (features: Feature) => {
           <p class="text-muted-foreground">
             Need a custom plan?
             <Link
+              as="button"
               href="/contact"
               class="text-primary hover:underline">
               Contact us

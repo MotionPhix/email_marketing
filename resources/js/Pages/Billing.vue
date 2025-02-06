@@ -48,7 +48,6 @@ interface Props {
 const props = defineProps<Props>()
 
 const billingPeriod = ref('monthly') // or 'yearly'
-const showConfirmation = ref(false)
 const selectedPlan = ref<Plan | null>(null)
 const processing = ref(false)
 const error = ref('')
@@ -76,6 +75,7 @@ const getPriceComparison = (plan: Plan) => {
 }
 
 const annualDiscount = 20 // 20% discount for annual billing
+const billingModal = ref()
 
 const adjustedPlans = computed(() => {
   return props.plans.map(plan => ({
@@ -100,8 +100,6 @@ const formatPrice = (price: number, currency: string) => {
 
 const handlePlanSelect = (plan: Plan) => {
   selectedPlan.value = plan
-  showConfirmation.value = true
-
   visitModal('#plan_modal')
 }
 
@@ -127,7 +125,7 @@ const handleSubscribe = async () => {
       preserveState: true,
       onSuccess: () => {
         error.value = null
-        console.log('close modal')
+        billingModal.value.close()
       },
       onError: (errors) => {
         error.value = errors.subscription
@@ -138,6 +136,7 @@ const handleSubscribe = async () => {
   } finally {
     error.value = null
     processing.value = false
+    billingModal.value.close()
   }
 }
 
@@ -176,8 +175,9 @@ const handleCancel = async () => {
                   <div class="flex items-center gap-2">
                     <span class="text-lg font-semibold">{{ subscription.plan.name }}</span>
                     <Badge
-                      :variant="subscription.status === 'active' ? 'default' : 'secondary'"
-                    >
+                      :variant="subscription.status === 'active'
+                      ? 'default'
+                      : 'secondary'">
                       {{ subscription.status }}
                     </Badge>
                   </div>
@@ -376,6 +376,7 @@ const handleCancel = async () => {
       v-slot="{ close }"
       max-width="md"
       name="plan_modal"
+      ref="billingModal"
       :close-explicitly="false"
       :close-button="false"
       paddingClasses="0"

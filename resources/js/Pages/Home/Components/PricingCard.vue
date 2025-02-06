@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { router } from '@inertiajs/vue3'
-import { IconCheck } from '@tabler/icons-vue'
+import { IconCheck, IconX } from '@tabler/icons-vue'
 
 interface Feature {
   text: string
@@ -73,9 +73,9 @@ const formatPrice = (price: number) => {
             v-if="feature.icon"
             class="h-5 w-5 text-primary flex-shrink-0"
           />
-          <span
+          <IconX
             v-else
-            class="h-5 w-5 flex-shrink-0"
+            class="h-5 text-primary w-5 flex-shrink-0"
           />
           <span :class="!feature.icon && 'text-muted-foreground'">
             {{ feature.text }}

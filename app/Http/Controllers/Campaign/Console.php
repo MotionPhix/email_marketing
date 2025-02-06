@@ -22,6 +22,11 @@ class Console extends Controller
    */
   public function __invoke(Request $request, Campaign $campaign)
   {
+    // Check if user has a paid plan
+    if (!$request->user()->hasPaidPlan()) {
+      return back()->with('error', 'Campaign scheduling is only available for paid plans.');
+    }
+
     $validated = $request->validate([
       'scheduled_at' => 'required|date|after:now',
       'frequency' => ['required', Rule::in(array_keys($this->schedulingService::FREQUENCIES))],

@@ -41,11 +41,11 @@ const endDate = ref<Date | null>(null)
 const isSubmitting = ref(false)
 
 const frequencies: FrequencyOption[] = [
-  {value: 'daily', label: 'Daily', duration: 30},
-  {value: 'weekly', label: 'Weekly', duration: 90},
-  {value: 'bi_weekly', label: 'Fortnight', duration: 120},
-  {value: 'monthly', label: 'Monthly', duration: 180},
-  {value: 'quarterly', label: 'Quarterly', duration: 360},
+  { value: 'daily', label: 'Daily', duration: 30 },      // 1 month
+  { value: 'weekly', label: 'Weekly', duration: 90 },    // ~3 months
+  { value: 'bi_weekly', label: 'Fortnight', duration: 180 }, // ~6 months
+  { value: 'monthly', label: 'Monthly', duration: 365 },  // 1 year
+  { value: 'quarterly', label: 'Quarterly', duration: 730 } // 2 years
 ]
 
 // Helper function to ensure valid Date objects

@@ -15,13 +15,18 @@ class CampaignEmailService
    * Send emails for the given campaign.
    *
    * @param Campaign $campaign
-   * @param array $recipients
+   * @param \Illuminate\Support\Collection $recipients
+   * @param User $user
+   * @throws \Exception
    */
   public function sendEmails(Campaign $campaign, $recipients, User $user)
   {
     if (!$campaign->template) {
-      Log::error("Campaign [{$campaign->id}] has no template assigned.");
-      return;
+      throw new \Exception("Campaign [{$campaign->id}] has no template assigned.");
+    }
+
+    if (!$user->id) {
+      throw new \Exception("Invalid user provided for campaign [{$campaign->id}].");
     }
 
     // Filter out unsubscribed recipients before sending
@@ -29,20 +34,37 @@ class CampaignEmailService
       return $recipient->unsubscribed()->exists();
     });
 
-    foreach ($activeRecipients as $recipient) {
-      $email = $this->prepareEmail($campaign, $recipient, $user);
-      $sendgrid = new \SendGrid(config('services.sendgrid.api_key'));
+    $sendgrid = new \SendGrid(config('services.sendgrid.api_key'));
 
+    foreach ($activeRecipients as $recipient) {
       try {
+        $email = $this->prepareEmail($campaign, $recipient, $user);
         $response = $sendgrid->send($email);
-        Log::info($response->body());
+
+        // Log successful sends
+        Log::info('Email sent successfully', [
+          'campaign_id' => $campaign->id,
+          'recipient_id' => $recipient->id,
+          'status_code' => $response->statusCode()
+        ]);
+
       } catch (\Exception $e) {
-        Log::error('SendGrid Error: ' . $e->getMessage());
+        Log::error('SendGrid Error', [
+          'campaign_id' => $campaign->id,
+          'recipient_id' => $recipient->id,
+          'error' => $e->getMessage()
+        ]);
+
+        // Continue with other recipients even if one fails
+        continue;
       }
     }
 
     // Update campaign status after sending
-    $campaign->update(['status' => 'sent']);
+    $campaign->update([
+      'status' => Campaign::STATUS_SENT,
+      'sent_at' => now()
+    ]);
   }
 
   /**

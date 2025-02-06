@@ -27,7 +27,8 @@ Route::middleware([
   Route::get(
     '/dashboard',
     \App\Http\Controllers\Analytics::class,
-  )->name('dashboard');
+  )->name('dashboard')
+    ->withoutMiddleware(\App\Http\Middleware\CheckSubscription::class);
 
   Route::prefix('settings')->group(function () {
 
@@ -51,7 +52,7 @@ Route::middleware([
       \App\Http\Controllers\Setting\Update::class,
     )->name('settings.update');
 
-  });
+  })->withoutMiddleware(\App\Http\Middleware\CheckSubscription::class);
 
   Route::prefix('campaigns')->group(function () {
 
@@ -218,7 +219,7 @@ Route::middleware([
       \App\Http\Controllers\Audience\Trash::class
     )->name('audiences.destroy');
 
-  });
+  })->withoutMiddleware(\App\Http\Middleware\CheckSubscription::class);
 
   Route::prefix('templates')->group(function () {
 
@@ -257,7 +258,7 @@ Route::middleware([
       \App\Http\Controllers\Template\Trash::class
     )->name('templates.destroy');
 
-  });
+  })->withoutMiddleware(\App\Http\Middleware\CheckSubscription::class);
 
   Route::prefix('subscription')->group(function () {
 
@@ -276,14 +277,30 @@ Route::middleware([
       [\App\Http\Controllers\Payment\SubscriptionController::class, 'handleRenewalCallback']
     )->name('subscription.renewal.callback');
 
-  });
+  })->withoutMiddleware(\App\Http\Middleware\CheckSubscription::class);
 
   Route::prefix('billing')->group(function () {
-    Route::get('/', [BillingController::class, 'index'])->name('billing');
-    Route::patch('/auto-renew', [BillingController::class, 'toggleAutoRenew'])->name('subscription.auto-renew');
-    Route::post('/change-plan', [BillingController::class, 'changePlan'])->name('subscription.change-plan');
-    Route::get('/invoice/{reference?}', [BillingController::class, 'downloadInvoice'])->name('billing.invoice');
-  });
+    Route::get(
+      '/',
+      [BillingController::class, 'index']
+    )->name('billing');
+
+    Route::patch(
+      '/auto-renew',
+      [BillingController::class, 'toggleAutoRenew']
+    )->name('subscription.auto-renew');
+
+    Route::post(
+      '/change-plan',
+      [BillingController::class, 'changePlan']
+    )->name('subscription.change-plan');
+
+    Route::get(
+      '/invoice/{reference?}',
+      [BillingController::class, 'downloadInvoice']
+    )->name('billing.invoice');
+
+  })->withoutMiddleware([\App\Http\Middleware\CheckSubscription::class]);
 
 });
 
@@ -299,3 +316,6 @@ Route::post(
   'webhooks/paychangu',
   [\App\Http\Controllers\Payment\SubscriptionController::class, 'webhook']
 )->name('webhooks.paychangu');
+
+require_once __DIR__ . '/fortify.php';
+require_once __DIR__ . '/jetstream.php';

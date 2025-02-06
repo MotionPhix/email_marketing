@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Traits\HasSubscription;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use App\Traits\BootUuid;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -55,7 +56,7 @@ class User extends Authenticatable implements MustVerifyEmail
    * @var array<int, string>
    */
   protected $appends = [
-    'profile_photo_url',
+    'profile_photo_url', 'name'
   ];
 
   /**
@@ -69,6 +70,11 @@ class User extends Authenticatable implements MustVerifyEmail
       'email_verified_at' => 'datetime',
       'password' => 'hashed',
     ];
+  }
+
+  public function name(): Attribute
+  {
+    return Attribute::get(fn() => $this->first_name . ' ' . $this->last_name);
   }
 
   public function campaigns()
@@ -99,19 +105,28 @@ class User extends Authenticatable implements MustVerifyEmail
     return $this->hasOne(Setting::class);
   }
 
-  public function subscriptions()
+  public function subscription()
   {
-    return $this->hasMany(Subscription::class);
+    return $this->hasOne(Subscription::class)->latest();
+  }
+
+  public function hasPaidPlan(): bool
+  {
+    return $this->subscription()
+      ->where('status', Subscription::STATUS_ACTIVE)
+      ->whereNull('ends_at')
+      ->orWhere('ends_at', '>', now())
+      ->exists();
   }
 
   public function activeSubscription()
   {
-    return $this->subscriptions()
+    return $this->subscription()
       ->where('status', Subscription::STATUS_ACTIVE)
       ->where(function ($query) {
         $query->whereNull('ends_at')
           ->orWhere('ends_at', '>', now());
       })
-      ->first();
+      ->exists();
   }
 }

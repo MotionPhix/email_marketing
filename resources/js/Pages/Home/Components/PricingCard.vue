@@ -50,8 +50,7 @@ const formatPrice = (price: number) => {
     <CardHeader>
       <div
         v-if="currentPlan?.uuid === plan.uuid"
-        class="absolute -top-4 left-0 right-0 text-center"
-      >
+        class="absolute -top-4 left-0 right-0 text-center">
         <span class="bg-primary text-primary-foreground px-4 py-1 rounded-full text-sm">
           Current Plan
         </span>
@@ -69,8 +68,7 @@ const formatPrice = (price: number) => {
         <li
           v-for="(feature, index) in features"
           :key="index"
-          class="flex items-center gap-x-3"
-        >
+          class="flex items-center gap-x-3">
           <IconCheck
             v-if="feature.icon"
             class="h-5 w-5 text-primary flex-shrink-0"

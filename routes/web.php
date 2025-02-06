@@ -1,18 +1,13 @@
 <?php
 
 use App\Http\Controllers\BillingController;
-use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
-use Inertia\Inertia;
 
 // Public routes
-Route::get('/', function () {
-  return Inertia::render('Home/Index', [
-    'canLogin' => Route::has('login'),
-    'canRegister' => Route::has('register'),
-    'plans' => \App\Models\Plan::all(),
-  ]);
-})->name('home');
+Route::get(
+  '/',
+  \App\Http\Controllers\Home\Index::class,
+)->name('home');
 
 // Authentication required routes
 Route::middleware([
@@ -20,11 +15,15 @@ Route::middleware([
   config('jetstream.auth_session'),
   'verified',
 ])->group(function () {
+
   // Routes that don't require subscription check
   Route::group([], function () {
+
     // Dashboard
-    Route::get('/dashboard', \App\Http\Controllers\Analytics::class)
-      ->name('dashboard');
+    Route::get(
+      '/dashboard',
+      \App\Http\Controllers\Analytics::class
+    )->name('dashboard');
 
     // Settings
     Route::prefix('settings')->group(function () {
@@ -82,6 +81,7 @@ Route::middleware([
       auth()->user()->notifications()->findOrFail($id)->markAsRead();
       return back();
     })->name('notifications.mark-as-read');
+
   });
 
   // Routes that require subscription check

@@ -11,7 +11,6 @@ import {
   IconArrowRight,
   IconPlayerPlay,
   IconDotsVertical,
-  IconCheck,
   IconBrandGithub,
   IconBrandTwitter
 } from '@tabler/icons-vue'
@@ -35,7 +34,6 @@ const isDark = useDark()
 const toggleDark = useToggle(isDark)
 
 // Props for the pricing plans
-// Props definition with proper TypeScript types
 interface Feature {
   uuid: string
   analytics: string
@@ -107,13 +105,13 @@ const faqs = [
 // Helper function to format features for display
 const formatFeatureList = (features: Feature) => {
   return [
-    { text: features.campaign_limit, icon: true },
-    { text: features.recipient_limit, icon: true },
-    { text: features.email_limit, icon: true },
-    { text: features.support_type, icon: true },
-    { text: features.can_schedule_campaigns ? 'Scheduled campaigns' : 'No campaign scheduling', icon: features.can_schedule_campaigns },
-    { text: features.personalisation ? 'Custom branding & personalization' : 'Basic personalization', icon: features.personalisation },
-    { text: features.analytics, icon: true },
+    { text: features?.campaign_limit, icon: true },
+    { text: features?.recipient_limit, icon: true },
+    { text: features?.email_limit, icon: true },
+    { text: features?.support_type, icon: true },
+    { text: features?.can_schedule_campaigns ? 'Scheduled campaigns' : 'No campaign scheduling', icon: features?.can_schedule_campaigns },
+    { text: features?.personalisation ? 'Custom branding & personalization' : 'Basic personalization', icon: features?.personalisation },
+    { text: features?.analytics, icon: true },
   ]
 }
 </script>
@@ -253,8 +251,7 @@ const formatFeatureList = (features: Feature) => {
             Need a custom plan?
             <Link
               href="/contact"
-              class="text-primary hover:underline"
-            >
+              class="text-primary hover:underline">
               Contact us
             </Link>
           </p>
@@ -272,8 +269,7 @@ const formatFeatureList = (features: Feature) => {
           <AccordionItem
             v-for="(faq, index) in faqs"
             :key="index"
-            :value="`item-${index + 1}`"
-          >
+            :value="`item-${index + 1}`" >
             <AccordionTrigger class="text-left">
               {{ faq.question }}
             </AccordionTrigger>

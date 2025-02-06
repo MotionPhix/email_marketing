@@ -93,7 +93,7 @@ const isCurrentPlan = (planId: number) => {
 const formatPrice = (price: number, currency: string) => {
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
-    currency: currency,
+    currency: 'MWK',
     minimumFractionDigits: 0
   }).format(price)
 }
@@ -373,6 +373,7 @@ const handleCancel = async () => {
 
     <!-- Plan Selection Confirmation Dialog -->
     <Modal
+      v-slot="{ close }"
       max-width="md"
       name="plan_modal"
       :close-explicitly="false"
@@ -470,9 +471,10 @@ const handleCancel = async () => {
         <Separator class="my-1" />
 
         <CardFooter class="gap-2 justify-end pt-2">
-          <Button variant="outline"
-                  :disabled="processing"
-                  @click="showConfirmation = false">
+          <Button
+            variant="outline"
+            :disabled="processing"
+            @click="close">
             Cancel
           </Button>
 

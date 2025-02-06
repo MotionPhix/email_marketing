@@ -35,9 +35,14 @@ class Subscription extends Model
     'last_payment_at' => 'datetime',
   ];
 
+  protected $appends = [
+    'formatted_features'
+  ];
+
   // Subscription statuses
   const STATUS_ACTIVE = 'active';
   const STATUS_CANCELLED = 'cancelled';
+  const STATUS_SCHEDULED = 'scheduled';
   const STATUS_EXPIRED = 'expired';
   const STATUS_TRIAL = 'trial';
   const STATUS_PENDING = 'pending';
@@ -57,14 +62,46 @@ class Subscription extends Model
     return $this->hasMany(SubscriptionRenewal::class);
   }
 
+  /**
+   * Get the formatted features from the associated plan
+   */
+  public function getFormattedFeaturesAttribute(): array
+  {
+    if (!$this->plan) {
+      return [];
+    }
+
+    // Check if plan has features property and it's an array
+    $features = $this->plan->features;
+    if (!is_array($features)) {
+      // If features is stored as JSON string, decode it
+      $features = json_decode($this->plan->features, true) ?? [];
+    }
+
+    // Format each feature
+    return array_map(function ($feature) {
+      return [
+        'name' => $feature['name'] ?? '',
+        'description' => $feature['description'] ?? '',
+        'included' => $feature['included'] ?? true,
+        'value' => $feature['value'] ?? null,
+        'icon' => $feature['icon'] ?? null,
+      ];
+    }, $features);
+  }
+
   public function latestRenewal()
   {
     return $this->hasOne(SubscriptionRenewal::class)->latest();
   }
 
-  public function isActive()
+  /**
+   * Check if the subscription is active
+   */
+  public function isActive(): bool
   {
-    return $this->status === self::STATUS_ACTIVE;
+    return $this->status === self::STATUS_ACTIVE &&
+      ($this->ends_at === null || $this->ends_at->isFuture());
   }
 
   public function isOnTrial()
@@ -75,5 +112,49 @@ class Subscription extends Model
   public function hasExpired()
   {
     return $this->ends_at?->isPast() || $this->status === self::STATUS_EXPIRED;
+  }
+
+  /**
+   * Check if the subscription has ended
+   */
+  public function hasEnded(): bool
+  {
+    return $this->ends_at !== null && $this->ends_at->isPast();
+  }
+
+  /**
+   * Check if the subscription is pending
+   */
+  public function isPending(): bool
+  {
+    return $this->status === self::STATUS_PENDING;
+  }
+
+  /**
+   * Check if the subscription is cancelled
+   */
+  public function isCancelled(): bool
+  {
+    return $this->status === self::STATUS_CANCELLED;
+  }
+
+  /**
+   * Check if the subscription is expired
+   */
+  public function isExpired(): bool
+  {
+    return $this->status === self::STATUS_EXPIRED;
+  }
+
+  /**
+   * Get the subscription's remaining days
+   */
+  public function getRemainingDays(): int
+  {
+    if (!$this->ends_at) {
+      return 0;
+    }
+
+    return max(0, now()->diffInDays($this->ends_at, false));
   }
 }

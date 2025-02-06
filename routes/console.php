@@ -11,3 +11,6 @@ Artisan::command('inspire', function () {
   ->daily()
   ->at('00:00')
   ->runInBackground();
+
+\Illuminate\Support\Facades\Schedule::command('subscriptions:process-scheduled')
+  ->hourly();

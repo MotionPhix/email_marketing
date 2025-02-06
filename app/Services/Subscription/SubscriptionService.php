@@ -143,4 +143,145 @@ class SubscriptionService
     }
     return $plan->price;
   }
+
+  /**
+   * Handle subscription changes based on plan types and current subscription status
+   */
+  public function changeSubscription(User $user, Plan $newPlan): Subscription
+  {
+    return DB::transaction(function () use ($user, $newPlan) {
+      $currentSubscription = $user->activeSubscription();
+
+      // If no active subscription or currently on free plan
+      if (!$currentSubscription || $currentSubscription->plan->price === 0) {
+        return $this->activateNewPlanImmediately($user, $newPlan);
+      }
+
+      // Determine if this is an upgrade or downgrade
+      $isUpgrade = $newPlan->price > $currentSubscription->plan->price;
+
+      if ($isUpgrade) {
+        return $this->handleUpgrade($user, $currentSubscription, $newPlan);
+      } else {
+        return $this->handleDowngrade($user, $currentSubscription, $newPlan);
+      }
+    });
+  }
+
+  /**
+   * Activate a new plan immediately (used for free to paid upgrades)
+   */
+  private function activateNewPlanImmediately(User $user, Plan $newPlan): Subscription
+  {
+    // Cancel any existing subscriptions
+    $user->subscriptions()
+      ->where('status', Subscription::STATUS_ACTIVE)
+      ->update(['status' => Subscription::STATUS_CANCELLED]);
+
+    // Create and activate new subscription
+    $subscription = Subscription::create([
+      'user_id' => $user->id,
+      'plan_id' => $newPlan->id,
+      'status' => Subscription::STATUS_ACTIVE,
+      'starts_at' => now(),
+      'ends_at' => now()->addMonth(),
+      'last_payment_at' => now(),
+    ]);
+
+    // Update user settings
+    $user->settings()->update([
+      'plan_id' => $newPlan->id
+    ]);
+
+    return $subscription;
+  }
+
+  /**
+   * Handle upgrade to a higher-tier paid plan
+   */
+  private function handleUpgrade(User $user, Subscription $currentSubscription, Plan $newPlan): Subscription
+  {
+    // Create new subscription with future start date
+    $newSubscription = Subscription::create([
+      'user_id' => $user->id,
+      'plan_id' => $newPlan->id,
+      'status' => Subscription::STATUS_SCHEDULED,
+      'starts_at' => $currentSubscription->ends_at,
+      'ends_at' => $currentSubscription->ends_at->copy()->addMonth(),
+    ]);
+
+    // Grant immediate access to new plan features
+    $user->settings()->update([
+      'plan_id' => $newPlan->id,
+      'effective_plan_id' => $newPlan->id, // New column to track actual available features
+      'scheduled_plan_id' => $newPlan->id
+    ]);
+
+    return $newSubscription;
+  }
+
+  /**
+   * Handle downgrade to a lower-tier paid plan
+   */
+  private function handleDowngrade(User $user, Subscription $currentSubscription, Plan $newPlan): Subscription
+  {
+    // Create new subscription with future start date
+    $newSubscription = Subscription::create([
+      'user_id' => $user->id,
+      'plan_id' => $newPlan->id,
+      'status' => Subscription::STATUS_SCHEDULED,
+      'starts_at' => $currentSubscription->ends_at,
+      'ends_at' => $currentSubscription->ends_at->copy()->addMonth(),
+    ]);
+
+    // Keep current plan features until expiry
+    $user->settings()->update([
+      'plan_id' => $currentSubscription->plan_id, // Keep current plan
+      'effective_plan_id' => $currentSubscription->plan_id, // Keep current features
+      'scheduled_plan_id' => $newPlan->id // Track future plan
+    ]);
+
+    return $newSubscription;
+  }
+
+  /**
+   * Cancel subscription
+   */
+  public function cancelSubscription(User $user): bool
+  {
+    return DB::transaction(function () use ($user) {
+      $subscription = $user->activeSubscription();
+
+      if (!$subscription) {
+        return false;
+      }
+
+      // Get the free plan
+      $freePlan = Plan::where('price', 0)->first();
+
+      // Cancel current subscription at the end of the period
+      $subscription->update([
+        'status' => Subscription::STATUS_CANCELLED,
+        'cancelled_at' => now()
+      ]);
+
+      // Schedule switch to free plan
+      if ($freePlan) {
+        Subscription::create([
+          'user_id' => $user->id,
+          'plan_id' => $freePlan->id,
+          'status' => Subscription::STATUS_SCHEDULED,
+          'starts_at' => $subscription->ends_at,
+          'ends_at' => null // Free plan has no end date
+        ]);
+
+        // Update user settings
+        $user->settings()->update([
+          'scheduled_plan_id' => $freePlan->id
+        ]);
+      }
+
+      return true;
+    });
+  }
 }

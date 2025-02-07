@@ -3,6 +3,7 @@
 namespace App\Modules\Campaigns\Http\Controllers;
 
 use App\Http\Controllers\Controller;
+use App\Modules\Campaigns\Jobs\ProcessCampaignQueue;
 use App\Modules\Campaigns\Models\Campaign;
 use App\Modules\Campaigns\Services\CampaignService;
 use App\Modules\Lists\Models\MailingList;
@@ -112,6 +113,23 @@ class CampaignController extends Controller
 
   public function schedule(Request $request, Campaign $campaign)
   {
+    $request->validate([
+      'scheduled_at' => ['required', 'date', 'after:now'],
+    ]);
+
+    $campaign->update([
+      'status' => Campaign::STATUS_SCHEDULED,
+      'scheduled_at' => $request->scheduled_at,
+    ]);
+
+    ProcessCampaignQueue::dispatch($campaign)
+      ->delay($request->scheduled_at);
+
+    return back()->with('success', 'Campaign scheduled successfully.');
+  }
+
+  public function schedule(Request $request, Campaign $campaign)
+  {
     $this->authorize('update', $campaign);
 
     $validated = $request->validate([
@@ -154,6 +172,17 @@ class CampaignController extends Controller
     return inertia('Campaigns/Preview', [
       'campaign' => $campaign->load('lists'),
     ]);
+  }
+
+  public function sendNow(Campaign $campaign)
+  {
+    if (!$campaign->isDraft()) {
+      return back()->with('error', 'Campaign cannot be sent.');
+    }
+
+    ProcessCampaignQueue::dispatch($campaign);
+
+    return back()->with('success', 'Campaign queued for sending.');
   }
 
   public function sendTest(Request $request, Campaign $campaign)

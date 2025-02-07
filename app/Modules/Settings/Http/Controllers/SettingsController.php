@@ -7,6 +7,7 @@ use App\Modules\Settings\Models\Setting;
 use App\Modules\Settings\Services\SettingsService;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Inertia\Response;
 
 class SettingsController extends Controller
@@ -33,23 +34,36 @@ class SettingsController extends Controller
 
   public function update(Request $request): \Illuminate\Http\RedirectResponse
   {
-    $settings = Setting::all();
+    try {
+      // Handle provider configuration
+      if ($request->has('provider')) {
+        $provider = EmailProvider::findOrFail($request->input('provider.id'));
 
-    foreach ($settings as $setting) {
-      if ($request->has($setting->key)) {
-        $value = $request->input($setting->key);
+        $emailProviderService = app(EmailProviderService::class);
 
-        // Validate based on type
-        $this->validate($request, [
-          $setting->key => $this->getValidationRules($setting),
-        ]);
-
-        // Update setting
-        $this->settings->set($setting->key, $value);
+        if ($emailProviderService->validateProvider(
+          $provider,
+          $request->input('provider.credentials')
+        )) {
+          $emailProviderService->setDefaultProvider(
+            auth()->id(),
+            $provider,
+            $request->input('provider.credentials')
+          );
+        }
       }
-    }
 
-    return redirect()->back()->with('success', 'Settings updated successfully');
+      // Handle regular settings
+      foreach ($request->input('settings', []) as $key => $value) {
+        $this->settings->set($key, $value);
+      }
+
+      return back()->with('success', 'Settings updated successfully');
+    } catch (ValidationException $e) {
+      return back()->withErrors($e->errors())->withInput();
+    } catch (\Exception $e) {
+      return back()->with('error', 'Failed to update settings: ' . $e->getMessage());
+    }
   }
 
   private function getValidationRules(Setting $setting): array

@@ -1,41 +1,73 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { Head, useForm } from '@inertiajs/vue3'
-import type { SettingsPageProps } from '../../types'
 import AppLayout from '@/Layouts/AppLayout.vue'
-import SettingField from './Components/SettingField.vue'
-import { useToast } from '@/Components/ui/toast/use-toast'
+import {
+  IconMail,
+  IconWorld,
+  IconCurrencyDollar,
+  IconClock,
+  IconSettings,
+  IconBrandMailgun,
+  IconBrandGmail
+} from '@tabler/icons-vue'
 
-const props = defineProps<SettingsPageProps>()
-const { toast } = useToast()
+interface EmailProvider {
+  id: number
+  name: string
+  slug: string
+  description: string
+  required_fields: Record<string, {
+    type: string
+    label: string
+    required: boolean
+  }>
+}
 
+interface Props {
+  settings: Record<string, Setting[]>
+  emailProviders: EmailProvider[]
+  userProviders: {
+    provider_id: number
+    credentials: Record<string, string>
+    is_active: boolean
+  }[]
+  groups: Record<string, string>
+}
+
+const props = defineProps<Props>()
 const currentGroup = ref('general')
+const showProviderModal = ref(false)
+const selectedProvider = ref<EmailProvider | null>(null)
 
-const form = useForm(
-  Object.values(props.settings)
-    .flat()
-    .reduce((acc, setting) => ({
-      ...acc,
-      [setting.key]: setting.value
-    }), {})
-)
+const form = useForm({
+  settings: Object.fromEntries(
+    Object.values(props.settings)
+      .flat()
+      .map(setting => [setting.key, setting.value])
+  ),
+  provider: {
+    id: null as number | null,
+    credentials: {} as Record<string, string>
+  }
+})
 
-const updateSettings = () => {
+const getGroupIcon = (group: string) => {
+  switch (group) {
+    case 'email':
+      return IconMail
+    case 'locale':
+      return IconWorld
+    default:
+      return IconSettings
+  }
+}
+
+const saveSettings = () => {
   form.put(route('settings.update'), {
     preserveScroll: true,
     onSuccess: () => {
-      toast({
-        title: 'Success',
-        description: 'Settings updated successfully',
-        variant: 'success'
-      })
-    },
-    onError: () => {
-      toast({
-        title: 'Error',
-        description: 'Failed to update settings',
-        variant: 'destructive'
-      })
+      showProviderModal.value = false
     }
   })
 }
@@ -66,6 +98,10 @@ const updateSettings = () => {
                   ]"
                   @click="currentGroup = group"
                 >
+                  <component
+                    :is="getGroupIcon(group)"
+                    class="mr-2 h-4 w-4"
+                  />
                   {{ label }}
                 </Button>
               </div>
@@ -73,48 +109,160 @@ const updateSettings = () => {
           </Card>
 
           <!-- Main Content -->
-          <Card class="col-span-12 md:col-span-9">
-            <CardHeader>
-              <CardTitle>{{ groups[currentGroup] }}</CardTitle>
-              <CardDescription>Configure your {{ groups[currentGroup].toLowerCase() }}</CardDescription>
-            </CardHeader>
-
-            <form @submit.prevent="updateSettings">
+          <div class="col-span-12 md:col-span-9 space-y-6">
+            <!-- Email Provider Selection -->
+            <Card v-if="currentGroup === 'email'">
+              <CardHeader>
+                <CardTitle>Email Providers</CardTitle>
+                <CardDescription>
+                  Configure your email delivery service
+                </CardDescription>
+              </CardHeader>
               <CardContent>
-                <div class="space-y-6">
-                  <SettingField
-                    v-for="setting in settings[currentGroup]"
-                    :key="setting.key"
-                    :setting="setting"
-                    v-model="form[setting.key]"
-                  />
+                <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                  <Card
+                    v-for="provider in emailProviders"
+                    :key="provider.id"
+                    :class="[
+                      'cursor-pointer transition-colors hover:bg-muted/50',
+                      userProviders.some(up => up.provider_id === provider.id && up.is_active)
+                        ? 'border-primary'
+                        : ''
+                    ]"
+                    @click="selectedProvider = provider; showProviderModal = true"
+                  >
+                    <CardHeader>
+                      <CardTitle class="flex items-center gap-2">
+                        <component
+                          :is="provider.slug === 'sendgrid' ? IconMail : IconBrandMailgun"
+                          class="h-5 w-5"
+                        />
+                        {{ provider.name }}
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p class="text-sm text-muted-foreground">
+                        {{ provider.description }}
+                      </p>
+                    </CardContent>
+                  </Card>
                 </div>
               </CardContent>
+            </Card>
 
-              <CardFooter class="flex justify-end space-x-2">
-                <Button
-                  type="reset"
-                  variant="outline"
-                  :disabled="form.processing"
-                >
-                  Reset
-                </Button>
-                <Button
-                  type="submit"
-                  :disabled="form.processing || !form.isDirty"
-                >
-                  Save Changes
-                  <Progress
-                    v-if="form.processing"
-                    class="ml-2 h-4 w-4"
-                    :indeterminate="true"
-                  />
-                </Button>
-              </CardFooter>
-            </form>
-          </Card>
+            <!-- Regular Settings -->
+            <Card>
+              <CardHeader>
+                <CardTitle>{{ groups[currentGroup] }}</CardTitle>
+                <CardDescription>
+                  Configure your {{ groups[currentGroup].toLowerCase() }}
+                </CardDescription>
+              </CardHeader>
+              <form @submit.prevent="saveSettings">
+                <CardContent>
+                  <div class="space-y-6">
+                    <div
+                      v-for="setting in settings[currentGroup]"
+                      :key="setting.key"
+                      class="space-y-2"
+                    >
+                      <Label>{{ setting.label }}</Label>
+
+                      <Select
+                        v-if="setting.type === 'string' && setting.options"
+                        v-model="form.settings[setting.key]"
+                      >
+                        <option
+                          v-for="[value, label] in Object.entries(setting.options)"
+                          :key="value"
+                          :value="value"
+                        >
+                          {{ label }}
+                        </option>
+                      </Select>
+
+                      <Input
+                        v-else
+                        :type="setting.type === 'email' ? 'email' : 'text'"
+                        v-model="form.settings[setting.key]"
+                      />
+
+                      <p class="text-sm text-muted-foreground">
+                        {{ setting.description }}
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+                <CardFooter>
+                  <Button type="submit" :disabled="form.processing">
+                    Save Changes
+                  </Button>
+                </CardFooter>
+              </form>
+            </Card>
+          </div>
         </div>
       </div>
     </div>
+
+    <!-- Email Provider Modal -->
+    <Dialog v-model:open="showProviderModal">
+      <DialogContent class="sm:max-w-[425px]">
+        <DialogHeader>
+          <DialogTitle>Configure {{ selectedProvider?.name }}</DialogTitle>
+          <DialogDescription>
+            Enter your credentials for {{ selectedProvider?.name }}
+          </DialogDescription>
+        </DialogHeader>
+
+        <div class="grid gap-4 py-4">
+          <div
+            v-for="(field, key) in selectedProvider?.required_fields"
+            :key="key"
+            class="space-y-2"
+          >
+            <Label :for="key">{{ field.label }}</Label>
+            <Input
+              :id="key"
+              :type="field.type"
+              :required="field.required"
+              v-model="form.provider.credentials[key]"
+            />
+          </div>
+
+          <div class="space-y-2">
+            <Label>
+              <div class="flex items-center gap-2">
+                <Switch
+                  v-model="form.provider.is_active"
+                  :disabled="form.processing"
+                />
+                Set as default provider
+              </div>
+            </Label>
+            <p class="text-sm text-muted-foreground">
+              This provider will be used for sending all your emails
+            </p>
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button
+            variant="ghost"
+            @click="showProviderModal = false"
+            :disabled="form.processing"
+          >
+            Cancel
+          </Button>
+          <Button
+            type="submit"
+            @click="saveSettings"
+            :disabled="form.processing"
+          >
+            Save Provider
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   </AppLayout>
 </template>

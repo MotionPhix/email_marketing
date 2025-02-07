@@ -2,14 +2,13 @@
 
 namespace App\Modules\Billing\Http\Controllers;
 
-use App\Http\Controllers\Controller;
 use App\Modules\Billing\Models\Plan;
 use App\Modules\Billing\Services\BillingService;
+use App\Modules\Core\Http\Controllers\ModuleController;
 use Illuminate\Http\Request;
-use Inertia\Inertia;
 use Inertia\Response;
 
-class BillingController extends Controller
+class BillingController extends ModuleController
 {
   public function __construct(
     protected BillingService $billingService
@@ -36,7 +35,7 @@ class BillingController extends Controller
 
     $currentSubscription = $request->user()?->subscription;
 
-    return Inertia::render('Billing/Index', [
+    return $this->moduleRender('Index', [
       'plans' => $plans,
       'currentSubscription' => $currentSubscription ? [
         'uuid' => $currentSubscription->uuid,

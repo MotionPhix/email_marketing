@@ -3,7 +3,6 @@ import '../css/app.css';
 
 import {createApp, h} from 'vue';
 import {createInertiaApp} from '@inertiajs/vue3';
-import {resolvePageComponent} from 'laravel-vite-plugin/inertia-helpers';
 import {ZiggyVue} from '../../vendor/tightenco/ziggy';
 import {ModalLink, renderApp} from '@inertiaui/modal-vue'
 import VueApexCharts from "vue3-apexcharts";
@@ -79,40 +78,44 @@ import {Input} from "@/Components/ui/input"
 import {Calendar} from "@/Components/ui/v-calendar"
 import FormField from "@/Components/Forms/FormField.vue";
 import GlobalModal from "@/Components/GlobalModal.vue";
+import {resolvePageComponent} from "laravel-vite-plugin/inertia-helpers";
 
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
 const pinia = createPinia()
 
 createInertiaApp({
   title: (title) => `${title} - ${appName}`,
-  resolve: (name) => {
-    // Add paths to module pages
-    const pages = import.meta.glob([
-      './Pages/**/*.vue',
-      '../Modules/*/Resources/js/Pages/**/*.vue'
-    ], { eager: true })
+  resolve: async (name) => {
 
-    // First try to find the page in the main Pages directory
-    let page = pages[`./Pages/${name}.vue`]
+    // First try the main Pages directory
+    let page = null;
 
-    // If not found, look in modules
-    if (!page) {
-      // Try to match module pages
-      const modulePage = Object.keys(pages).find(key => {
-        const modulePattern = new RegExp(`../Modules/.*/Resources/js/Pages/${name}\\.vue`)
-        return modulePattern.test(key)
-      })
-
-      if (modulePage) {
-        page = pages[modulePage]
+    try {
+      page = await resolvePageComponent(
+        `./Pages/${name}.vue`,
+        import.meta.glob('./Pages/**/*.vue')
+      );
+    } catch (error) {
+      // If page not found in main Pages, try modules
+      const moduleMatches = name.match(/^(\w+)\/(.+)$/);
+      if (moduleMatches) {
+        const [, moduleName, pagePath] = moduleMatches;
+        try {
+          page = await resolvePageComponent(
+            `../Modules/${moduleName}/Resources/js/Pages/${pagePath}.vue`,
+            import.meta.glob('../Modules/*/Resources/js/Pages/**/*.vue')
+          );
+        } catch (moduleError) {
+          throw new Error(`Page ${name} not found in either main Pages or module Pages.`);
+        }
       }
     }
 
     if (!page) {
-      throw new Error(`Page ${name} not found.`)
+      throw new Error(`Page ${name} not found.`);
     }
 
-    return page
+    return page;
   },
   setup({el, App, props, plugin}) {
     return createApp({render: renderApp(App, props)})

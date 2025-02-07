@@ -43,8 +43,7 @@ class Index extends Controller
       $userPlan = $request->user()
         ->settings()
         ->with('plan')
-        ->first()
-        ->plan;
+        ->first();
 
       if ($userPlan) {
         $currentPlan = [

@@ -9,7 +9,7 @@ Route::post('webhooks/paychangu', [PayChanguWebhook::class, 'handle'])
   ->name('webhooks.paychangu');
 
 Route::middleware(['auth'])->group(function () {
-  Route::get('/billing', [BillingController::class, 'index'])->name('billing.index');
+  Route::get('/pay-changu-billing', [BillingController::class, 'index'])->name('billing.index');
 
   Route::prefix('subscriptions')->name('subscriptions.')->group(function () {
     Route::post('/', [SubscriptionController::class, 'store'])->name('store');

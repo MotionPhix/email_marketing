@@ -130,4 +130,69 @@ class Campaign extends Model
 
     return round(($this->complained_count / $this->sent_count) * 100, 2);
   }
+
+  public function queueItems(): HasMany
+  {
+    return $this->hasMany(CampaignQueue::class);
+  }
+
+  public function emailEvents(): HasMany
+  {
+    return $this->hasMany(EmailEvent::class);
+  }
+
+  public function queue(array $recipientIds, ?Carbon $scheduleAt = null): void
+  {
+    $items = collect($recipientIds)->map(fn ($recipientId) => [
+      'recipient_id' => $recipientId,
+      'status' => CampaignQueue::STATUS_PENDING,
+      'scheduled_at' => $scheduleAt,
+      'created_at' => now(),
+      'updated_at' => now(),
+    ]);
+
+    $this->queueItems()->insert($items->toArray());
+
+    $this->queueItems()
+      ->where('status', CampaignQueue::STATUS_PENDING)
+      ->each(function (CampaignQueue $queueItem) {
+        if ($queueItem->scheduled_at) {
+          SendCampaignEmail::dispatch($queueItem)
+            ->delay($queueItem->scheduled_at);
+        } else {
+          SendCampaignEmail::dispatch($queueItem);
+        }
+      });
+  }
+
+  public function getStats(): array
+  {
+    $queueStats = $this->queueItems()
+      ->selectRaw('status, count(*) as count')
+      ->groupBy('status')
+      ->pluck('count', 'status')
+      ->toArray();
+
+    $eventStats = $this->emailEvents()
+      ->selectRaw('event_type, count(*) as count')
+      ->groupBy('event_type')
+      ->pluck('count', 'event_type')
+      ->toArray();
+
+    $totalRecipients = array_sum($queueStats);
+    $totalSent = $queueStats[CampaignQueue::STATUS_SENT] ?? 0;
+
+    return [
+      'total_recipients' => $totalRecipients,
+      'sent' => $totalSent,
+      'pending' => $queueStats[CampaignQueue::STATUS_PENDING] ?? 0,
+      'failed' => $queueStats[CampaignQueue::STATUS_FAILED] ?? 0,
+      'opened' => $eventStats[EmailEvent::EVENT_OPENED] ?? 0,
+      'clicked' => $eventStats[EmailEvent::EVENT_CLICKED] ?? 0,
+      'bounced' => $eventStats[EmailEvent::EVENT_BOUNCED] ?? 0,
+      'complained' => $eventStats[EmailEvent::EVENT_COMPLAINED] ?? 0,
+      'open_rate' => $totalSent ? round(($eventStats[EmailEvent::EVENT_OPENED] ?? 0) / $totalSent * 100, 2) : 0,
+      'click_rate' => $totalSent ? round(($eventStats[EmailEvent::EVENT_CLICKED] ?? 0) / $totalSent * 100, 2) : 0,
+    ];
+  }
 }

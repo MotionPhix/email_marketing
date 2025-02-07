@@ -1,6 +1,7 @@
 <?php
 
 use App\Modules\Campaigns\Http\Controllers\CampaignController;
+use App\Modules\Campaigns\Http\Controllers\CampaignTrackingController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth', 'verified'])->group(function () {
@@ -14,3 +15,19 @@ Route::middleware(['auth', 'verified'])->group(function () {
   Route::post('/campaigns/{campaign}/cancel', [CampaignController::class, 'cancel'])->name('campaigns.cancel');
   Route::get('/campaigns/{campaign}/preview', [CampaignController::class, 'preview'])->name('campaigns.preview');
 });
+
+Route::prefix('campaigns/track')
+  ->name('campaigns.track.')
+  ->group(function () {
+
+    Route::get(
+      '{campaign}/{recipient}/open',
+      [CampaignTrackingController::class, 'trackOpen']
+    )->name('open');
+
+    Route::get(
+      '{campaign}/{recipient}/click/{url}',
+      [CampaignTrackingController::class, 'trackClick']
+    )->name('click');
+
+  });

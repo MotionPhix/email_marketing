@@ -8,7 +8,7 @@ import {ModalLink, renderApp} from '@inertiaui/modal-vue'
 import VueApexCharts from "vue3-apexcharts";
 import {createPinia} from "pinia";
 
-import { setupCalendar, Calendar as VCalendar, DatePicker } from 'v-calendar';
+import {setupCalendar, Calendar as VCalendar, DatePicker} from 'v-calendar';
 import 'v-calendar/style.css';
 
 // Existing components
@@ -85,37 +85,46 @@ const pinia = createPinia()
 
 createInertiaApp({
   title: (title) => `${title} - ${appName}`,
-  resolve: async (name) => {
+  resolve: async name => {
+    // Log the requested page name
+    console.log('Resolving page:', name);
 
-    // First try the main Pages directory
-    let page = null;
+    // Define the page globs
+    const pages = {
+      // App pages
+      app: import.meta.glob('./Pages/**/*.vue'),
+      // Module pages - notice the path format
+      modules: import.meta.glob('/app/Modules/*/Resources/js/Pages/**/*.vue')
+    };
 
-    try {
-      page = await resolvePageComponent(
-        `./Pages/${name}.vue`,
-        import.meta.glob('./Pages/**/*.vue')
-      );
-    } catch (error) {
-      // If page not found in main Pages, try modules
-      const moduleMatches = name.match(/^(\w+)\/(.+)$/);
-      if (moduleMatches) {
-        const [, moduleName, pagePath] = moduleMatches;
-        try {
-          page = await resolvePageComponent(
-            `../Modules/${moduleName}/Resources/js/Pages/${pagePath}.vue`,
-            import.meta.glob('../Modules/*/Resources/js/Pages/**/*.vue')
-          );
-        } catch (moduleError) {
-          throw new Error(`Page ${name} not found in either main Pages or module Pages.`);
-        }
+    // Check if this is a module page request
+    const moduleMatch = name.match(/^(\w+)\/(.+)$/);
+
+    if (moduleMatch) {
+      const [, moduleName, pagePath] = moduleMatch;
+
+      // Construct the expected module page path
+      const modulePage = `/app/Modules/${moduleName}/Resources/js/Pages/${pagePath}.vue`;
+
+      console.log('Looking for module page:', modulePage);
+
+      if (pages.modules[modulePage]) {
+        console.log('Found module page:', modulePage);
+        return pages.modules[modulePage]();
       }
     }
 
-    if (!page) {
-      throw new Error(`Page ${name} not found.`);
+    // If not found in modules or not a module path, try app pages
+    const appPage = `./Pages/${name}.vue`;
+
+    if (pages.app[appPage]) {
+      console.log('Found app page:', appPage);
+      return pages.app[appPage]();
     }
 
-    return page;
+    console.error('Available app pages:', Object.keys(pages.app));
+    console.error('Available module pages:', Object.keys(pages.modules));
+    throw new Error(`Page ${name} not found. Looked in both app and module directories.`);
   },
   setup({el, App, props, plugin}) {
     return createApp({render: renderApp(App, props)})

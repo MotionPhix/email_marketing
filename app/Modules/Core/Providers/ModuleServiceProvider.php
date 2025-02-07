@@ -3,6 +3,7 @@
 namespace App\Modules\Core\Providers;
 
 use App\Modules\Core\Support\ModuleLoader;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\ServiceProvider;
 
 class ModuleServiceProvider extends ServiceProvider

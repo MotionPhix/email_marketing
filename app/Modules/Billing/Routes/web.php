@@ -8,6 +8,14 @@ use Illuminate\Support\Facades\Route;
 Route::post('webhooks/paychangu', [PayChanguWebhook::class, 'handle'])
   ->name('webhooks.paychangu');
 
+Route::get('/debug-vite', function() {
+  $pages = glob(base_path('app/Modules/*/Resources/js/Pages/**/*.vue'));
+  return [
+    'module_pages' => $pages,
+    'app_pages' => glob(resource_path('js/Pages/**/*.vue')),
+  ];
+});
+
 Route::middleware(['auth'])->group(function () {
   Route::get('/pay-changu-billing', [BillingController::class, 'index'])->name('billing.index');
 

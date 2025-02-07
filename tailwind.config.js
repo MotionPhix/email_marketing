@@ -12,6 +12,8 @@ export default {
     './storage/framework/views/*.php',
     './resources/views/**/*.blade.php',
     './resources/js/**/*.{js,ts,tsx,vue}',
+    './app/Modules/**/*.js',
+    './app/Modules/**/*.vue',
   ],
 
   theme: {

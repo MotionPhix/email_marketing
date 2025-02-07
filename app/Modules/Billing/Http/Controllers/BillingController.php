@@ -35,7 +35,7 @@ class BillingController extends ModuleController
 
     $currentSubscription = $request->user()?->subscription;
 
-    return $this->moduleRender('Index', [
+    return Inertia('Billing/Billing/Index', [
       'plans' => $plans,
       'currentSubscription' => $currentSubscription ? [
         'uuid' => $currentSubscription->uuid,

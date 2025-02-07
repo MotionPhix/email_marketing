@@ -163,7 +163,7 @@ Route::post(
 
 Route::post(
   'webhooks/paychangu',
-  [\App\Http\Controllers\Payment\SubscriptionController::class, 'webhook']
+  [\App\Modules\Billing\Http\Controllers\PayChanguWebhook::class, 'handle']
 )->name('webhooks.paychangu');
 
 // Unsubscribe route (should be public)

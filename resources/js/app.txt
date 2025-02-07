@@ -1,4 +1,5 @@
 import './bootstrap';
+import 'maz-ui/styles'
 import '../css/app.css';
 
 import {createApp, h} from 'vue';
@@ -6,13 +7,16 @@ import {createInertiaApp} from '@inertiajs/vue3';
 import {resolvePageComponent} from 'laravel-vite-plugin/inertia-helpers';
 import {ZiggyVue} from '../../vendor/tightenco/ziggy';
 import {ModalLink, renderApp} from '@inertiaui/modal-vue'
+import ToastPlugin from 'vue-toast-notification';
 import VueApexCharts from "vue3-apexcharts";
 import {createPinia} from "pinia";
+import {installToaster} from 'maz-ui'
+import 'vue-toast-notification/dist/theme-default.css';
 
 import { setupCalendar, Calendar as VCalendar, DatePicker } from 'v-calendar';
 import 'v-calendar/style.css';
 
-// Existing components
+// components
 import {
   Card,
   CardContent,
@@ -32,7 +36,6 @@ import {
   SelectGroup,
   SelectSeparator,
 } from "@/Components/ui/select";
-
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -42,37 +45,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/Components/ui/dropdown-menu'
-
-// Additional shadcn components useful for billing
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/Components/ui/dialog"
-
-import {
-  Alert,
-  AlertDescription,
-  AlertTitle,
-} from "@/Components/ui/alert"
-
-import {
-  Toast,
-  ToastAction,
-  ToastClose,
-  ToastDescription,
-  ToastProvider,
-  ToastTitle,
-  ToastViewport,
-} from "@/Components/ui/toast"
-
-import {Badge} from "@/Components/ui/badge"
-import {Progress} from "@/Components/ui/progress"
-import {Separator} from "@/Components/ui/separator"
 import {Label} from "@/Components/ui/label"
 import {Button} from "@/Components/ui/button"
 import {Input} from "@/Components/ui/input"
@@ -83,46 +55,25 @@ import GlobalModal from "@/Components/GlobalModal.vue";
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
 const pinia = createPinia()
 
+// DEFAULT OPTIONS
+const toasterOptions = {
+  position: 'bottom-right',
+  timeout: 10_000,
+  persistent: false,
+}
+
 createInertiaApp({
   title: (title) => `${title} - ${appName}`,
-  resolve: (name) => {
-    // Add paths to module pages
-    const pages = import.meta.glob([
-      './Pages/**/*.vue',
-      '../Modules/*/Resources/js/Pages/**/*.vue'
-    ], { eager: true })
-
-    // First try to find the page in the main Pages directory
-    let page = pages[`./Pages/${name}.vue`]
-
-    // If not found, look in modules
-    if (!page) {
-      // Try to match module pages
-      const modulePage = Object.keys(pages).find(key => {
-        const modulePattern = new RegExp(`../Modules/.*/Resources/js/Pages/${name}\\.vue`)
-        return modulePattern.test(key)
-      })
-
-      if (modulePage) {
-        page = pages[modulePage]
-      }
-    }
-
-    if (!page) {
-      throw new Error(`Page ${name} not found.`)
-    }
-
-    return page
-  },
+  resolve: (name) => resolvePageComponent(`./Pages/${name}.vue`, import.meta.glob('./Pages/**/*.vue')),
   setup({el, App, props, plugin}) {
     return createApp({render: renderApp(App, props)})
       .use(plugin)
       .use(ZiggyVue)
       .use(pinia)
+      .use(ToastPlugin)
       .use(VueApexCharts)
+      .use(installToaster, toasterOptions)
       .use(setupCalendar, {})
-
-      // Existing components
       .component('VCalendar', VCalendar)
       .component('VDatePicker', DatePicker)
       .component('GlobalModal', GlobalModal)
@@ -153,28 +104,6 @@ createInertiaApp({
       .component('Button', Button)
       .component('Input', Input)
       .component('Label', Label)
-
-      // New shadcn components
-      .component('Dialog', Dialog)
-      .component('DialogContent', DialogContent)
-      .component('DialogDescription', DialogDescription)
-      .component('DialogFooter', DialogFooter)
-      .component('DialogHeader', DialogHeader)
-      .component('DialogTitle', DialogTitle)
-      .component('DialogTrigger', DialogTrigger)
-      .component('Alert', Alert)
-      .component('AlertDescription', AlertDescription)
-      .component('AlertTitle', AlertTitle)
-      .component('Toast', Toast)
-      .component('ToastAction', ToastAction)
-      .component('ToastClose', ToastClose)
-      .component('ToastDescription', ToastDescription)
-      .component('ToastProvider', ToastProvider)
-      .component('ToastTitle', ToastTitle)
-      .component('ToastViewport', ToastViewport)
-      .component('Badge', Badge)
-      .component('Progress', Progress)
-      .component('Separator', Separator)
       .mount(el);
   },
   progress: {

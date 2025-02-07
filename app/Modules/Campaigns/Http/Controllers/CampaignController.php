@@ -111,36 +111,31 @@ class CampaignController extends Controller
       ->with('success', 'Campaign updated successfully.');
   }
 
+  /**
+   * Schedule a campaign for later sending
+   */
   public function schedule(Request $request, Campaign $campaign)
   {
-    $request->validate([
-      'scheduled_at' => ['required', 'date', 'after:now'],
-    ]);
-
-    $campaign->update([
-      'status' => Campaign::STATUS_SCHEDULED,
-      'scheduled_at' => $request->scheduled_at,
-    ]);
-
-    ProcessCampaignQueue::dispatch($campaign)
-      ->delay($request->scheduled_at);
-
-    return back()->with('success', 'Campaign scheduled successfully.');
-  }
-
-  public function schedule(Request $request, Campaign $campaign)
-  {
-    $this->authorize('update', $campaign);
-
     $validated = $request->validate([
       'scheduled_at' => ['required', 'date', 'after:now'],
     ]);
 
-    $this->campaigns->schedule($campaign, $validated['scheduled_at']);
+    // Check if campaign can be scheduled using existing model method
+    if (!$campaign->canBeEdited()) {
+      return back()->with('error', 'This campaign cannot be scheduled.');
+    }
 
-    return redirect()
-      ->back()
-      ->with('success', 'Campaign scheduled successfully.');
+    // Update campaign status and schedule time
+    $campaign->update([
+      'status' => Campaign::STATUS_SCHEDULED,
+      'scheduled_at' => $validated['scheduled_at'],
+    ]);
+
+    // Dispatch the existing ProcessCampaignQueue job
+    ProcessCampaignQueue::dispatch($campaign)
+      ->delay($validated['scheduled_at']);
+
+    return back()->with('success', 'Campaign scheduled successfully.');
   }
 
   public function cancel(Campaign $campaign)

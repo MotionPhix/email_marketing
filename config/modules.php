@@ -21,7 +21,7 @@ return [
   */
   'enabled' => [
     'Core',
-    'js'
+    'Home'
   ],
 
   /*

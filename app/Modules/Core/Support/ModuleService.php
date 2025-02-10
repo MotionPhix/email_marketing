@@ -2,7 +2,6 @@
 
 namespace App\Modules\Core\Support;
 
-use Illuminate\Support\Facades\File;
 use Illuminate\Support\ServiceProvider;
 
 class ModuleService

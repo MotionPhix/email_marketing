@@ -18,10 +18,6 @@ return Application::configure(basePath: dirname(__DIR__))
       \Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets::class,
     ]);
 
-    $middleware->alias([
-      'subscription' => \App\Http\Middleware\CheckSubscription::class,
-    ]);
-
     $middleware->validateCsrfTokens(except: [
       '/analytics',
       '/webhooks/paychangu',

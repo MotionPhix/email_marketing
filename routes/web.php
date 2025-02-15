@@ -37,6 +37,3 @@ Route::middleware(['auth'])->group(function () {
   Route::get('subscribers', [SubscriberController::class, 'index'])->name('subscribers.index');
   Route::get('subscribers/create', [SubscriberController::class, 'create'])->name('subscribers.create');
 });
-
-require_once __DIR__ . '/fortify.php';
-require_once __DIR__ . '/jetstream.php';

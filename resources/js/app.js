@@ -85,47 +85,7 @@ const pinia = createPinia()
 
 createInertiaApp({
   title: (title) => `${title} - ${appName}`,
-  resolve: async name => {
-    // Log the requested page name
-    console.log('Resolving page:', name);
-
-    // Define the page globs
-    const pages = {
-      // App pages
-      app: import.meta.glob('./Pages/**/*.vue'),
-      // Module pages - notice the path format
-      modules: import.meta.glob('/app/Modules/*/Resources/js/Pages/**/*.vue')
-    };
-
-    // Check if this is a module page request
-    const moduleMatch = name.match(/^(\w+)\/(.+)$/);
-
-    if (moduleMatch) {
-      const [, moduleName, pagePath] = moduleMatch;
-
-      // Construct the expected module page path
-      const modulePage = `/app/Modules/${moduleName}/Resources/js/Pages/${pagePath}.vue`;
-
-      console.log('Looking for module page:', modulePage);
-
-      if (pages.modules[modulePage]) {
-        console.log('Found module page:', modulePage);
-        return pages.modules[modulePage]();
-      }
-    }
-
-    // If not found in modules or not a module path, try app pages
-    const appPage = `./Pages/${name}.vue`;
-
-    if (pages.app[appPage]) {
-      console.log('Found app page:', appPage);
-      return pages.app[appPage]();
-    }
-
-    console.error('Available app pages:', Object.keys(pages.app));
-    console.error('Available module pages:', Object.keys(pages.modules));
-    throw new Error(`Page ${name} not found. Looked in both app and module directories.`);
-  },
+  resolve: (name) => resolvePageComponent(`./Pages/${name}.vue`, import.meta.glob('./Pages/**/*.vue')),
   setup({el, App, props, plugin}) {
     return createApp({render: renderApp(App, props)})
       .use(plugin)

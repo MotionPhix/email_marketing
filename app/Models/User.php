@@ -3,6 +3,11 @@
 namespace App\Models;
 
 use App\Traits\HasSubscription;
+use App\Traits\HasEmailQuota;
+use App\Traits\HasApiKeys;
+use App\Traits\HasBranding;
+use App\Traits\HasAnalytics;
+use App\Traits\HasTeams;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use App\Traits\BootUuid;
 use Illuminate\Database\Eloquent\Casts\Attribute;
@@ -17,14 +22,20 @@ use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable implements MustVerifyEmail
 {
-  use HasApiTokens, BootUuid, HasRoles, HasSubscription;
-
-  /** @use HasFactory<\Database\Factories\UserFactory> */
-  use HasFactory;
-  use HasProfilePhoto;
-  use Notifiable;
-  use TwoFactorAuthenticatable;
-  use SoftDeletes;
+  use HasApiTokens,
+    BootUuid,
+    HasRoles,
+    HasSubscription,
+    HasEmailQuota,
+    HasApiKeys,
+    HasBranding,
+    HasAnalytics,
+    HasTeams,
+    HasFactory,
+    HasProfilePhoto,
+    Notifiable,
+    TwoFactorAuthenticatable,
+    SoftDeletes;
 
   /**
    * The attributes that are mass assignable.
@@ -36,6 +47,18 @@ class User extends Authenticatable implements MustVerifyEmail
     'last_name',
     'email',
     'password',
+    'company_name',
+    'phone',
+    'timezone',
+    'language',
+    'notification_preferences',
+    'email_signature',
+    'sendgrid_api_key',
+    'default_sender_email',
+    'default_sender_name',
+    'account_status',
+    'last_login_at',
+    'last_login_ip',
   ];
 
   /**
@@ -48,7 +71,26 @@ class User extends Authenticatable implements MustVerifyEmail
     'remember_token',
     'two_factor_recovery_codes',
     'two_factor_secret',
+    'sendgrid_api_key',
   ];
+
+  /**
+   * The attributes that should be cast.
+   *
+   * @var array<string, string>
+   */
+  protected function casts(): array
+  {
+    return [
+      'email_verified_at' => 'datetime',
+      'password' => 'hashed',
+      'notification_preferences' => 'array',
+      'last_login_at' => 'datetime',
+      'trial_ends_at' => 'datetime',
+      'email_quota' => 'integer',
+      'account_status' => 'string',
+    ];
+  }
 
   /**
    * The accessors to append to the model's array form.
@@ -56,45 +98,43 @@ class User extends Authenticatable implements MustVerifyEmail
    * @var array<int, string>
    */
   protected $appends = [
-    'profile_photo_url', 'name'
+    'profile_photo_url',
+    'name',
+    'email_quota_remaining',
+    'is_trial',
+    'subscription_status'
   ];
 
   /**
-   * Get the attributes that should be cast.
-   *
-   * @return array<string, string>
+   * Get the user's full name.
    */
-  protected function casts(): array
-  {
-    return [
-      'email_verified_at' => 'datetime',
-      'password' => 'hashed',
-    ];
-  }
-
   public function name(): Attribute
   {
     return Attribute::get(fn() => $this->first_name . ' ' . $this->last_name);
   }
 
+  /**
+   * Get user's email campaigns.
+   */
   public function campaigns()
   {
-    return $this->hasMany(Campaign::class);
+    return $this->hasMany(Campaign::class)->latest();
   }
 
-  public function recipients()
-  {
-    return $this->hasMany(Recipient::class);
-  }
-
-  public function audiences()
-  {
-    return $this->hasMany(Audience::class);
-  }
-
+  /**
+   * Get user's email templates.
+   */
   public function templates()
   {
-    return $this->hasMany(Template::class);
+    return $this->hasMany(EmailTemplate::class);
+  }
+
+  /**
+   * Get user's automation workflows.
+   */
+  public function automations()
+  {
+    return $this->hasMany(Automation::class);
   }
 
   /**
@@ -106,67 +146,124 @@ class User extends Authenticatable implements MustVerifyEmail
   }
 
   /**
-   * Get the user's subscription.
-   * A user can only have one active subscription at a time.
+   * Get user's API usage logs.
    */
-  public function subscription()
+  public function apiLogs()
   {
-    return $this->hasOne(Subscription::class)->latest();
-  }
-
-  public function hasPaidPlan(): bool
-  {
-    return $this->subscription()
-      ->where('status', Subscription::STATUS_ACTIVE)
-      ->whereNull('ends_at')
-      ->orWhere('ends_at', '>', now())
-      ->exists();
+    return $this->hasMany(ApiLog::class);
   }
 
   /**
-   * Check if user has an active subscription
+   * Get user's bounce logs.
    */
-  public function hasActiveSubscription(): bool
+  public function bounceLogs()
   {
-    return $this->subscription()
-      ->where('status', Subscription::STATUS_ACTIVE)
-      ->where(function ($query) {
-        $query->whereNull('ends_at')
-          ->orWhere('ends_at', '>', now());
-      })
-      ->exists();
+    return $this->hasMany(BounceLog::class);
   }
 
   /**
-   * Get user's pending subscription that will take effect after current subscription ends
+   * Check if user is within email quota limits.
    */
-  public function pendingSubscription()
+  public function hasEmailQuotaAvailable(): bool
   {
-    return $this->hasOne(Subscription::class)
-      ->where('status', Subscription::STATUS_PENDING)
-      ->where('starts_at', '>', now())
-      ->latest();
+    return $this->email_quota_remaining > 0;
   }
 
   /**
-   * Get the user's active subscription if any.
+   * Get remaining email quota.
    */
-  public function activeSubscription()
+  public function emailQuotaRemaining(): Attribute
   {
-    return $this->subscription()
-      ->where('status', Subscription::STATUS_ACTIVE)
-      ->where(function ($query) {
-        $query->whereNull('ends_at')
-          ->orWhere('ends_at', '>', now());
-      })
-      ->first();
+    return Attribute::get(function() {
+      $quotaUsed = $this->trackingEvents()
+        ->where('type', 'sent')
+        ->where('created_at', '>=', now()->startOfMonth())
+        ->count();
+
+      return max(0, $this->email_quota - $quotaUsed);
+    });
   }
 
   /**
-   * Check if user can change their subscription
+   * Check if user is in trial period.
    */
-  public function canChangeSubscription(): bool
+  public function isTrialStatus(): Attribute
   {
-    return !$this->pendingSubscription()->exists();
+    return Attribute::get(
+      fn() => $this->trial_ends_at && $this->trial_ends_at->isFuture()
+    );
+  }
+
+  /**
+   * Get current subscription status.
+   */
+  public function subscriptionStatus(): Attribute
+  {
+    return Attribute::get(function() {
+      if ($this->is_trial) {
+        return 'trial';
+      }
+
+      if ($this->hasActiveSubscription()) {
+        return 'active';
+      }
+
+      return 'inactive';
+    });
+  }
+
+  /**
+   * Scope for active users.
+   */
+  public function scopeActive($query)
+  {
+    return $query->where('account_status', 'active');
+  }
+
+  /**
+   * Record user login.
+   */
+  public function recordLogin(string $ip)
+  {
+    $this->update([
+      'last_login_at' => now(),
+      'last_login_ip' => $ip
+    ]);
+  }
+
+  /**
+   * Check if user can send emails.
+   */
+  public function canSendEmails(): bool
+  {
+    return $this->account_status === 'active' &&
+      $this->hasEmailQuotaAvailable() &&
+      ($this->hasActiveSubscription() || $this->is_trial);
+  }
+
+  /**
+   * Get user's sending reputation score.
+   */
+  public function getReputationScore(): float
+  {
+    $totalSent = $this->trackingEvents()->where('type', 'sent')->count();
+    if ($totalSent === 0) return 100.0;
+
+    $bounces = $this->bounceLogs()->count();
+    $complaints = $this->trackingEvents()->where('type', 'complaint')->count();
+
+    $bounceRate = ($bounces / $totalSent) * 100;
+    $complaintRate = ($complaints / $totalSent) * 100;
+
+    return max(0, 100 - ($bounceRate * 2) - ($complaintRate * 5));
+  }
+
+  /**
+   * Check if user needs sending warm-up.
+   */
+  public function needsWarmup(): bool
+  {
+    return $this->created_at->isAfter(now()->subDays(30)) &&
+      $this->trackingEvents()->where('type', 'sent')->count() < 1000;
   }
 }

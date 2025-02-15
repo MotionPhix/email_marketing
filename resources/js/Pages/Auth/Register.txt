@@ -1,0 +1,224 @@
+<script setup lang="ts">
+import { ref } from 'vue'
+import { Head, Link, useForm } from '@inertiajs/vue3'
+import AuthLayout from '@/Layouts/AuthLayout.vue'
+import InputError from "@/Components/InputError.vue";
+import {IconBrandGoogle, IconBrandGithub, IconLoader2} from "@tabler/icons-vue"
+
+const form = useForm({
+  first_name: '',
+  last_name: '',
+  email: '',
+  password: '',
+  password_confirmation: '',
+  company_name: '',
+  industry: '',
+  terms: false
+})
+
+const isLoading = ref(false)
+
+const industries = [
+  'Technology',
+  'E-commerce',
+  'Healthcare',
+  'Education',
+  'Finance',
+  'Marketing',
+  'Retail',
+  'Other'
+]
+
+const submit = () => {
+  isLoading.value = true
+  form.post(route('register'), {
+    onFinish: () => {
+      isLoading.value = false
+    },
+  })
+}
+</script>
+
+<template>
+  <AuthLayout>
+    <Head title="Create an account" />
+
+    <div class="lg:p-8">
+      <div class="mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[350px]">
+        <div class="flex flex-col space-y-2 text-center">
+          <h1 class="text-2xl font-semibold tracking-tight">Create an account</h1>
+          <p class="text-sm text-muted-foreground">
+            Enter your information to create your account
+          </p>
+        </div>
+
+        <form @submit.prevent="submit" class="space-y-6">
+          <div class="space-y-4">
+            <div class="grid gap-4 sm:grid-cols-2">
+              <FormField>
+                <Label for="first_name">First name</Label>
+                <Input
+                  id="first_name"
+                  v-model="form.first_name"
+                  type="text"
+                  :disabled="isLoading"
+                  required
+                />
+                <InputError :message="form.errors.first_name" />
+              </FormField>
+
+              <FormField>
+                <Label for="last_name">Last name</Label>
+                <Input
+                  id="last_name"
+                  v-model="form.last_name"
+                  type="text"
+                  :disabled="isLoading"
+                  required
+                />
+                <InputError :message="form.errors.last_name" />
+              </FormField>
+            </div>
+
+            <FormField>
+              <Label for="email">Email</Label>
+              <Input
+                id="email"
+                v-model="form.email"
+                type="email"
+                placeholder="m@example.com"
+                :disabled="isLoading"
+                autocomplete="email"
+                required
+              />
+              <InputError :message="form.errors.email" />
+            </FormField>
+
+            <FormField>
+              <Label for="company_name">Company name</Label>
+              <Input
+                id="company_name"
+                v-model="form.company_name"
+                type="text"
+                :disabled="isLoading"
+              />
+              <InputError :message="form.errors.company_name" />
+            </FormField>
+
+            <FormField>
+              <Label for="industry">Industry</Label>
+              <Select v-model="form.industry" :disabled="isLoading">
+                <SelectTrigger>
+                  <SelectValue placeholder="Select your industry" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem
+                    v-for="industry in industries"
+                    :key="industry"
+                    :value="industry"
+                  >
+                    {{ industry }}
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+              <InputError :message="form.errors.industry" />
+            </FormField>
+
+            <FormField>
+              <Label for="password">Password</Label>
+              <Input
+                id="password"
+                v-model="form.password"
+                type="password"
+                :disabled="isLoading"
+                autocomplete="new-password"
+                required
+              />
+              <InputError :message="form.errors.password" />
+            </FormField>
+
+            <FormField>
+              <Label for="password_confirmation">Confirm password</Label>
+              <Input
+                id="password_confirmation"
+                v-model="form.password_confirmation"
+                type="password"
+                :disabled="isLoading"
+                required
+              />
+            </FormField>
+
+            <div class="flex items-center space-x-2">
+              <Checkbox
+                id="terms"
+                :checked="form.terms"
+                @update:checked="value => form.terms = value"
+                :disabled="isLoading"
+                required
+              />
+              <label
+                for="terms"
+                class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                I agree to the
+                <Link
+                  :href="route('terms.show')"
+                  class="text-primary hover:underline"
+                  target="_blank">
+                  terms of service
+                </Link>
+                and
+                <Link
+                  :href="route('policy.show')"
+                  class="text-primary hover:underline"
+                  target="_blank">
+                  privacy policy
+                </Link>
+              </label>
+              <InputError :message="form.errors.terms" />
+            </div>
+          </div>
+
+          <Button type="submit" class="w-full" :disabled="isLoading">
+            <IconLoader2
+              v-if="isLoading"
+              class="mr-2 h-4 w-4 animate-spin"
+            />
+            Sign Up
+          </Button>
+        </form>
+
+        <div class="relative">
+          <div class="absolute inset-0 flex items-center">
+            <span class="w-full border-t" />
+          </div>
+          <div class="relative flex justify-center text-xs uppercase">
+            <span class="bg-background px-2 text-muted-foreground">
+              Or continue with
+            </span>
+          </div>
+        </div>
+
+        <div class="grid gap-4">
+          <Button variant="outline" type="button" :disabled="isLoading">
+            <IconBrandGithub class="mr-2 h-4 w-4" />
+            Github
+          </Button>
+
+          <Button variant="outline" type="button" :disabled="isLoading">
+            <IconBrandGoogle class="mr-2 h-4 w-4" />
+            Google
+          </Button>
+        </div>
+
+        <p class="px-8 text-center text-sm text-muted-foreground">
+          Already have an account?
+          <Link
+            :href="route('login')"
+            class="text-primary hover:underline">
+            Sign in
+          </Link>
+        </p>
+      </div>
+    </div>
+  </AuthLayout>
+</template>

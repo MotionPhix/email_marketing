@@ -77,6 +77,7 @@ import {
 } from "@/Components/ui/tabs"
 
 import {Badge} from "@/Components/ui/badge"
+import {Checkbox} from "@/Components/ui/checkbox"
 import {Progress} from "@/Components/ui/progress"
 import {Separator} from "@/Components/ui/separator"
 import {Label} from "@/Components/ui/label"
@@ -128,6 +129,7 @@ createInertiaApp({
       .component('DropdownMenuSeparator', DropdownMenuSeparator)
       .component('DropdownMenuTrigger', DropdownMenuTrigger)
       .component('FormField', FormField)
+      .component('Checkbox', Checkbox)
       .component('Calendar', Calendar)
       .component('Button', Button)
       .component('Input', Input)

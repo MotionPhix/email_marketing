@@ -1,141 +1,409 @@
-<script setup lang="js">
-import {Head, Link, useForm} from '@inertiajs/vue3';
-import AuthenticationCard from '@/Components/AuthenticationCard.vue';
-import ApplicationMark from "@/Components/ApplicationMark.vue";
-import InputError from '@/Components/InputError.vue';
-import InputLabel from '@/Components/InputLabel.vue';
-import {Checkbox} from '@/Components/ui/checkbox';
+<script setup lang="ts">
+import { ref, computed } from 'vue'
+import { Head, Link, useForm } from '@inertiajs/vue3'
+import AuthLayout from '@/Layouts/AuthLayout.vue'
+import RegistrationStepper from '@/Pages/Auth/Partials/RegistrationStepper.vue'
+import InputError from "@/Components/InputError.vue";
+import {TrashIcon, Loader2Icon, PlusIcon} from "lucide-vue-next";
+
+const currentStep = ref(1)
+const isLoading = ref(false)
+
+const steps = [
+  {
+    title: 'Account',
+    description: 'Create your personal account'
+  },
+  {
+    title: 'Organization',
+    description: 'Set up your organization'
+  },
+  {
+    title: 'Team',
+    description: 'Invite your team members'
+  },
+  {
+    title: 'Verify',
+    description: 'Verify your email'
+  }
+]
 
 const form = useForm({
+  // Personal Information
   first_name: '',
   last_name: '',
   email: '',
   password: '',
   password_confirmation: '',
-  terms: false,
-});
+
+  // Organization Information
+  organization_name: '',
+  organization_size: '',
+  industry: '',
+  website: '',
+
+  // Team Setup
+  team_members: [{ email: '', role: 'member' }],
+
+  terms: false
+})
+
+const organizationSizes = [
+  '1-10 employees',
+  '11-50 employees',
+  '51-200 employees',
+  '201-500 employees',
+  '500+ employees'
+]
+
+const industries = [
+  'Technology',
+  'E-commerce',
+  'Healthcare',
+  'Education',
+  'Finance',
+  'Marketing',
+  'Retail',
+  'Other'
+]
+
+const roles = [
+  { value: 'admin', label: 'Administrator' },
+  { value: 'editor', label: 'Editor' },
+  { value: 'member', label: 'Team Member' }
+]
+
+const canProceed = computed(() => {
+  switch (currentStep.value) {
+    case 1:
+      return form.first_name &&
+        form.last_name &&
+        form.email &&
+        form.password &&
+        form.password_confirmation &&
+        form.terms
+    case 2:
+      return form.organization_name &&
+        form.organization_size &&
+        form.industry
+    case 3:
+      return form.team_members.every(member => member.email && member.role)
+    default:
+      return true
+  }
+})
+
+const addTeamMember = () => {
+  form.team_members.push({ email: '', role: 'member' })
+}
+
+const removeTeamMember = (index: number) => {
+  form.team_members.splice(index, 1)
+}
+
+const next = () => {
+  if (currentStep.value < steps.length) {
+    currentStep.value++
+  }
+}
+
+const back = () => {
+  if (currentStep.value > 1) {
+    currentStep.value--
+  }
+}
 
 const submit = () => {
+  isLoading.value = true
+
   form.post(route('register'), {
-    onFinish: () => form.reset('password', 'password_confirmation'),
-  });
-};
+    onSuccess: () => {
+      next() // Move to verification step
+    },
+    onFinish: () => {
+      isLoading.value = false
+    },
+  })
+}
 </script>
 
 <template>
-  <Head title="Register"/>
+  <AuthLayout>
+    <Head title="Create an account" />
 
-  <AuthenticationCard>
+    <div class="lg:p-8">
+      <div class="mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[450px]">
+        <RegistrationStepper
+          :current-step="currentStep"
+          :steps="steps"
+        />
 
-    <template #logo>
-      <ApplicationMark class="h-14" />
-    </template>
-
-    <form @submit.prevent="submit">
-      <Card class="mx-auto max-w-md">
-        <CardHeader>
-          <CardTitle class="text-xl">
-            Sign Up
-          </CardTitle>
-
-          <CardDescription>
-            Enter your information to create an account
-          </CardDescription>
-        </CardHeader>
-
-        <CardContent>
-          <div class="grid gap-2">
-            <div class="grid grid-cols-2 gap-4">
-              <div class="grid gap-2">
-                <FormField
+        <form @submit.prevent="currentStep === 3 ? submit() : next()" class="space-y-6">
+          <!-- Step 1: Personal Information -->
+          <div v-show="currentStep === 1" class="space-y-4">
+            <div class="grid gap-4 sm:grid-cols-2">
+              <FormField>
+                <Label for="first_name">First name</Label>
+                <Input
+                  id="first_name"
                   v-model="form.first_name"
-                  label="First name"
-                  placeholder="Max"
-                  :error="form.errors.first_name"
+                  type="text"
+                  :disabled="isLoading"
                   required
                 />
-              </div>
+                <InputError :message="form.errors.first_name" />
+              </FormField>
 
-              <div class="grid gap-2">
-                <FormField
+              <FormField>
+                <Label for="last_name">Last name</Label>
+                <Input
+                  id="last_name"
                   v-model="form.last_name"
-                  label="Last name"
-                  :error="form.errors.last_name"
-                  placeholder="Robinson"
+                  type="text"
+                  :disabled="isLoading"
+                  required
                 />
-              </div>
+                <InputError :message="form.errors.last_name" />
+              </FormField>
             </div>
 
-            <div class="grid gap-2">
-              <FormField
-                label="Email"
-                type="email"
+            <FormField>
+              <Label for="email">Email</Label>
+              <Input
+                id="email"
                 v-model="form.email"
+                type="email"
                 placeholder="m@example.com"
-                :error="form.errors.email"
+                :disabled="isLoading"
                 required
               />
-            </div>
+              <InputError :message="form.errors.email" />
+            </FormField>
 
-            <div class="grid gap-2">
-              <FormField
-                label="Password"
-                type="password"
-                placeholder="Enter a strong password"
-                :error="form.errors.password"
+            <FormField>
+              <Label for="password">Password</Label>
+              <Input
+                id="password"
                 v-model="form.password"
-                required
-              />
-
-              <FormField
-                label="Confirm password"
                 type="password"
-                v-model="form.password_confirmation"
-                placeholder="Confirm your password"
-                :error="form.errors.password_confirmation"
+                :disabled="isLoading"
                 required
               />
+              <InputError :message="form.errors.password" />
+            </FormField>
 
-              <div v-if="$page.props.jetstream.hasTermsAndPrivacyPolicyFeature">
-                <InputLabel for="terms">
-                  <div class="flex items-center">
+            <FormField>
+              <Label for="password_confirmation">Confirm password</Label>
+              <Input
+                id="password_confirmation"
+                v-model="form.password_confirmation"
+                type="password"
+                :disabled="isLoading"
+                required
+              />
+            </FormField>
 
-                    <Checkbox
-                      id="terms"
-                      @update:checked="form.terms = !form.terms"
-                      :checked="form.terms" name="terms" required
-                    />
+            <div class="flex items-center space-x-2">
+              <Checkbox
+                id="terms"
+                v-model:checked="form.terms"
+                :disabled="isLoading"
+                required
+              />
+              <label
+                for="terms"
+                class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+              >
+                I agree to the
+                <Link
+                  :href="route('terms.show')"
+                  class="text-primary hover:underline"
+                  target="_blank"
+                >
+                  terms of service
+                </Link>
+                and
+                <Link
+                  :href="route('policy.show')"
+                  class="text-primary hover:underline"
+                  target="_blank"
+                >
+                  privacy policy
+                </Link>
+              </label>
+            </div>
+          </div>
 
-                    <div class="ms-2">
-                      I agree to the <a target="_blank" :href="route('terms.show')"
-                                        class="underline text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:focus:ring-offset-gray-800">Terms
-                      of Service</a> and <a target="_blank" :href="route('policy.show')"
-                                            class="underline text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:focus:ring-offset-gray-800">Privacy
-                      Policy</a>
-                    </div>
-                  </div>
-                  <InputError class="mt-2" :message="form.errors.terms"/>
-                </InputLabel>
+          <!-- Step 2: Organization Setup -->
+          <div v-show="currentStep === 2" class="space-y-4">
+            <FormField>
+              <Label for="organization_name">Organization name</Label>
+              <Input
+                id="organization_name"
+                v-model="form.organization_name"
+                type="text"
+                :disabled="isLoading"
+                required
+              />
+              <InputError :message="form.errors.organization_name" />
+            </FormField>
+
+            <FormField>
+              <Label for="organization_size">Organization size</Label>
+              <Select
+                v-model="form.organization_size"
+                :disabled="isLoading"
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select organization size" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem
+                    v-for="size in organizationSizes"
+                    :key="size"
+                    :value="size"
+                  >
+                    {{ size }}
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+              <InputError :message="form.errors.organization_size" />
+            </FormField>
+
+            <FormField>
+              <Label for="industry">Industry</Label>
+              <Select
+                v-model="form.industry"
+                :disabled="isLoading"
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select your industry" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem
+                    v-for="industry in industries"
+                    :key="industry"
+                    :value="industry"
+                  >
+                    {{ industry }}
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+              <InputError :message="form.errors.industry" />
+            </FormField>
+
+            <FormField>
+              <Label for="website">Website (optional)</Label>
+              <Input
+                id="website"
+                v-model="form.website"
+                type="url"
+                placeholder="https://"
+                :disabled="isLoading"
+              />
+              <InputError :message="form.errors.website" />
+            </FormField>
+          </div>
+
+          <!-- Step 3: Team Setup -->
+          <div v-show="currentStep === 3" class="space-y-4">
+            <div class="space-y-4">
+              <div
+                v-for="(member, index) in form.team_members"
+                :key="index"
+                class="flex items-end gap-2"
+              >
+                <FormField class="flex-1">
+                  <Label :for="`team_member_${index}`">Team member email</Label>
+                  <Input
+                    :id="`team_member_${index}`"
+                    v-model="member.email"
+                    type="email"
+                    :disabled="isLoading"
+                    required
+                  />
+                </FormField>
+
+                <FormField class="w-[150px]">
+                  <Label :for="`team_member_role_${index}`">Role</Label>
+                  <Select
+                    v-model="member.role"
+                    :disabled="isLoading"
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem
+                        v-for="role in roles"
+                        :key="role.value"
+                        :value="role.value"
+                      >
+                        {{ role.label }}
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </FormField>
+
+                <Button
+                  v-if="index > 0"
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  class="mb-[2px]"
+                  @click="removeTeamMember(index)"
+                >
+                  <TrashIcon class="h-4 w-4" />
+                </Button>
               </div>
             </div>
 
             <Button
-              type="submit"
-              class="w-full"
-              :class="{ 'opacity-25': form.processing }"
-              :disabled="form.processing">
-              Create an account
+              type="button"
+              variant="outline"
+              size="sm"
+              @click="addTeamMember"
+            >
+              <PlusIcon class="mr-2 h-4 w-4" />
+              Add team member
             </Button>
           </div>
 
-          <div class="mt-4 text-center text-sm">
-            Already have an account?
-            <Link :href="route('login')" as="button" class="underline">
-              Sign in
-            </Link>
+          <!-- Navigation Buttons -->
+          <div class="flex justify-between">
+            <Button
+              v-if="currentStep > 1"
+              type="button"
+              variant="outline"
+              @click="back"
+              :disabled="isLoading"
+            >
+              Back
+            </Button>
+            <Button
+              type="submit"
+              class="ml-auto"
+              :disabled="isLoading || !canProceed"
+            >
+              <Loader2Icon
+                v-if="isLoading"
+                class="mr-2 h-4 w-4 animate-spin"
+              />
+              {{ currentStep === 3 ? 'Complete Setup' : 'Continue' }}
+            </Button>
           </div>
-        </CardContent>
-      </Card>
-    </form>
-  </AuthenticationCard>
+        </form>
+
+        <p class="px-8 text-center text-sm text-muted-foreground">
+          Already have an account?
+          <Link
+            :href="route('login')"
+            class="text-primary hover:underline"
+          >
+            Sign in
+          </Link>
+        </p>
+      </div>
+    </div>
+  </AuthLayout>
 </template>

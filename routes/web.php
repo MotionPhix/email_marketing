@@ -13,6 +13,23 @@ Route::middleware(['auth'])->group(function () {
   Route::post('templates/{template}/duplicate', [EmailTemplateController::class, 'duplicate'])->name('templates.duplicate');
   Route::get('templates/{template}/preview', [EmailTemplateController::class, 'preview'])->name('templates.preview');
   Route::get('template-variables', [EmailTemplateController::class, 'variables'])->name('templates.variables');
+
+  Route::get('/campaigns', [CampaignController::class, 'index'])->name('campaigns.index');
+  Route::get('/campaigns/create', [CampaignController::class, 'create'])->name('campaigns.create');
+  Route::post('/campaigns', [CampaignController::class, 'store'])->name('campaigns.store');
+  Route::get('/campaigns/{campaign}', [CampaignController::class, 'show'])->name('campaigns.show');
+  Route::get('/campaigns/{campaign}/edit', [CampaignController::class, 'edit'])->name('campaigns.edit');
+  Route::put('/campaigns/{campaign}', [CampaignController::class, 'update'])->name('campaigns.update');
+  Route::delete('/campaigns/{campaign}', [CampaignController::class, 'destroy'])->name('campaigns.destroy');
+
+  // Campaign Actions
+  Route::post('/campaigns/{campaign}/schedule', [CampaignController::class, 'schedule'])->name('campaigns.schedule');
+  Route::post('/campaigns/{campaign}/send', [CampaignController::class, 'send'])->name('campaigns.send');
+  Route::post('/campaigns/{campaign}/duplicate', [CampaignController::class, 'duplicate'])->name('campaigns.duplicate');
+  Route::get('/campaigns/{campaign}/preview', [CampaignController::class, 'preview'])->name('campaigns.preview');
+
+  // Campaign Stats
+  Route::get('/campaigns/{campaign}/stats', [CampaignController::class, 'stats'])->name('campaigns.stats');
 });
 
 require_once __DIR__ . '/fortify.php';

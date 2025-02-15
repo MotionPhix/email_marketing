@@ -69,6 +69,13 @@ import {
   ToastViewport,
 } from "@/Components/ui/toast"
 
+import {
+  Tabs,
+  TabsList,
+  TabsContent,
+  TabsTrigger,
+} from "@/Components/ui/tabs"
+
 import {Badge} from "@/Components/ui/badge"
 import {Progress} from "@/Components/ui/progress"
 import {Separator} from "@/Components/ui/separator"
@@ -147,6 +154,10 @@ createInertiaApp({
       .component('Badge', Badge)
       .component('Progress', Progress)
       .component('Separator', Separator)
+      .component('Tabs', Tabs)
+      .component('TabsTrigger', TabsTrigger)
+      .component('TabsList', TabsList)
+      .component('TabsContent', TabsContent)
       .mount(el);
   },
   progress: {

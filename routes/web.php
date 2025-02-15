@@ -1,6 +1,8 @@
 <?php
 
+use App\Http\Controllers\CampaignController;
 use App\Http\Controllers\EmailTemplateController;
+use App\Http\Controllers\SubscriberController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth'])->group(function () {
@@ -30,6 +32,10 @@ Route::middleware(['auth'])->group(function () {
 
   // Campaign Stats
   Route::get('/campaigns/{campaign}/stats', [CampaignController::class, 'stats'])->name('campaigns.stats');
+
+  // Subscriber routes
+  Route::get('subscribers', [SubscriberController::class, 'index'])->name('subscribers.index');
+  Route::get('subscribers/create', [SubscriberController::class, 'create'])->name('subscribers.create');
 });
 
 require_once __DIR__ . '/fortify.php';

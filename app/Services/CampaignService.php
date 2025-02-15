@@ -9,16 +9,10 @@ use SendGrid\Mail\Personalization;
 
 class CampaignService
 {
-  protected $emailPersonalizationService;
-  protected $sendGrid;
-
   public function __construct(
-    EmailPersonalizationService $emailPersonalizationService,
-    SendGridService $sendGrid
-  ) {
-    $this->emailPersonalizationService = $emailPersonalizationService;
-    $this->sendGrid = $sendGrid;
-  }
+    protected EmailPersonalizationService $emailPersonalization,
+    protected SendGridService $sendGrid
+  ) {}
 
   public function sendCampaign(Campaign $campaign)
   {
@@ -51,7 +45,7 @@ class CampaignService
     }
 
     // Process template content
-    $content = $this->emailPersonalizationService->parseTemplate(
+    $content = $this->emailPersonalization->parseTemplate(
       $campaign->content,
       [] // Base variables, personalization handled by SendGrid
     );

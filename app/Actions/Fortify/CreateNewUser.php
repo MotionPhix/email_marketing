@@ -90,6 +90,8 @@ class CreateNewUser implements CreatesNewUsers
         }
       }
 
+      DB::commit();
+
       return $user;
     });
   }

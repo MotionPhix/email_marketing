@@ -13,6 +13,7 @@ return new class extends Migration {
     Schema::table('users', function (Blueprint $table) {
       $table->string('registration_status')->default('incomplete');
       $table->json('completed_registration_steps')->nullable();
+      $table->timestamp('trial_ends_at')->nullable();
       $table->string('company_name')->nullable();
       $table->string('industry')->nullable();
       $table->string('company_size')->nullable();

@@ -12,8 +12,8 @@ return new class extends Migration {
   {
     Schema::create('onboarding_progress', function (Blueprint $table) {
       $table->id();
-      $table->foreignUuid('user_id')->constrained()->cascadeOnDelete();
-      $table->json('completed_steps')->default('[]');
+      $table->foreignId('user_id')->constrained()->cascadeOnDelete();
+      $table->json('completed_steps');
       $table->json('form_data')->nullable();
       $table->boolean('is_completed')->default(false);
       $table->timestamp('completed_at')->nullable();

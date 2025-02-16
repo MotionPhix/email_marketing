@@ -18,7 +18,7 @@ return new class extends Migration {
       $table->string('from_email');
       $table->string('reply_to')->nullable();
       $table->longText('content');
-      $table->foreignId('template_id')->nullable()->constrained()->nullOnDelete();
+      $table->foreignId('template_id')->nullable()->constrained('email_templates')->nullOnDelete();
       $table->string('status')->default('draft');
       $table->json('settings')->nullable();
       $table->json('recipients')->nullable();

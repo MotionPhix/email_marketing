@@ -35,7 +35,7 @@ return new class extends Migration {
 
     Schema::create('registration_data', function (Blueprint $table) {
       $table->id();
-      $table->foreignUuid('user_id')->constrained()->cascadeOnDelete();
+      $table->foreignId('user_id')->constrained()->cascadeOnDelete();
       $table->integer('step');
       $table->json('data');
       $table->json('validation_errors')->nullable();
@@ -43,20 +43,6 @@ return new class extends Migration {
       $table->timestamps();
 
       $table->index(['user_id', 'step']);
-    });
-
-    Schema::create('invited_team_members', function (Blueprint $table) {
-      $table->id();
-      $table->foreignUuid('user_id')->constrained()->cascadeOnDelete();
-      $table->string('email');
-      $table->string('role')->default('member');
-      $table->string('invitation_token');
-      $table->timestamp('invited_at');
-      $table->timestamp('accepted_at')->nullable();
-      $table->timestamps();
-
-      $table->unique(['user_id', 'email']);
-      $table->index('invitation_token');
     });
   }
 
@@ -85,6 +71,5 @@ return new class extends Migration {
     });
 
     Schema::dropIfExists('registration_data');
-    Schema::dropIfExists('invited_team_members');
   }
 };

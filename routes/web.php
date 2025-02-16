@@ -1,9 +1,14 @@
 <?php
 
+use App\Http\Controllers\Api\V1\BrandingController;
+use App\Http\Controllers\Api\V1\QuotaController;
+use App\Http\Controllers\Api\V1\TeamController;
+use App\Http\Controllers\Api\V1\TeamMemberController;
 use App\Http\Controllers\CampaignController;
 use App\Http\Controllers\EmailTemplateController;
 use App\Http\Controllers\OnboardingController;
 use App\Http\Controllers\SubscriberController;
+use App\Http\Controllers\TeamInvitationController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth'])->group(function () {
@@ -100,3 +105,9 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/usage', [QuotaController::class, 'usage']);
   });
 });
+
+Route::get('/team-invitations/{token}', [TeamInvitationController::class, 'accept'])
+  ->name('team-invitations.accept');
+
+Route::post('/team-invitations/{token}/register', [TeamInvitationController::class, 'register'])
+  ->name('team-invitations.register');

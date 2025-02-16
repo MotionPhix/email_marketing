@@ -3,6 +3,7 @@ import { ref } from 'vue'
 import { Head, useForm } from '@inertiajs/vue3'
 import AuthLayout from '@/Layouts/AuthLayout.vue'
 import InputError from "@/Components/InputError.vue"
+import {Loader2Icon} from "lucide-vue-next"
 
 const props = defineProps<{
   token: string
@@ -144,8 +145,7 @@ const submit = () => {
           <Button
             type="submit"
             class="w-full"
-            :disabled="isLoading"
-          >
+            :disabled="isLoading">
             <Loader2Icon
               v-if="isLoading"
               class="mr-2 h-4 w-4 animate-spin"

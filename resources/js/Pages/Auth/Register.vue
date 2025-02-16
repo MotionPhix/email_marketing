@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
-import { Head, Link, useForm } from '@inertiajs/vue3'
+import {ref, computed} from 'vue'
+import {Head, Link, useForm} from '@inertiajs/vue3'
 import AuthLayout from '@/Layouts/AuthLayout.vue'
 import RegistrationStepper from '@/Pages/Auth/Partials/RegistrationStepper.vue'
 import InputError from "@/Components/InputError.vue";
@@ -43,7 +43,7 @@ const form = useForm({
   website: '',
 
   // Team Setup
-  team_members: [{ email: '', role: 'member' }],
+  team_members: [],
 
   terms: false
 })
@@ -68,9 +68,9 @@ const industries = [
 ]
 
 const roles = [
-  { value: 'admin', label: 'Administrator' },
-  { value: 'editor', label: 'Editor' },
-  { value: 'member', label: 'Team Member' }
+  {value: 'admin', label: 'Administrator'},
+  {value: 'editor', label: 'Editor'},
+  {value: 'member', label: 'Team Member'}
 ]
 
 const canProceed = computed(() => {
@@ -87,14 +87,14 @@ const canProceed = computed(() => {
         form.organization_size &&
         form.industry
     case 3:
-      return form.team_members.every(member => member.email && member.role)
+      return form.team_members === [] || form.team_members.every(member => member.email && member.role)
     default:
       return true
   }
 })
 
 const addTeamMember = () => {
-  form.team_members.push({ email: '', role: 'member' })
+  form.team_members.push({email: '', role: 'member'})
 }
 
 const removeTeamMember = (index: number) => {
@@ -113,6 +113,12 @@ const back = () => {
   }
 }
 
+// Function to get the error message for a specific field
+const getErrorMessage = (index, field) => {
+  const errorKey = `team_members.${index}.${field}`;
+  return form.errors[errorKey] || null;
+};
+
 const submit = () => {
   isLoading.value = true
 
@@ -129,7 +135,7 @@ const submit = () => {
 
 <template>
   <AuthLayout>
-    <Head title="Create an account" />
+    <Head title="Create an account"/>
 
     <div class="lg:p-8">
       <div class="mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[450px]">
@@ -167,7 +173,7 @@ const submit = () => {
               label="Email"
               v-model="form.email"
               placeholder="m@example.com"
-              :message="form.errors.email"
+              :error="form.errors.email"
               :disabled="isLoading"
               required
             />
@@ -176,7 +182,7 @@ const submit = () => {
               label="Password"
               v-model="form.password"
               placeholder="Type a strong password"
-              :message="form.errors.password"
+              :error="form.errors.password"
               :disabled="isLoading"
               type="password"
               required
@@ -266,36 +272,42 @@ const submit = () => {
               <div
                 v-for="(member, index) in form.team_members"
                 :key="index"
-                class="flex items-end gap-2">
-                <FormField
-                  class="flex-1"
-                  placeholder="Enter member's email address"
-                  label="Team member email"
-                  v-model="member.email"
-                  :disabled="isLoading"
-                  type="email"
-                  required
-                />
+                class="flex items-center gap-2">
+                <div
+                  class="flex-1">
+                  <FormField
+                    placeholder="Enter member's email address"
+                    :error="getErrorMessage(index, 'email')"
+                    label="Team member email"
+                    v-model="member.email"
+                    :disabled="isLoading"
+                    type="email"
+                  />
+                </div>
 
-                <FormField
-                  class="w-[150px]"
-                  label="Member Role"
-                  v-model="member.role"
-                  placeholder="Assign a role to this member"
-                  :disabled="isLoading"
-                  :options="roles"
-                  type="select"
-                />
+                <div
+                  class="w-[150px]">
+                  <FormField
+                    label="Member Role"
+                    v-model="member.role"
+                    :error="getErrorMessage(index, 'role')"
+                    placeholder="Assign a role to this member"
+                    :disabled="isLoading"
+                    :options="roles"
+                    type="select"
+                  />
+                </div>
 
-                <Button
-                  v-if="index > 0"
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  class="mb-[2px]"
-                  @click="removeTeamMember(index)">
-                  <TrashIcon class="h-4 w-4" />
-                </Button>
+                <div
+                  v-if="index > 0">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    @click="removeTeamMember(index)">
+                    <TrashIcon class="h-4 w-4"/>
+                  </Button>
+                </div>
               </div>
             </div>
 
@@ -304,7 +316,7 @@ const submit = () => {
               variant="outline"
               size="sm"
               @click="addTeamMember">
-              <PlusIcon class="mr-2 h-4 w-4" />
+              <PlusIcon class="mr-2 h-4 w-4"/>
               Add team member
             </Button>
           </div>

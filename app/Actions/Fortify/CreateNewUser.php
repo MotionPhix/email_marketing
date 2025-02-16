@@ -2,6 +2,7 @@
 
 namespace App\Actions\Fortify;
 
+use App\Models\InvitedTeamMember;
 use App\Models\User;
 use App\Notifications\TeamInvitation;
 use Illuminate\Support\Facades\DB;
@@ -38,6 +39,10 @@ class CreateNewUser implements CreatesNewUsers
       'team_members' => ['nullable', 'array'],
       'team_members.*.email' => ['required', 'email', 'distinct'],
       'team_members.*.role' => ['required', 'string', 'in:admin,editor,member'],
+    ], [
+      'team_members.*.email.required' => 'Enter the member\'s email address',
+      'team_members.*.email.email' => 'Enter a valid email address',
+      'team_members.*.email.distinct' => 'You have already entered this email',
     ])->validate();
 
     return DB::transaction(function () use ($input) {
@@ -50,9 +55,11 @@ class CreateNewUser implements CreatesNewUsers
         'company_size' => $input['organization_size'],
         'industry' => $input['industry'],
         'website' => $input['website'] ?? null,
-        'registration_status' => 'completed',
-        'completed_registration_steps' => [1, 2, 3],
-        'registration_completed_at' => now(),
+        'registration_status' => 'incomplete',
+        'completed_registration_steps' => [
+          User::REGISTRATION_STEP_ACCOUNT,
+          User::REGISTRATION_STEP_ORGANIZATION
+        ],
         'trial_ends_at' => now()->addDays(14),
       ]);
 
@@ -68,17 +75,18 @@ class CreateNewUser implements CreatesNewUsers
       // Process team invitations
       if (!empty($input['team_members'])) {
         foreach ($input['team_members'] as $member) {
-          $invitation = InvitedTeamMember::create([
+          $invitation = InvitedTeamMember::invite([
             'user_id' => $user->id,
             'team_id' => $team->id,
             'email' => $member['email'],
             'role' => $member['role'],
-            'invitation_token' => InvitedTeamMember::generateInvitationToken(),
-            'invited_at' => now(),
           ]);
 
           // Send invitation email
           $invitation->notify(new TeamInvitation($user, $team));
+
+          // Mark team setup step as completed
+          $user->completeRegistrationStep(User::REGISTRATION_STEP_TEAM);
         }
       }
 

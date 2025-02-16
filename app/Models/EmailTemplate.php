@@ -26,4 +26,19 @@ class EmailTemplate extends Model
     'is_default' => 'boolean',
     'variables' => 'array',
   ];
+
+  public function user()
+  {
+    return $this->belongsTo(User::class);
+  }
+
+  public function campaigns()
+  {
+    return $this->hasMany(Campaign::class, 'template_id');
+  }
+
+  public function team()
+  {
+    return $this->belongsTo(Team::class);
+  }
 }

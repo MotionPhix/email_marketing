@@ -35,6 +35,23 @@ class Subscriber extends Model
     return $this->hasMany(CampaignEvent::class);
   }
 
+  public function user()
+  {
+    return $this->belongsTo(User::class);
+  }
+
+  public function campaigns()
+  {
+    return $this->belongsToMany(Campaign::class, 'campaign_events')
+      ->withPivot('type', 'metadata')
+      ->withTimestamps();
+  }
+
+  public function team()
+  {
+    return $this->belongsTo(Team::class);
+  }
+
   public function isSubscribed()
   {
     return $this->status === self::STATUS_SUBSCRIBED;

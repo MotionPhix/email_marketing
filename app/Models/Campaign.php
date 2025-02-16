@@ -43,6 +43,23 @@ class Campaign extends Model
     return $this->belongsTo(EmailTemplate::class);
   }
 
+  public function user()
+  {
+    return $this->belongsTo(User::class);
+  }
+
+  public function subscribers()
+  {
+    return $this->belongsToMany(Subscriber::class, 'campaign_events')
+      ->withPivot('type', 'metadata')
+      ->withTimestamps();
+  }
+
+  public function team()
+  {
+    return $this->belongsTo(Team::class);
+  }
+
   public function events()
   {
     return $this->hasMany(CampaignEvent::class);

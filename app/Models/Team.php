@@ -33,6 +33,31 @@ class Team extends Model
       ->withTimestamps();
   }
 
+  public function campaigns()
+  {
+    return $this->hasMany(Campaign::class);
+  }
+
+  public function templates()
+  {
+    return $this->hasMany(EmailTemplate::class);
+  }
+
+  public function subscribers()
+  {
+    return $this->hasMany(Subscriber::class);
+  }
+
+  public function automations()
+  {
+    return $this->hasMany(Automation::class);
+  }
+
+  public function settings()
+  {
+    return $this->hasOne(Setting::class);
+  }
+
   public function invitations(): HasMany
   {
     return $this->hasMany(InvitedTeamMember::class);

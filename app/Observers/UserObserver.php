@@ -30,6 +30,16 @@ class UserObserver
         'primary_color' => '#4F46E5',
         'accent_color' => '#818CF8',
       ],
+      'subscription_settings' => [
+        'plan' => 'free',
+        'email_quota' => 100,
+        'features' => [
+          'custom_domain' => false,
+          'api_access' => false,
+          'advanced_analytics' => false,
+        ],
+        'trial_ends_at' => now()->addDays(14),
+      ],
     ]);
   }
 

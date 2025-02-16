@@ -45,28 +45,10 @@ class User extends Authenticatable implements MustVerifyEmail
     'last_name',
     'email',
     'password',
-    'company_name',
-    'phone',
-    'timezone',
-    'language',
-    'notification_preferences',
-    'email_signature',
-    'sendgrid_api_key',
-    'default_sender_email',
-    'default_sender_name',
+    'completed_registration_steps',
     'account_status',
     'last_login_at',
     'last_login_ip',
-    'industry',
-    'company_size',
-    'website',
-    'role',
-    'marketing_preferences',
-    'registration_status',
-    'completed_registration_steps',
-    'registration_completed_at',
-    'trial_ends_at',
-    'email_quota'
   ];
 
   /**
@@ -77,8 +59,6 @@ class User extends Authenticatable implements MustVerifyEmail
     'remember_token',
     'two_factor_recovery_codes',
     'two_factor_secret',
-    'sendgrid_api_key',
-    'verification_token',
   ];
 
   /**
@@ -89,14 +69,8 @@ class User extends Authenticatable implements MustVerifyEmail
     return [
       'email_verified_at' => 'datetime',
       'password' => 'hashed',
-      'notification_preferences' => 'array',
-      'marketing_preferences' => 'array',
       'completed_registration_steps' => 'array',
       'last_login_at' => 'datetime',
-      'trial_ends_at' => 'datetime',
-      'registration_completed_at' => 'datetime',
-      'email_quota' => 'integer',
-      'account_status' => 'string',
     ];
   }
 
@@ -106,9 +80,7 @@ class User extends Authenticatable implements MustVerifyEmail
   protected $appends = [
     'profile_photo_url',
     'name',
-    'email_quota_remaining',
     'is_trial',
-    'subscription_status',
     'registration_progress'
   ];
 
@@ -149,6 +121,11 @@ class User extends Authenticatable implements MustVerifyEmail
         'accent_color' => '#818CF8',
       ],
     ]);
+  }
+
+  public function trackingEvents()
+  {
+    return $this->hasMany(TrackingEvent::class);
   }
 
   public function invitedTeamMembers()

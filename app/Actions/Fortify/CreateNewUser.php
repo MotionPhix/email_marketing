@@ -60,7 +60,6 @@ class CreateNewUser implements CreatesNewUsers
           User::REGISTRATION_STEP_ACCOUNT,
           User::REGISTRATION_STEP_ORGANIZATION
         ],
-        'trial_ends_at' => now()->addDays(14),
       ]);
 
       // Create team

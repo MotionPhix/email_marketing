@@ -15,8 +15,11 @@ return new class extends Migration {
       $table->foreignId('user_id')->constrained()->onDelete('cascade');
       $table->json('preferences')->nullable();
       $table->json('notification_settings')->nullable();
-      $table->json('email_settings')->nullable();
       $table->json('branding_settings')->nullable();
+      $table->json('email_settings')->nullable();
+      $table->json('marketing_settings');
+      $table->json('company_settings');
+      $table->json('sender_settings');
       $table->timestamps();
     });
   }

@@ -3,6 +3,7 @@
 namespace App\Traits;
 
 use App\Models\EmailQuota;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
 trait HasEmailQuota
@@ -10,6 +11,28 @@ trait HasEmailQuota
   public function emailQuota(): HasOne
   {
     return $this->hasOne(EmailQuota::class);
+  }
+
+  public function emailQuotaRemaining(): Attribute
+  {
+    return Attribute::get(function() {
+      $quotaUsed = $this->trackingEvents()
+        ->where('type', 'sent')
+        ->where('created_at', '>=', now()->startOfMonth())
+        ->count();
+
+      return max(0, $this->settings->email_quota - $quotaUsed);
+    });
+  }
+
+  public function emailQuotaUsed(): Attribute
+  {
+    return Attribute::get(function() {
+      return $this->trackingEvents()
+        ->where('type', 'sent')
+        ->where('created_at', '>=', now()->startOfMonth())
+        ->count();
+    });
   }
 
   public function initializeEmailQuota(): void
@@ -56,5 +79,21 @@ trait HasEmailQuota
       'daily' => ($this->emailQuota->daily_used / $this->emailQuota->daily_limit) * 100,
       'monthly' => ($this->emailQuota->monthly_used / $this->emailQuota->monthly_limit) * 100
     ];
+  }
+
+  public function hasEmailQuotaRemaining(): bool
+  {
+    return $this->email_quota_remaining > 0;
+  }
+
+  public function incrementEmailQuotaUsage(int $count = 1): void
+  {
+    // Create sent events
+    for ($i = 0; $i < $count; $i++) {
+      $this->trackingEvents()->create([
+        'type' => 'sent',
+        'occurred_at' => now(),
+      ]);
+    }
   }
 }

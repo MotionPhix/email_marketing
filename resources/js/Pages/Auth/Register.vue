@@ -49,22 +49,22 @@ const form = useForm({
 })
 
 const organizationSizes = [
-  '1-10 employees',
-  '11-50 employees',
-  '51-200 employees',
-  '201-500 employees',
-  '500+ employees'
+  {label: '1-10 employees', value: '1-10'},
+  {label: '11-50 employees', value: '11-50'},
+  {label: '51-200 employees', value: '51-200'},
+  {label: '201-500 employees', value: '201-500'},
+  {label: '500+ employees', value: '500+'}
 ]
 
 const industries = [
-  'Technology',
-  'E-commerce',
-  'Healthcare',
-  'Education',
-  'Finance',
-  'Marketing',
-  'Retail',
-  'Other'
+  {label: 'Technology', value: 'technology'},
+  {label: 'E-commerce', value: 'e-commerce'},
+  {label: 'Healthcare', value: 'healthcare'},
+  {label: 'Education', value: 'education'},
+  {label: 'Finance', value: 'finance'},
+  {label: 'Marketing', value: 'marketing'},
+  {label: 'Retail', value: 'retail'},
+  {label: 'Other', value: 'other'}
 ]
 
 const roles = [
@@ -138,70 +138,58 @@ const submit = () => {
           :steps="steps"
         />
 
-        <form @submit.prevent="currentStep === 3 ? submit() : next()" class="space-y-6">
+        <form
+          @submit.prevent="currentStep === 3 ? submit() : next()"
+          class="space-y-6">
           <!-- Step 1: Personal Information -->
           <div v-show="currentStep === 1" class="space-y-4">
             <div class="grid gap-4 sm:grid-cols-2">
-              <FormField>
-                <Label for="first_name">First name</Label>
-                <Input
-                  id="first_name"
-                  v-model="form.first_name"
-                  type="text"
-                  :disabled="isLoading"
-                  required
-                />
-                <InputError :message="form.errors.first_name" />
-              </FormField>
+              <FormField
+                label="First name"
+                v-model="form.first_name"
+                :error="form.errors.first_name"
+                placeholder="Enter your first name"
+                :disabled="isLoading"
+                required
+              />
 
-              <FormField>
-                <Label for="last_name">Last name</Label>
-                <Input
-                  id="last_name"
-                  v-model="form.last_name"
-                  type="text"
-                  :disabled="isLoading"
-                  required
-                />
-                <InputError :message="form.errors.last_name" />
-              </FormField>
+              <FormField
+                label="Last name"
+                v-model="form.last_name"
+                placeholder="Enter your last name"
+                :error="form.errors.last_name"
+                :disabled="isLoading"
+                required
+              />
             </div>
 
-            <FormField>
-              <Label for="email">Email</Label>
-              <Input
-                id="email"
-                v-model="form.email"
-                type="email"
-                placeholder="m@example.com"
-                :disabled="isLoading"
-                required
-              />
-              <InputError :message="form.errors.email" />
-            </FormField>
+            <FormField
+              label="Email"
+              v-model="form.email"
+              placeholder="m@example.com"
+              :message="form.errors.email"
+              :disabled="isLoading"
+              required
+            />
 
-            <FormField>
-              <Label for="password">Password</Label>
-              <Input
-                id="password"
-                v-model="form.password"
-                type="password"
-                :disabled="isLoading"
-                required
-              />
-              <InputError :message="form.errors.password" />
-            </FormField>
+            <FormField
+              label="Password"
+              v-model="form.password"
+              placeholder="Type a strong password"
+              :message="form.errors.password"
+              :disabled="isLoading"
+              type="password"
+              required
+            />
 
-            <FormField>
-              <Label for="password_confirmation">Confirm password</Label>
-              <Input
-                id="password_confirmation"
-                v-model="form.password_confirmation"
-                type="password"
-                :disabled="isLoading"
-                required
-              />
-            </FormField>
+            <FormField
+              label="Confirm password"
+              v-model="form.password_confirmation"
+              placeholder="Confirm your password"
+              :disabled="isLoading"
+              type="password"
+              required
+            />
 
             <div class="flex items-center space-x-2">
               <Checkbox
@@ -212,22 +200,19 @@ const submit = () => {
               />
               <label
                 for="terms"
-                class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-              >
+                class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
                 I agree to the
                 <Link
                   :href="route('terms.show')"
                   class="text-primary hover:underline"
-                  target="_blank"
-                >
+                  target="_blank">
                   terms of service
                 </Link>
                 and
                 <Link
                   :href="route('policy.show')"
                   class="text-primary hover:underline"
-                  target="_blank"
-                >
+                  target="_blank">
                   privacy policy
                 </Link>
               </label>
@@ -236,73 +221,42 @@ const submit = () => {
 
           <!-- Step 2: Organization Setup -->
           <div v-show="currentStep === 2" class="space-y-4">
-            <FormField>
-              <Label for="organization_name">Organization name</Label>
-              <Input
-                id="organization_name"
-                v-model="form.organization_name"
-                type="text"
-                :disabled="isLoading"
-                required
-              />
-              <InputError :message="form.errors.organization_name" />
-            </FormField>
+            <FormField
+              name="organisation_name"
+              label="Organization name"
+              v-model="form.organization_name"
+              :error="form.errors.organization_name"
+              :disabled="isLoading"
+              required
+            />
 
-            <FormField>
-              <Label for="organization_size">Organization size</Label>
-              <Select
-                v-model="form.organization_size"
-                :disabled="isLoading"
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select organization size" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem
-                    v-for="size in organizationSizes"
-                    :key="size"
-                    :value="size"
-                  >
-                    {{ size }}
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-              <InputError :message="form.errors.organization_size" />
-            </FormField>
+            <FormField
+              label="Organization size"
+              v-model="form.organization_size"
+              placeholder="Select organization size"
+              :error="form.errors.organization_size"
+              :options="organizationSizes"
+              :disabled="isLoading"
+              type="select"
+            />
 
-            <FormField>
-              <Label for="industry">Industry</Label>
-              <Select
-                v-model="form.industry"
-                :disabled="isLoading"
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select your industry" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem
-                    v-for="industry in industries"
-                    :key="industry"
-                    :value="industry"
-                  >
-                    {{ industry }}
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-              <InputError :message="form.errors.industry" />
-            </FormField>
+            <FormField
+              label="Industry"
+              v-model="form.industry"
+              placeholder="Select your industry"
+              :error="form.errors.industry"
+              :disabled="isLoading"
+              :options="industries"
+            />
 
-            <FormField>
-              <Label for="website">Website (optional)</Label>
-              <Input
-                id="website"
-                v-model="form.website"
-                type="url"
-                placeholder="https://"
-                :disabled="isLoading"
-              />
-              <InputError :message="form.errors.website" />
-            </FormField>
+            <FormField
+              v-model="form.website"
+              label="Website (optional)"
+              :error="form.errors.website"
+              placeholder="https://"
+              :disabled="isLoading"
+              type="url"
+            />
           </div>
 
           <!-- Step 3: Team Setup -->
@@ -311,39 +265,25 @@ const submit = () => {
               <div
                 v-for="(member, index) in form.team_members"
                 :key="index"
-                class="flex items-end gap-2"
-              >
-                <FormField class="flex-1">
-                  <Label :for="`team_member_${index}`">Team member email</Label>
-                  <Input
-                    :id="`team_member_${index}`"
-                    v-model="member.email"
-                    type="email"
-                    :disabled="isLoading"
-                    required
-                  />
-                </FormField>
+                class="flex items-end gap-2">
+                <FormField
+                  class="flex-1"
+                  label="Team member email"
+                  v-model="member.email"
+                  type="email"
+                  :disabled="isLoading"
+                  required
+                />
 
-                <FormField class="w-[150px]">
-                  <Label :for="`team_member_role_${index}`">Role</Label>
-                  <Select
-                    v-model="member.role"
-                    :disabled="isLoading"
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem
-                        v-for="role in roles"
-                        :key="role.value"
-                        :value="role.value"
-                      >
-                        {{ role.label }}
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                </FormField>
+                <FormField
+                  class="w-[150px]"
+                  label="Member Role"
+                  v-model="member.role"
+                  placeholder="Assign a role to this member"
+                  :disabled="isLoading"
+                  :options="roles"
+                  type="select"
+                />
 
                 <Button
                   v-if="index > 0"
@@ -351,8 +291,7 @@ const submit = () => {
                   variant="ghost"
                   size="icon"
                   class="mb-[2px]"
-                  @click="removeTeamMember(index)"
-                >
+                  @click="removeTeamMember(index)">
                   <TrashIcon class="h-4 w-4" />
                 </Button>
               </div>
@@ -362,8 +301,7 @@ const submit = () => {
               type="button"
               variant="outline"
               size="sm"
-              @click="addTeamMember"
-            >
+              @click="addTeamMember">
               <PlusIcon class="mr-2 h-4 w-4" />
               Add team member
             </Button>
@@ -376,15 +314,14 @@ const submit = () => {
               type="button"
               variant="outline"
               @click="back"
-              :disabled="isLoading"
-            >
+              :disabled="isLoading">
               Back
             </Button>
+
             <Button
               type="submit"
               class="ml-auto"
-              :disabled="isLoading || !canProceed"
-            >
+              :disabled="isLoading || !canProceed">
               <Loader2Icon
                 v-if="isLoading"
                 class="mr-2 h-4 w-4 animate-spin"
@@ -398,8 +335,7 @@ const submit = () => {
           Already have an account?
           <Link
             :href="route('login')"
-            class="text-primary hover:underline"
-          >
+            class="text-primary hover:underline">
             Sign in
           </Link>
         </p>

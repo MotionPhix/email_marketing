@@ -8,6 +8,7 @@ use App\Traits\HasApiKeys;
 use App\Traits\HasBranding;
 use App\Traits\HasAnalytics;
 use App\Traits\HasTeams;
+use App\Traits\HasRegistrationSteps;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use App\Traits\BootUuid;
 use Illuminate\Database\Eloquent\Casts\Attribute;
@@ -31,6 +32,7 @@ class User extends Authenticatable implements MustVerifyEmail
     HasBranding,
     HasAnalytics,
     HasTeams,
+    HasRegistrationSteps,
     HasFactory,
     HasProfilePhoto,
     Notifiable,
@@ -39,8 +41,6 @@ class User extends Authenticatable implements MustVerifyEmail
 
   /**
    * The attributes that are mass assignable.
-   *
-   * @var array<int, string>
    */
   protected $fillable = [
     'first_name',
@@ -59,12 +59,20 @@ class User extends Authenticatable implements MustVerifyEmail
     'account_status',
     'last_login_at',
     'last_login_ip',
+    'industry',
+    'company_size',
+    'website',
+    'role',
+    'marketing_preferences',
+    'registration_status',
+    'completed_registration_steps',
+    'registration_completed_at',
+    'trial_ends_at',
+    'email_quota'
   ];
 
   /**
    * The attributes that should be hidden for serialization.
-   *
-   * @var array<int, string>
    */
   protected $hidden = [
     'password',
@@ -72,12 +80,11 @@ class User extends Authenticatable implements MustVerifyEmail
     'two_factor_recovery_codes',
     'two_factor_secret',
     'sendgrid_api_key',
+    'verification_token',
   ];
 
   /**
    * The attributes that should be cast.
-   *
-   * @var array<string, string>
    */
   protected function casts(): array
   {
@@ -85,8 +92,11 @@ class User extends Authenticatable implements MustVerifyEmail
       'email_verified_at' => 'datetime',
       'password' => 'hashed',
       'notification_preferences' => 'array',
+      'marketing_preferences' => 'array',
+      'completed_registration_steps' => 'array',
       'last_login_at' => 'datetime',
       'trial_ends_at' => 'datetime',
+      'registration_completed_at' => 'datetime',
       'email_quota' => 'integer',
       'account_status' => 'string',
     ];
@@ -94,84 +104,64 @@ class User extends Authenticatable implements MustVerifyEmail
 
   /**
    * The accessors to append to the model's array form.
-   *
-   * @var array<int, string>
    */
   protected $appends = [
     'profile_photo_url',
     'name',
     'email_quota_remaining',
     'is_trial',
-    'subscription_status'
+    'subscription_status',
+    'registration_progress'
   ];
 
-  /**
-   * Get the user's full name.
-   */
-  public function name(): Attribute
-  {
-    return Attribute::get(fn() => $this->first_name . ' ' . $this->last_name);
-  }
-
-  /**
-   * Get user's email campaigns.
-   */
+  // Keep existing relationships
   public function campaigns()
   {
     return $this->hasMany(Campaign::class)->latest();
   }
 
-  /**
-   * Get user's email templates.
-   */
   public function templates()
   {
     return $this->hasMany(EmailTemplate::class);
   }
 
-  /**
-   * Get user's automation workflows.
-   */
   public function automations()
   {
     return $this->hasMany(Automation::class);
   }
 
-  /**
-   * Get the settings associated with the user.
-   */
   public function settings()
   {
     return $this->hasOne(Setting::class);
   }
 
-  /**
-   * Get user's API usage logs.
-   */
   public function apiLogs()
   {
     return $this->hasMany(ApiLog::class);
   }
 
-  /**
-   * Get user's bounce logs.
-   */
   public function bounceLogs()
   {
     return $this->hasMany(BounceLog::class);
   }
 
-  /**
-   * Check if user is within email quota limits.
-   */
-  public function hasEmailQuotaAvailable(): bool
+  // Add new registration-related relationships
+  public function registrationData()
   {
-    return $this->email_quota_remaining > 0;
+    return $this->hasMany(RegistrationData::class);
   }
 
-  /**
-   * Get remaining email quota.
-   */
+  public function invitedTeamMembers()
+  {
+    return $this->hasMany(InvitedTeamMember::class);
+  }
+
+  // Keep existing computed attributes
+  public function name(): Attribute
+  {
+    return Attribute::get(fn() => $this->first_name . ' ' . $this->last_name);
+  }
+
   public function emailQuotaRemaining(): Attribute
   {
     return Attribute::get(function() {
@@ -184,9 +174,6 @@ class User extends Authenticatable implements MustVerifyEmail
     });
   }
 
-  /**
-   * Check if user is in trial period.
-   */
   public function isTrialStatus(): Attribute
   {
     return Attribute::get(
@@ -194,9 +181,6 @@ class User extends Authenticatable implements MustVerifyEmail
     );
   }
 
-  /**
-   * Get current subscription status.
-   */
   public function subscriptionStatus(): Attribute
   {
     return Attribute::get(function() {
@@ -212,17 +196,27 @@ class User extends Authenticatable implements MustVerifyEmail
     });
   }
 
-  /**
-   * Scope for active users.
-   */
+  // Add new registration-related computed attribute
+  public function registrationProgress(): Attribute
+  {
+    return Attribute::get(function() {
+      $totalSteps = count(self::getRegistrationSteps());
+      $completedSteps = count($this->completed_registration_steps ?? []);
+      return [
+        'current_step' => $this->getCurrentRegistrationStep(),
+        'completed_steps' => $completedSteps,
+        'total_steps' => $totalSteps,
+        'percentage' => $totalSteps > 0 ? ($completedSteps / $totalSteps) * 100 : 0,
+      ];
+    });
+  }
+
+  // Keep existing methods
   public function scopeActive($query)
   {
     return $query->where('account_status', 'active');
   }
 
-  /**
-   * Record user login.
-   */
   public function recordLogin(string $ip)
   {
     $this->update([
@@ -231,9 +225,11 @@ class User extends Authenticatable implements MustVerifyEmail
     ]);
   }
 
-  /**
-   * Check if user can send emails.
-   */
+  public function hasEmailQuotaAvailable(): bool
+  {
+    return $this->email_quota_remaining > 0;
+  }
+
   public function canSendEmails(): bool
   {
     return $this->account_status === 'active' &&
@@ -241,9 +237,6 @@ class User extends Authenticatable implements MustVerifyEmail
       ($this->hasActiveSubscription() || $this->is_trial);
   }
 
-  /**
-   * Get user's sending reputation score.
-   */
   public function getReputationScore(): float
   {
     $totalSent = $this->trackingEvents()->where('type', 'sent')->count();
@@ -258,12 +251,49 @@ class User extends Authenticatable implements MustVerifyEmail
     return max(0, 100 - ($bounceRate * 2) - ($complaintRate * 5));
   }
 
-  /**
-   * Check if user needs sending warm-up.
-   */
   public function needsWarmup(): bool
   {
     return $this->created_at->isAfter(now()->subDays(30)) &&
       $this->trackingEvents()->where('type', 'sent')->count() < 1000;
+  }
+
+  // Add registration-specific methods
+  public function hasCompletedStep(int $step): bool
+  {
+    return in_array($step, $this->completed_registration_steps ?? []);
+  }
+
+  public function getCurrentRegistrationStep(): int
+  {
+    $completedSteps = $this->completed_registration_steps ?? [];
+    return empty($completedSteps) ? 1 : max($completedSteps) + 1;
+  }
+
+  public function completeRegistrationStep(int $step, array $data): void
+  {
+    $this->registrationData()->create([
+      'step' => $step,
+      'data' => $data,
+      'completed_at' => now(),
+    ]);
+
+    $completedSteps = $this->completed_registration_steps ?? [];
+    $completedSteps[] = $step;
+    $this->completed_registration_steps = array_unique($completedSteps);
+
+    if ($step === count(self::getRegistrationSteps())) {
+      $this->registration_status = 'completed';
+      $this->registration_completed_at = now();
+
+      // Start trial period
+      $this->trial_ends_at = now()->addDays(14);
+    }
+
+    $this->save();
+  }
+
+  public function hasCompletedRegistration(): bool
+  {
+    return $this->registration_status === 'completed';
   }
 }

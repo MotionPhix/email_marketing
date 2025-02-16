@@ -4,9 +4,9 @@ namespace App\Traits;
 
 use Illuminate\Support\Str;
 
-trait BootUuid
+trait HasBootUuid
 {
-  public static function bootBootUuid()
+  public static function bootHasBootUuid()
   {
     static::creating(function ($model) {
       $model->uuid = Str::orderedUuid();

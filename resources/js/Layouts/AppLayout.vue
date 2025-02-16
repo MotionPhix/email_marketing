@@ -82,7 +82,7 @@ defineProps({
       </header>
 
       <!-- Page Content -->
-      <main class="max-w-3xl mx-auto">
+      <main class="max-w-5xl mx-auto">
         <slot/>
       </main>
     </div>

@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import {BarChartIcon, MailIcon, UsersIcon, ZapIcon, ArrowRightIcon} from "lucide-vue-next";
+import {router} from "@inertiajs/vue3";
+
 defineEmits(['next'])
 
 const features = [
@@ -62,7 +65,7 @@ const features = [
       <div class="flex justify-between">
         <Button
           variant="outline"
-          @click="$router.push(route('dashboard'))"
+          @click="router.visit(route('dashboard'), { replace: true })"
         >
           Go to dashboard
         </Button>

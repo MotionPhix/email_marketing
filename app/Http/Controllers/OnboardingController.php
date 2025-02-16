@@ -16,7 +16,9 @@ class OnboardingController extends Controller
 {
   public function __construct(
     protected OnboardingService $onboardingService
-  ) {}
+  )
+  {
+  }
 
   public function index(): Response
   {
@@ -40,7 +42,7 @@ class OnboardingController extends Controller
     }
   }
 
-  public function skip(int $step): JsonResponse
+  public function skip(int $step)
   {
     try {
       DB::beginTransaction();
@@ -52,18 +54,14 @@ class OnboardingController extends Controller
 
       DB::commit();
 
-      return response()->json([
+      return back()->with([
         'message' => 'Step skipped successfully',
         'progress' => $progress->fresh(),
       ]);
     } catch (OnboardingException $e) {
       DB::rollBack();
 
-      return response()->json([
-        'message' => $e->getMessage(),
-        'step' => $e->getStep(),
-        'errors' => $e->getErrors(),
-      ], 422);
+      return back()->withErrors(['step' => $e->getMessage()], 'default');
     } catch (Throwable $e) {
       DB::rollBack();
       Log::error('Failed to skip onboarding step', [

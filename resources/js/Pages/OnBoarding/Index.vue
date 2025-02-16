@@ -1,10 +1,25 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import {type Component, computed, markRaw, watch} from 'vue'
 import { Head, router } from '@inertiajs/vue3'
 import AppLayout from '@/Layouts/AppLayout.vue'
 import {WavesIcon, UsersIcon, GlobeIcon, LayoutTemplateIcon, SendIcon, CheckIcon} from "lucide-vue-next";
+import {toast} from "vue-sonner";
+import {useStorage} from "@vueuse/core";
+import OnboardingStep1 from "@/Pages/OnBoarding/Partials/OnboardingStep1.vue";
+import OnboardingStep2 from "@/Pages/OnBoarding/Partials/OnboardingStep2.vue";
+import OnboardingStep3 from "@/Pages/OnBoarding/Partials/OnboardingStep3.vue";
+import OnboardingStep4 from "@/Pages/OnBoarding/Partials/OnboardingStep4.vue";
+import OnboardingStep5 from "@/Pages/OnBoarding/Partials/OnboardingStep5.vue";
 
-const currentStep = ref(1)
+const props = defineProps<{
+  progress: any,
+  userSettings: object
+}>()
+
+const currentStep = useStorage('onboardingStep', 1)
+let currentComponent: Component = OnboardingStep1
+
+console.log(props.userSettings)
 
 const steps = [
   {
@@ -44,11 +59,33 @@ const progress = computed(() => {
 })
 
 const skipOnboarding = () => {
-  router.post(route('onboarding.skip'), {}, {
+  router.post(route('onboarding.skip', currentStep.value), {}, {
     preserveScroll: true,
-    onSuccess: () => router.visit(route('dashboard'))
+    onSuccess: () => router.visit(route('dashboard')),
+    onError: (err) => {
+      toast.error(err.step)
+    }
   })
 }
+
+watch(currentStep, (newStep) => {
+  switch (newStep) {
+    case 1:
+      return currentComponent = OnboardingStep1
+
+    case 2:
+      return currentComponent = OnboardingStep2
+
+    case 3:
+      return currentComponent = OnboardingStep3
+
+    case 4:
+      return currentComponent = OnboardingStep4
+
+    case 5:
+      return currentComponent = OnboardingStep5
+  }
+}, { immediate: true })
 </script>
 
 <template>
@@ -62,18 +99,19 @@ const skipOnboarding = () => {
           <h2 class="text-3xl font-bold tracking-tight">
             {{ steps[currentStep - 1].title }}
           </h2>
+
           <Button
             variant="ghost"
-            @click="skipOnboarding"
-          >
+            @click="skipOnboarding">
             Skip onboarding
           </Button>
         </div>
-        <Progress :value="progress" class="h-2" />
+
+        <Progress v-model="progress" class="h-2" />
       </div>
 
       <!-- Step Content -->
-      <div class="grid gap-8 lg:grid-cols-3">
+      <div class="grid gap-4 lg:grid-cols-3">
         <!-- Steps Sidebar -->
         <Card class="lg:col-span-1">
           <CardContent class="p-6">
@@ -81,18 +119,17 @@ const skipOnboarding = () => {
               <button
                 v-for="step in steps"
                 :key="step.id"
-                class="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left transition-colors"
+                class="flex w-full gap-4 rounded-lg px-3 py-2 text-left transition-colors"
                 :class="[
                   step.id === currentStep
                     ? 'bg-primary text-primary-foreground'
                     : 'hover:bg-muted',
                   step.id < currentStep && 'text-muted-foreground'
                 ]"
-                @click="currentStep = step.id"
-              >
+                @click="currentStep = step.id">
                 <component
                   :is="step.icon"
-                  class="h-5 w-5"
+                  class="h-5 w-5 shrink-0"
                 />
                 <div>
                   <div class="text-sm font-medium">
@@ -115,7 +152,7 @@ const skipOnboarding = () => {
         <div class="lg:col-span-2">
           <KeepAlive>
             <component
-              :is="`OnboardingStep${currentStep}`"
+              :is="currentComponent"
               @next="currentStep++"
               @back="currentStep--"
             />

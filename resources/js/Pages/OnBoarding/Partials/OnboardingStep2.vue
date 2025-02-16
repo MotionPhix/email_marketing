@@ -82,8 +82,9 @@ const handleUpload = async () => {
         </TabsContent>
 
         <TabsContent value="paste" class="space-y-4">
-          <Textarea
+          <FormField
             placeholder="Paste your subscriber data here..."
+            type="textarea"
             rows="10"
           />
           <p class="text-xs text-muted-foreground">

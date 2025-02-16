@@ -12,26 +12,36 @@ use App\Http\Controllers\TeamInvitationController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth'])->group(function () {
-  // Onboarding Routes
+  // Dashboard
   Route::get(
-    '/onboarding',
-    [OnboardingController::class, 'index']
-  )->name('onboarding.index');
+    '/',
+    \App\Http\Controllers\Analytics::class
+  )->name('dashboard');
 
-  Route::post(
-    '/onboarding/update-step',
-    [OnboardingController::class, 'updateStep']
-  )->name('onboarding.update-step');
+  // Onboarding Routes
+  Route::prefix('onboarding')->group(function () {
 
-  Route::post(
-    '/onboarding/complete',
-    [OnboardingController::class, 'completeOnboarding']
-  )->name('onboarding.complete');
+    Route::get(
+      '/',
+      [OnboardingController::class, 'index']
+    )->name('onboarding.index');
 
-  Route::post(
-    '/onboarding/skip',
-    [OnboardingController::class, 'skip']
-  )->name('onboarding.skip');
+    Route::post(
+      '/update-step',
+      [OnboardingController::class, 'updateStep']
+    )->name('onboarding.update-step');
+
+    Route::post(
+      '/complete',
+      [OnboardingController::class, 'completeOnboarding']
+    )->name('onboarding.complete');
+
+    Route::post(
+      '/skip/{step}',
+      [OnboardingController::class, 'skip']
+    )->name('onboarding.skip');
+
+  });
 
   Route::get('templates', [EmailTemplateController::class, 'index'])->name('templates.index');
   Route::get('templates/create', [EmailTemplateController::class, 'create'])->name('templates.create');

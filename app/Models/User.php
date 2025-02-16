@@ -133,11 +133,6 @@ class User extends Authenticatable implements MustVerifyEmail
     return $this->hasOne(Setting::class);
   }
 
-  public function apiLogs()
-  {
-    return $this->hasMany(ApiLog::class);
-  }
-
   public function bounceLogs()
   {
     return $this->hasMany(BounceLog::class);
@@ -152,6 +147,36 @@ class User extends Authenticatable implements MustVerifyEmail
   public function invitedTeamMembers()
   {
     return $this->hasMany(InvitedTeamMember::class);
+  }
+
+  public function onboardingProgress()
+  {
+    return $this->hasOne(OnboardingProgress::class);
+  }
+
+  public function teamInvitations()
+  {
+    return $this->hasMany(InvitedTeamMember::class, 'email', 'email');
+  }
+
+  public function sentTeamInvitations()
+  {
+    return $this->hasMany(InvitedTeamMember::class, 'user_id');
+  }
+
+  public function campaignStats()
+  {
+    return $this->hasManyThrough(CampaignStats::class, Campaign::class);
+  }
+
+  public function campaignEvents()
+  {
+    return $this->hasManyThrough(CampaignEvent::class, Campaign::class);
+  }
+
+  public function subscribers()
+  {
+    return $this->hasMany(Subscriber::class);
   }
 
   // Keep existing computed attributes

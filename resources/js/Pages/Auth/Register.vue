@@ -140,7 +140,7 @@ const submit = () => {
 
         <form
           @submit.prevent="currentStep === 3 ? submit() : next()"
-          class="space-y-6">
+          class="space-y-6" novalidate>
           <!-- Step 1: Personal Information -->
           <div v-show="currentStep === 1" class="space-y-4">
             <div class="grid gap-4 sm:grid-cols-2">
@@ -247,6 +247,7 @@ const submit = () => {
               :error="form.errors.industry"
               :disabled="isLoading"
               :options="industries"
+              type="select"
             />
 
             <FormField
@@ -268,10 +269,11 @@ const submit = () => {
                 class="flex items-end gap-2">
                 <FormField
                   class="flex-1"
+                  placeholder="Enter member's email address"
                   label="Team member email"
                   v-model="member.email"
-                  type="email"
                   :disabled="isLoading"
+                  type="email"
                   required
                 />
 

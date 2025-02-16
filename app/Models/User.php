@@ -2,15 +2,14 @@
 
 namespace App\Models;
 
+use App\Traits\HasBootUuid;
 use App\Traits\HasSubscription;
 use App\Traits\HasEmailQuota;
-use App\Traits\HasApiKeys;
 use App\Traits\HasBranding;
 use App\Traits\HasAnalytics;
 use App\Traits\HasTeams;
 use App\Traits\HasRegistrationSteps;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
-use App\Traits\BootUuid;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -24,11 +23,10 @@ use Spatie\Permission\Traits\HasRoles;
 class User extends Authenticatable implements MustVerifyEmail
 {
   use HasApiTokens,
-    BootUuid,
+    HasBootUuid,
     HasRoles,
     HasSubscription,
     HasEmailQuota,
-    HasApiKeys,
     HasBranding,
     HasAnalytics,
     HasTeams,

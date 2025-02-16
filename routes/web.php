@@ -58,4 +58,45 @@ Route::middleware(['auth'])->group(function () {
   // Subscriber routes
   Route::get('subscribers', [SubscriberController::class, 'index'])->name('subscribers.index');
   Route::get('subscribers/create', [SubscriberController::class, 'create'])->name('subscribers.create');
+
+
+  // Team Management
+  Route::prefix('teams')->group(function () {
+    Route::get('/', [TeamController::class, 'index']);
+    Route::post('/', [TeamController::class, 'store']);
+    Route::get('/{team}', [TeamController::class, 'show']);
+    Route::put('/{team}', [TeamController::class, 'update']);
+    Route::delete('/{team}', [TeamController::class, 'destroy']);
+
+    // Team Members
+    Route::get('/{team}/members', [TeamMemberController::class, 'index']);
+    Route::post('/{team}/members', [TeamMemberController::class, 'store']);
+    Route::put('/{team}/members/{user}', [TeamMemberController::class, 'update']);
+    Route::delete('/{team}/members/{user}', [TeamMemberController::class, 'destroy']);
+
+    // Team Invitations
+    Route::get('/{team}/invitations', [TeamInvitationController::class, 'index']);
+    Route::post('/{team}/invitations', [TeamInvitationController::class, 'store']);
+    Route::delete('/{team}/invitations/{invitation}', [TeamInvitationController::class, 'destroy']);
+  });
+
+  /*// API Keys
+  Route::prefix('api-keys')->group(function () {
+    Route::get('/', [ApiKeyController::class, 'index']);
+    Route::post('/', [ApiKeyController::class, 'store']);
+    Route::delete('/{apiKey}', [ApiKeyController::class, 'destroy']);
+  });*/
+
+  // Branding
+  Route::prefix('branding')->group(function () {
+    Route::get('/', [BrandingController::class, 'show']);
+    Route::put('/', [BrandingController::class, 'update']);
+    Route::post('/logo', [BrandingController::class, 'uploadLogo']);
+  });
+
+  // Email Quotas
+  Route::prefix('quotas')->group(function () {
+    Route::get('/', [QuotaController::class, 'show']);
+    Route::get('/usage', [QuotaController::class, 'usage']);
+  });
 });

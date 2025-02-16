@@ -37,6 +37,10 @@ return [
 
   'mailers' => [
 
+    'sendgrid' => [
+      'transport' => 'sendgrid',
+    ],
+
     'smtp' => [
       'transport' => 'smtp',
       'url' => env('MAIL_URL'),
@@ -95,6 +99,44 @@ return [
       ],
     ],
 
+  ],
+
+  'quotas' => [
+    'monthly_default' => env('MAIL_MONTHLY_QUOTA', 10000),
+    'daily_default' => env('MAIL_DAILY_QUOTA', 1000),
+    'burst_limit' => env('MAIL_BURST_LIMIT', 100), // Maximum emails per minute
+    'tier_limits' => [
+      'free' => [
+        'monthly' => 500,
+        'daily' => 50,
+      ],
+      'starter' => [
+        'monthly' => 5000,
+        'daily' => 500,
+      ],
+      'pro' => [
+        'monthly' => 50000,
+        'daily' => 5000,
+      ],
+      'enterprise' => [
+        'monthly' => 500000,
+        'daily' => 50000,
+      ],
+    ],
+  ],
+
+  'tracking' => [
+    'opens' => true,
+    'clicks' => true,
+    'unsubscribes' => true,
+    'bounces' => true,
+    'complaints' => true,
+  ],
+
+  'sendgrid' => [
+    'api_key' => env('SENDGRID_API_KEY'),
+    'template_id' => env('SENDGRID_TEMPLATE_ID'),
+    'webhook_secret' => env('SENDGRID_WEBHOOK_SECRET'),
   ],
 
   /*

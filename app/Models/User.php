@@ -80,7 +80,7 @@ class User extends Authenticatable implements MustVerifyEmail
   protected $appends = [
     'profile_photo_url',
     'name',
-    'is_trial',
+    'account_status',
     'registration_progress'
   ];
 
@@ -98,6 +98,11 @@ class User extends Authenticatable implements MustVerifyEmail
   public function templates()
   {
     return $this->hasMany(EmailTemplate::class);
+  }
+
+  public function registrationData()
+  {
+    return $this->hasMany(RegistrationData::class);
   }
 
   public function settings()
@@ -169,9 +174,14 @@ class User extends Authenticatable implements MustVerifyEmail
     return Attribute::get(fn() => $this->first_name . ' ' . $this->last_name);
   }
 
+  public function accountStatus(): Attribute
+  {
+    return Attribute::get(fn() => '$this->account_status');
+  }
+
   public function emailQuotaRemaining(): Attribute
   {
-    return Attribute::get(function() {
+    return Attribute::get(function () {
       $quotaUsed = $this->trackingEvents()
         ->where('type', 'sent')
         ->where('created_at', '>=', now()->startOfMonth())
@@ -183,15 +193,19 @@ class User extends Authenticatable implements MustVerifyEmail
 
   public function isTrialStatus(): Attribute
   {
-    return Attribute::get(
-      fn() => $this->trial_ends_at && $this->trial_ends_at->isFuture()
-    );
+    return Attribute::get(function () {
+      $trialEndsAt = $this->settings->subscription_settings['trial_ends_at'] ?? null;
+      return $trialEndsAt && now()->parse($trialEndsAt)->isFuture();
+    });
   }
 
   public function subscriptionStatus(): Attribute
   {
     return Attribute::get(function() {
-      if ($this->is_trial) {
+      $trialEndsAt = $this->settings->subscription_settings['trial_ends_at'] ?? null;
+      $isTrialActive = $trialEndsAt && now()->parse($trialEndsAt)->isFuture();
+
+      if ($isTrialActive) {
         return 'trial';
       }
 
@@ -203,10 +217,25 @@ class User extends Authenticatable implements MustVerifyEmail
     });
   }
 
+  public function hasActiveSubscription(): bool
+  {
+    return $this->settings->subscription_settings['plan'] !== 'free';
+  }
+
+  public function canSendEmails(): bool
+  {
+    $trialEndsAt = $this->settings->subscription_settings['trial_ends_at'] ?? null;
+    $isTrialActive = $trialEndsAt && now()->parse($trialEndsAt)->isFuture();
+
+    return $this->registration_status === 'completed' &&
+      $this->hasEmailQuotaRemaining() &&
+      ($this->hasActiveSubscription() || $isTrialActive);
+  }
+
   // Add new registration-related computed attribute
   public function registrationProgress(): Attribute
   {
-    return Attribute::get(function() {
+    return Attribute::get(function () {
       $totalSteps = count(self::getRegistrationSteps());
       $completedSteps = count($this->completed_registration_steps ?? []);
       return [
@@ -216,6 +245,12 @@ class User extends Authenticatable implements MustVerifyEmail
         'percentage' => $totalSteps > 0 ? ($completedSteps / $totalSteps) * 100 : 0,
       ];
     });
+  }
+
+  public function isOnTrial(): bool
+  {
+    $trialEndsAt = $this->settings->subscription_settings['trial_ends_at'] ?? null;
+    return $trialEndsAt && now()->parse($trialEndsAt)->isFuture();
   }
 
   // Keep existing methods
@@ -235,13 +270,6 @@ class User extends Authenticatable implements MustVerifyEmail
   public function hasEmailQuotaAvailable(): bool
   {
     return $this->email_quota_remaining > 0;
-  }
-
-  public function canSendEmails(): bool
-  {
-    return $this->account_status === 'active' &&
-      $this->hasEmailQuotaAvailable() &&
-      ($this->hasActiveSubscription() || $this->is_trial);
   }
 
   public function getReputationScore(): float
@@ -292,15 +320,15 @@ class User extends Authenticatable implements MustVerifyEmail
       $this->registration_status = 'completed';
       $this->registration_completed_at = now();
 
-      // Start trial period
-      $this->trial_ends_at = now()->addDays(14);
+      // Update trial period in subscription settings
+      $this->settings->update([
+        'subscription_settings' => array_merge(
+          $this->settings->subscription_settings ?? [],
+          ['trial_ends_at' => now()->addDays(14)->format('Y-m-d H:i:s')]
+        )
+      ]);
     }
 
     $this->save();
-  }
-
-  public function hasCompletedRegistration(): bool
-  {
-    return $this->registration_status === 'completed';
   }
 }

@@ -43,22 +43,74 @@ Route::middleware(['auth'])->group(function () {
   Route::get('templates/{template}/preview', [EmailTemplateController::class, 'preview'])->name('templates.preview');
   Route::get('template-variables', [EmailTemplateController::class, 'variables'])->name('templates.variables');
 
-  Route::get('/campaigns', [CampaignController::class, 'index'])->name('campaigns.index');
-  Route::get('/campaigns/create', [CampaignController::class, 'create'])->name('campaigns.create');
-  Route::post('/campaigns', [CampaignController::class, 'store'])->name('campaigns.store');
-  Route::get('/campaigns/{campaign}', [CampaignController::class, 'show'])->name('campaigns.show');
-  Route::get('/campaigns/{campaign}/edit', [CampaignController::class, 'edit'])->name('campaigns.edit');
-  Route::put('/campaigns/{campaign}', [CampaignController::class, 'update'])->name('campaigns.update');
-  Route::delete('/campaigns/{campaign}', [CampaignController::class, 'destroy'])->name('campaigns.destroy');
+  Route::prefix('campaigns')
+    ->name('campaigns.')
+    ->middleware('onboarding.complete')
+    ->group(function () {
 
-  // Campaign Actions
-  Route::post('/campaigns/{campaign}/schedule', [CampaignController::class, 'schedule'])->name('campaigns.schedule');
-  Route::post('/campaigns/{campaign}/send', [CampaignController::class, 'send'])->name('campaigns.send');
-  Route::post('/campaigns/{campaign}/duplicate', [CampaignController::class, 'duplicate'])->name('campaigns.duplicate');
-  Route::get('/campaigns/{campaign}/preview', [CampaignController::class, 'preview'])->name('campaigns.preview');
+      Route::get(
+        '/',
+        [CampaignController::class, 'index']
+      )->name('index');
 
-  // Campaign Stats
-  Route::get('/campaigns/{campaign}/stats', [CampaignController::class, 'stats'])->name('campaigns.stats');
+      Route::get(
+        '/new-campaign',
+        [CampaignController::class, 'create']
+      )->name('create');
+
+      Route::post(
+        '/',
+        [CampaignController::class, 'store']
+      )->name('store');
+
+      Route::get(
+        '/s/{campaign}',
+        [CampaignController::class, 'show']
+      )->name('show');
+
+      Route::get(
+        '/e/{campaign}',
+        [CampaignController::class, 'edit']
+      )->name('edit');
+
+      Route::put(
+        '/u/{campaign}',
+        [CampaignController::class, 'update']
+      )->name('update');
+
+      Route::delete(
+        '/d/{campaign}',
+        [CampaignController::class, 'destroy']
+      )->name('destroy');
+
+      // Campaign Actions
+      Route::post(
+        '/schedule/{campaign}',
+        [CampaignController::class, 'schedule']
+      )->name('schedule');
+
+      Route::post(
+        '/send/{campaign}',
+        [CampaignController::class, 'send']
+      )->name('send');
+
+      Route::post(
+        '/duplicate/{campaign}',
+        [CampaignController::class, 'duplicate']
+      )->name('duplicate');
+
+      Route::get(
+        '/preview/{campaign}',
+        [CampaignController::class, 'preview']
+      )->name('preview');
+
+      // Campaign Stats
+      Route::get(
+        '/stats/{campaign}',
+        [CampaignController::class, 'stats']
+      )->name('stats');
+
+    });
 
   // Subscriber routes
   Route::get('subscribers', [SubscriberController::class, 'index'])->name('subscribers.index');

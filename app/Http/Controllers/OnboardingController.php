@@ -23,7 +23,7 @@ class OnboardingController extends Controller
     try {
       $progress = $this->onboardingService->getOrCreateProgress(auth()->user());
 
-      return Inertia::render('Onboarding/Index', [
+      return Inertia::render('OnBoarding/Index', [
         'progress' => $progress,
         'userSettings' => auth()->user()->settings,
       ]);

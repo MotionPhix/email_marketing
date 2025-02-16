@@ -51,14 +51,60 @@ class CreateNewUser implements CreatesNewUsers
         'last_name' => $input['last_name'],
         'email' => $input['email'],
         'password' => Hash::make($input['password']),
-        'company_name' => $input['organization_name'],
-        'company_size' => $input['organization_size'],
-        'industry' => $input['industry'],
-        'website' => $input['website'] ?? null,
         'registration_status' => 'incomplete',
         'completed_registration_steps' => [
           User::REGISTRATION_STEP_ACCOUNT,
           User::REGISTRATION_STEP_ORGANIZATION
+        ],
+      ]);
+
+      // Create default settings
+      $user->settings()->create([
+        'preferences' => [
+          'language' => 'en',
+          'timezone' => 'UTC',
+        ],
+        'notification_settings' => [
+          'email_notifications' => true,
+          'in_app_notifications' => true,
+        ],
+        'email_settings' => [
+          'from_name' => null,
+          'reply_to' => null,
+        ],
+        'sender_settings' => [
+          'default_sender_name' => null,
+          'default_sender_email' => null,
+          'email_verified' => false,
+          'verification_token' => null,
+        ],
+        'marketing_settings' => [
+          'email_updates' => true,
+          'product_news' => true,
+          'marketing_communications' => true,
+        ],
+        'company_settings' => [
+          'company_name' => $input['organization_name'],
+          'industry' => $input['industry'],
+          'company_size' => $input['organization_size'],
+          'website' => $input['website'] ?? null,
+          'phone' => $input['phone'] ?? null,
+          'role' => null,
+        ],
+        'branding_settings' => [
+          'logo_url' => null,
+          'primary_color' => '#4F46E5',
+          'accent_color' => '#818CF8',
+        ],
+        'subscription_settings' => [
+          'plan' => 'free',
+          'email_quota' => 100,
+          'features' => [
+            'custom_domain' => false,
+            'api_access' => false,
+            'advanced_analytics' => false,
+          ],
+          'trial_ends_at' => now()->addDays(14),
         ],
       ]);
 

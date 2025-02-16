@@ -18,6 +18,10 @@ return Application::configure(basePath: dirname(__DIR__))
       \Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets::class,
     ]);
 
+    $middleware->append([
+      'onboarding.complete' => \App\Http\Middleware\EnsureOnboardingIsComplete::class,
+    ]);
+
     $middleware->validateCsrfTokens(except: [
       '/analytics',
       '/webhooks/paychangu',

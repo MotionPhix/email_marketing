@@ -12,7 +12,7 @@ class UserObserver
   public function created(User $user): void
   {
     // Create default settings for the user
-    $user->settings()->create([
+    /*$user->settings()->create([
       'preferences' => [
         'language' => 'en',
         'timezone' => 'UTC',
@@ -40,7 +40,7 @@ class UserObserver
         ],
         'trial_ends_at' => now()->addDays(14),
       ],
-    ]);
+    ]);*/
   }
 
   /**

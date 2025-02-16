@@ -20,6 +20,7 @@ return new class extends Migration {
       $table->json('marketing_settings');
       $table->json('company_settings');
       $table->json('sender_settings');
+      $table->json('subscription_settings')->nullable();
       $table->timestamps();
     });
   }

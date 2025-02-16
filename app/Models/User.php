@@ -112,6 +112,11 @@ class User extends Authenticatable implements MustVerifyEmail
     'registration_progress'
   ];
 
+  const REGISTRATION_STEP_ACCOUNT = 1;
+  const REGISTRATION_STEP_ORGANIZATION = 2;
+  const REGISTRATION_STEP_TEAM = 3;
+  const REGISTRATION_STEP_VERIFICATION = 4;
+
   // Keep existing relationships
   public function campaigns()
   {

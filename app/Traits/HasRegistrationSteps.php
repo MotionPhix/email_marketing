@@ -2,6 +2,8 @@
 
 namespace App\Traits;
 
+use phpDocumentor\Reflection\Types\Self_;
+
 trait HasRegistrationSteps
 {
   /**
@@ -10,27 +12,22 @@ trait HasRegistrationSteps
   public static function getRegistrationSteps(): array
   {
     return [
-      1 => [
+      self::REGISTRATION_STEP_ACCOUNT => [
         'title' => 'Account Setup',
         'fields' => ['first_name', 'last_name', 'email', 'password'],
         'required' => true,
       ],
-      2 => [
+      self::REGISTRATION_STEP_ORGANIZATION => [
         'title' => 'Company Information',
         'fields' => ['company_name', 'industry', 'company_size', 'website'],
         'required' => true,
       ],
-      3 => [
-        'title' => 'Email Configuration',
-        'fields' => ['default_sender_name', 'default_sender_email'],
-        'required' => true,
-      ],
-      4 => [
+      self::REGISTRATION_STEP_TEAM => [
         'title' => 'Team Setup',
         'fields' => ['invited_team_members'],
         'required' => false,
       ],
-      5 => [
+      self::REGISTRATION_STEP_VERIFICATION => [
         'title' => 'Verification',
         'fields' => ['email_verified'],
         'required' => true,
@@ -79,15 +76,11 @@ trait HasRegistrationSteps
         'website' => 'nullable|url',
       ],
       3 => [
-        'default_sender_name' => 'required|string|max:255',
-        'default_sender_email' => 'required|email',
-      ],
-      4 => [
         'invited_team_members' => 'nullable|array',
         'invited_team_members.*.email' => 'required|email',
         'invited_team_members.*.role' => 'required|string|in:admin,editor,member',
       ],
-      5 => [
+      4 => [
         'email_verified' => 'required|boolean|accepted',
       ],
       default => [],

@@ -3,6 +3,8 @@
 namespace App\Services;
 
 use App\Exceptions\OnboardingException;
+use App\Jobs\ImportContacts;
+use App\Jobs\VerifyDomain;
 use App\Models\OnboardingProgress;
 use App\Models\User;
 use Illuminate\Support\Facades\Log;
@@ -12,11 +14,24 @@ use Throwable;
 
 class OnboardingService
 {
+  // Define which steps are required
+  private const REQUIRED_STEPS = [
+    1, // Account setup
+    2, // Contact import
+  ];
+
+  private const OPTIONAL_STEPS = [
+    3, // Domain setup
+    4, // Template creation
+    5, // Test campaign
+  ];
+
   public function getOrCreateProgress(User $user): OnboardingProgress
   {
     return $user->onboardingProgress ?? OnboardingProgress::create([
       'user_id' => $user->id,
       'completed_steps' => [],
+      'skipped_steps' => [],
       'form_data' => [],
     ]);
   }
@@ -28,7 +43,7 @@ class OnboardingService
     // Validate step sequence
     if (!$this->isStepSequenceValid($progress, $step)) {
       throw new OnboardingException(
-        'Please complete previous steps first',
+        'Please complete previous required steps first',
         $step
       );
     }
@@ -38,16 +53,53 @@ class OnboardingService
 
     // Update progress
     $completedSteps = collect($progress->completed_steps);
+
     if (!$completedSteps->contains($step)) {
       $completedSteps->push($step);
     }
+
+    // Remove from skipped if it was previously skipped
+    $skippedSteps = collect($progress->skipped_steps)->reject(fn($s) => $s === $step);
 
     $formData = $progress->form_data;
     $formData["step_{$step}"] = $data;
 
     $progress->update([
       'completed_steps' => $completedSteps->toArray(),
+      'skipped_steps' => $skippedSteps->toArray(),
       'form_data' => $formData,
+    ]);
+
+    return $progress;
+  }
+
+  public function skipStep(User $user, int $step): OnboardingProgress
+  {
+    if (in_array($step, self::REQUIRED_STEPS)) {
+      throw new OnboardingException(
+        'This step cannot be skipped',
+        $step
+      );
+    }
+
+    $progress = $this->getOrCreateProgress($user);
+
+    // Can't skip if previous required steps aren't completed
+    if (!$this->isStepSequenceValid($progress, $step)) {
+      throw new OnboardingException(
+        'Please complete previous required steps first',
+        $step
+      );
+    }
+
+    $skippedSteps = collect($progress->skipped_steps);
+
+    if (!$skippedSteps->contains($step)) {
+      $skippedSteps->push($step);
+    }
+
+    $progress->update([
+      'skipped_steps' => $skippedSteps->toArray(),
     ]);
 
     return $progress;
@@ -58,7 +110,16 @@ class OnboardingService
     if ($currentStep === 1) return true;
 
     $completedSteps = collect($progress->completed_steps);
-    return $completedSteps->contains($currentStep - 1);
+    $skippedSteps = collect($progress->skipped_steps);
+
+    // Get all previous required steps
+    $previousRequiredSteps = collect(self::REQUIRED_STEPS)
+      ->filter(fn($step) => $step < $currentStep);
+
+    // return $completedSteps->contains($currentStep - 1);
+
+    // All previous required steps must be completed
+    return $previousRequiredSteps->every(fn($step) => $completedSteps->contains($step));
   }
 
   private function processStepData(User $user, int $step, array $data): void
@@ -168,10 +229,30 @@ class OnboardingService
   {
     $progress = $this->getOrCreateProgress($user);
 
-    // Verify all steps are completed
-    if (count($progress->completed_steps) !== 5) {
+    // Check if all required steps are completed
+    $completedSteps = collect($progress->completed_steps);
+    $skippedSteps = collect($progress->skipped_steps);
+
+    $missingRequiredSteps = collect(self::REQUIRED_STEPS)
+      ->reject(fn($step) => $completedSteps->contains($step));
+
+    if ($missingRequiredSteps->isNotEmpty()) {
       throw new OnboardingException(
-        'Please complete all steps before finishing onboarding'
+        'Please complete all required steps before finishing onboarding',
+        $missingRequiredSteps->first()
+      );
+    }
+
+    // All optional steps should either be completed or skipped
+    $missingOptionalSteps = collect(self::OPTIONAL_STEPS)
+      ->reject(fn($step) =>
+        $completedSteps->contains($step) || $skippedSteps->contains($step)
+      );
+
+    if ($missingOptionalSteps->isNotEmpty()) {
+      throw new OnboardingException(
+        'Please complete or skip all remaining steps',
+        $missingOptionalSteps->first()
       );
     }
 

@@ -40,6 +40,44 @@ class OnboardingController extends Controller
     }
   }
 
+  public function skip(int $step): JsonResponse
+  {
+    try {
+      DB::beginTransaction();
+
+      $progress = $this->onboardingService->skipStep(
+        auth()->user(),
+        $step
+      );
+
+      DB::commit();
+
+      return response()->json([
+        'message' => 'Step skipped successfully',
+        'progress' => $progress->fresh(),
+      ]);
+    } catch (OnboardingException $e) {
+      DB::rollBack();
+
+      return response()->json([
+        'message' => $e->getMessage(),
+        'step' => $e->getStep(),
+        'errors' => $e->getErrors(),
+      ], 422);
+    } catch (Throwable $e) {
+      DB::rollBack();
+      Log::error('Failed to skip onboarding step', [
+        'error' => $e->getMessage(),
+        'step' => $step,
+        'user_id' => auth()->id(),
+      ]);
+
+      return response()->json([
+        'message' => 'Failed to skip step. Please try again.',
+      ], 500);
+    }
+  }
+
   public function updateStep(UpdateStepRequest $request): JsonResponse
   {
     try {

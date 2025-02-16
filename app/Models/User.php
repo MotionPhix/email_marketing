@@ -128,6 +128,29 @@ class User extends Authenticatable implements MustVerifyEmail
     return $this->hasMany(EmailTemplate::class);
   }
 
+  public function settings()
+  {
+    return $this->hasOne(Setting::class)->withDefault([
+      'preferences' => [
+        'language' => 'en',
+        'timezone' => 'UTC',
+      ],
+      'notification_settings' => [
+        'email_notifications' => true,
+        'in_app_notifications' => true,
+      ],
+      'email_settings' => [
+        'from_name' => null,
+        'reply_to' => null,
+      ],
+      'branding_settings' => [
+        'logo_url' => null,
+        'primary_color' => '#4F46E5',
+        'accent_color' => '#818CF8',
+      ],
+    ]);
+  }
+
   public function invitedTeamMembers()
   {
     return $this->hasMany(InvitedTeamMember::class);

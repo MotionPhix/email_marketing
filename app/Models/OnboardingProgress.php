@@ -10,6 +10,7 @@ class OnboardingProgress extends Model
   protected $fillable = [
     'user_id',
     'completed_steps',
+    'skipped_steps',
     'form_data',
     'is_completed',
     'completed_at',
@@ -17,6 +18,7 @@ class OnboardingProgress extends Model
 
   protected $casts = [
     'completed_steps' => 'array',
+    'skipped_steps' => 'array',
     'form_data' => 'array',
     'is_completed' => 'boolean',
     'completed_at' => 'datetime',

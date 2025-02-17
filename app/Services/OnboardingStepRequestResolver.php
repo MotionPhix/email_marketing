@@ -9,6 +9,8 @@ use App\Http\Requests\Onboarding\Step4Request;
 use App\Http\Requests\Onboarding\Step5Request;
 use App\Http\Requests\Onboarding\Step6Request;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\ValidationException;
 
 class OnboardingStepRequestResolver
 {
@@ -20,15 +22,36 @@ class OnboardingStepRequestResolver
     6 => Step6Request::class,
   ];
 
-  public function resolve(Request $request): BaseStepRequest
+  public function resolve(Request $request): array
   {
-    $step = $request->get('step');
+    $step = $request->input('step');
     $requestClass = self::STEP_REQUESTS[$step] ?? null;
 
     if (!$requestClass) {
       throw new \InvalidArgumentException("Invalid step number: {$step}");
     }
 
-    return new $requestClass();
+    /** @var BaseStepRequest $formRequest */
+    $formRequest = new $requestClass;
+
+    // Get validation rules from the form request
+    $rules = $formRequest->rules(); // Make sure this calls stepRules() method
+    $messages = method_exists($formRequest, 'messages') ? $formRequest->messages() : [];
+
+    // Debugging: Output validation rules and request data
+    \Log::info('Validation rules: ', $rules);
+    \Log::info('Request data: ', $request->all());
+
+    // Create validator instance
+    $validator = Validator::make($request->all(), $rules, $messages);
+
+    if ($validator->fails()) {
+
+      \Log::error('Validation errors: ', $validator->errors()->toArray());
+      // Return error messages in a custom error bag if necessary
+      throw ValidationException::withMessages($validator->errors()->toArray());
+    }
+
+    return $validator->validated();
   }
 }

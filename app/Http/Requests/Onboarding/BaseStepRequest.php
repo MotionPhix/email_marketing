@@ -15,12 +15,49 @@ abstract class BaseStepRequest extends FormRequest
 
   public function rules(): array
   {
-    return [
-      'step' => ['required', 'integer', 'between:1,6'],
-      'data' => array_merge(
-        ['required', 'array'],
-        $this->stepRules()
-      ),
-    ];
+    // Merge top-level rules with step-specific rules
+    return array_merge(
+      [
+        'step' => ['required', 'integer', 'between:1,6'],
+        'data' => ['required', 'array'],
+      ],
+      $this->transformStepRules()
+    );
+  }
+
+  public function messages(): array
+  {
+    return array_merge(
+      [
+        'step.required' => 'The step number is required.',
+        'step.integer' => 'The step must be a number.',
+        'step.between' => 'Invalid step number.',
+        'data.required' => 'The step data is required.',
+        'data.array' => 'Invalid data format.',
+      ],
+      $this->stepMessages()
+    );
+  }
+
+  // Transform step-specific rules for nested data validation
+  protected function transformStepRules(): array
+  {
+    $rules = [];
+    foreach ($this->stepRules() as $key => $rule) {
+      $rules[$key] = $rule;
+    }
+    return $rules;
+  }
+
+  // Optionally merge step-specific messages
+  protected function stepMessages(): array
+  {
+    return [];
+  }
+
+  public function attributes(): array
+  {
+    return [];
   }
 }
+

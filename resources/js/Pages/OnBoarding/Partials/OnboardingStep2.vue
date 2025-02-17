@@ -67,7 +67,9 @@ const handleSubmit = () => {
       emit('next')
     },
     onError: (errors) => {
-      toast.error('Please fix the errors below')
+      Object.keys(errors).map(k => {
+        toast.error(errors[k])
+      })
     }
   })
 }
@@ -84,44 +86,40 @@ const handleSubmit = () => {
 
         <div class="space-y-4">
           <div>
-            <Label for="default_sender_name">Default Sender Name</Label>
-            <Input
-              id="default_sender_name"
+            <FormField
+              label="Default Sender Name"
               v-model="form.sender_settings.default_sender_name"
               placeholder="John from Company"
-              :error="form.errors['sender_settings.default_sender_name']"
+              :error="form.errors['data.sender_settings.default_sender_name']"
             />
           </div>
 
           <div>
-            <Label for="default_sender_email">Default Sender Email</Label>
-            <Input
-              id="default_sender_email"
+            <FormField
+              label="Default Sender Email"
               type="email"
               v-model="form.sender_settings.default_sender_email"
               placeholder="newsletters@yourcompany.com"
-              :error="form.errors['sender_settings.default_sender_email']"
+              :error="form.errors['data.sender_settings.default_sender_email']"
             />
           </div>
 
           <div>
-            <Label for="from_name">From Name</Label>
-            <Input
-              id="from_name"
+            <FormField
+              label="From Name"
               v-model="form.email_settings.from_name"
               placeholder="Marketing Team"
-              :error="form.errors['email_settings.from_name']"
+              :error="form.errors['data.email_settings.from_name']"
             />
           </div>
 
           <div>
-            <Label for="reply_to">Reply-To Email</Label>
-            <Input
-              id="reply_to"
+            <FormField
+              label="Reply-To Email"
               type="email"
               v-model="form.email_settings.reply_to"
               placeholder="support@yourcompany.com"
-              :error="form.errors['email_settings.reply_to']"
+              :error="form.errors['data.email_settings.reply_to']"
             />
           </div>
         </div>
@@ -135,45 +133,25 @@ const handleSubmit = () => {
 
         <div class="grid gap-4 sm:grid-cols-2">
           <div>
-            <Label for="language">Language</Label>
-            <Select
+            <FormField
+              label="Language"
               v-model="form.preferences.language"
-              :error="form.errors['preferences.language']"
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select language" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem
-                  v-for="lang in languages"
-                  :key="lang.value"
-                  :value="lang.value"
-                >
-                  {{ lang.label }}
-                </SelectItem>
-              </SelectContent>
-            </Select>
+              :error="form.errors['data.preferences.language']"
+              placeholder="Select language"
+              :options="languages"
+              type="select"
+            />
           </div>
 
           <div>
-            <Label for="timezone">Timezone</Label>
-            <Select
+            <FormField
+              label="Timezone"
               v-model="form.preferences.timezone"
-              :error="form.errors['preferences.timezone']"
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select timezone" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem
-                  v-for="tz in timezones"
-                  :key="tz.value"
-                  :value="tz.value"
-                >
-                  {{ tz.label }}
-                </SelectItem>
-              </SelectContent>
-            </Select>
+              :error="form.errors['data.preferences.timezone']"
+              placeholder="Select timezone"
+              :options="timezones"
+              type="select"
+            />
           </div>
         </div>
       </div>

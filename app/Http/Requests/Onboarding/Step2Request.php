@@ -24,8 +24,8 @@ class Step2Request extends BaseStepRequest
   public function messages(): array
   {
     return [
-      'data.sender_settings.default_sender_name.required' => 'The sender name is required.',
-      'data.sender_settings.default_sender_email.required' => 'The sender email is required.',
+      'data.sender_settings.default_sender_name.required' => 'Provide a name for the sender.',
+      'data.sender_settings.default_sender_email.required' => 'Provide the sender\'s valid email address.',
       'data.sender_settings.default_sender_email.email' => 'Please enter a valid sender email.',
       'data.email_settings.from_name.required' => 'The from name is required.',
       'data.email_settings.reply_to.required' => 'The reply-to email is required.',

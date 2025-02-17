@@ -87,10 +87,7 @@ class OnboardingController extends Controller
   public function updateStep(Request $request)
   {
     // Resolve and validate the appropriate request for this step
-    $stepRequest = $this->stepResolver->resolve($request);
-    $validated = $stepRequest->validated();
-
-    dd($validated);
+    $validated = $this->stepResolver->resolve($request);
 
     try {
       DB::beginTransaction();

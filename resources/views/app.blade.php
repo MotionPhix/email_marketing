@@ -19,11 +19,6 @@
     <link href="https://fonts.bunny.net/css?family=Roboto:400,500,600,700&display=swap" rel="stylesheet"/>
     <link href="https://fonts.bunny.net/css?family=dm-serif-display:400" rel="stylesheet" />
 
-    <script src="{{ asset('tinymce/tinymce.min.js') }}" referrerpolicy="origin"></script>
-    <script>
-      window.tinymce_api_key = '{{ env('VITE_TINYMCE_API_KEY') }}'
-    </script>
-
     <!-- Scripts -->
     @routes
       @vite(['resources/js/app.js'])

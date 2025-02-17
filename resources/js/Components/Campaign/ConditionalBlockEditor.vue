@@ -1,6 +1,10 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-import { Icon } from '@tabler/icons-vue'
+import { ref, computed } from 'vue'
+import { Label } from '@/Components/ui/label'
+import { Input } from '@/Components/ui/input'
+import { Button } from '@/Components/ui/button'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/Components/ui/select'
+import { Card } from '@/Components/ui/card'
 
 interface Condition {
   variable: string
@@ -8,9 +12,17 @@ interface Condition {
   value: string
 }
 
-const props = defineProps<{
-  onInsert: (condition: string) => void
-}>()
+interface Props {
+  modelValue?: string
+  onInsert?: (content: string) => void
+}
+
+const props = withDefaults(defineProps<Props>(), {
+  modelValue: '',
+  onInsert: undefined
+})
+
+const emit = defineEmits(['update:modelValue', 'insert'])
 
 const condition = ref<Condition>({
   variable: '',
@@ -23,6 +35,9 @@ const operators = [
   { value: '!=', label: 'Not equals' },
   { value: '>', label: 'Greater than' },
   { value: '<', label: 'Less than' },
+  { value: 'contains', label: 'Contains' },
+  { value: 'startsWith', label: 'Starts with' },
+  { value: 'endsWith', label: 'Ends with' }
 ]
 
 const variables = [
@@ -32,76 +47,156 @@ const variables = [
   { value: 'subscriber.total_purchases', label: 'Total Purchases' },
   { value: 'subscriber.last_purchase_date', label: 'Last Purchase Date' },
   { value: 'subscriber.subscription_type', label: 'Subscription Type' },
+  { value: 'subscriber.tags', label: 'Tags' },
+  { value: 'subscriber.custom_fields', label: 'Custom Fields' }
 ]
 
-const insertCondition = () => {
-  const conditionText = `{% if {{${condition.value.variable}}} ${condition.value.operator} "${condition.value.value}" %}
-    Content when condition is true
-  {% else %}
-    Content when condition is false
-  {% endif %}`
+const previewContent = computed(() => {
+  if (!condition.value.variable || !condition.value.value) {
+    return ''
+  }
 
-  props.onInsert(conditionText)
+  return `{% if ${condition.value.variable} ${condition.value.operator} "${condition.value.value}" %}
+  <div class="conditional-content true">
+    Content when condition is true
+  </div>
+{% else %}
+  <div class="conditional-content false">
+    Content when condition is false
+  </div>
+{% endif %}`
+})
+
+const insertCondition = () => {
+  if (!condition.value.variable || !condition.value.value) {
+    return
+  }
+
+  const content = previewContent.value
+
+  if (props.onInsert) {
+    props.onInsert(content)
+  } else {
+    emit('insert', content)
+  }
+
+  // Reset form after insertion
+  condition.value = {
+    variable: '',
+    operator: '==',
+    value: ''
+  }
 }
+
+const isValid = computed(() => {
+  return condition.value.variable &&
+    condition.value.operator &&
+    condition.value.value.length > 0
+})
 </script>
 
 <template>
-  <div class="space-y-4 p-4">
-    <h3 class="text-lg font-medium">Add Conditional Content</h3>
+  <Card class="p-4">
+    <div class="space-y-4">
+      <h3 class="text-lg font-medium">Add Conditional Content</h3>
+      <p class="text-sm text-muted-foreground">
+        Create dynamic content that changes based on subscriber data
+      </p>
 
-    <div class="grid gap-4">
-      <div class="grid gap-2">
-        <Label>If</Label>
-        <Select v-model="condition.variable">
-          <option value="">Select variable</option>
-          <option
-            v-for="variable in variables"
-            :key="variable.value"
-            :value="variable.value"
+      <div class="grid gap-4">
+        <div class="grid gap-2">
+          <Label>If</Label>
+          <Select
+            v-model="condition.variable"
+            placeholder="Select variable"
           >
-            {{ variable.label }}
-          </option>
-        </Select>
-      </div>
+            <SelectTrigger>
+              <SelectValue :placeholder="condition.variable || 'Select a variable'" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem
+                v-for="variable in variables"
+                :key="variable.value"
+                :value="variable.value"
+              >
+                {{ variable.label }}
+              </SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
 
-      <div class="grid gap-2">
-        <Label>Operator</Label>
-        <Select v-model="condition.operator">
-          <option
-            v-for="op in operators"
-            :key="op.value"
-            :value="op.value"
+        <div class="grid gap-2">
+          <Label>Operator</Label>
+          <Select
+            v-model="condition.operator"
+            placeholder="Select operator"
           >
-            {{ op.label }}
-          </option>
-        </Select>
+            <SelectTrigger>
+              <SelectValue :placeholder="condition.operator || 'Select an operator'" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem
+                v-for="op in operators"
+                :key="op.value"
+                :value="op.value"
+              >
+                {{ op.label }}
+              </SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div class="grid gap-2">
+          <Label>Value</Label>
+          <Input
+            v-model="condition.value"
+            placeholder="Compare with..."
+            :disabled="!condition.variable"
+          />
+          <p class="text-xs text-muted-foreground">
+            {{
+              condition.operator === 'contains' ? 'Enter text to search for' :
+                condition.operator === 'startsWith' ? 'Enter beginning text' :
+                  condition.operator === 'endsWith' ? 'Enter ending text' :
+                    'Enter value to compare against'
+            }}
+          </p>
+        </div>
       </div>
 
-      <div class="grid gap-2">
-        <Label>Value</Label>
-        <Input v-model="condition.value" placeholder="Compare with..." />
-      </div>
-    </div>
-
-    <div class="pt-4">
       <Button
         class="w-full"
-        :disabled="!condition.variable || !condition.value"
+        :disabled="!isValid"
         @click="insertCondition"
       >
         Insert Conditional Block
       </Button>
-    </div>
 
-    <div class="rounded-lg border p-4">
-      <h4 class="mb-2 font-medium">Preview</h4>
-      <code class="block whitespace-pre-wrap text-sm">
-        {% if {{{{ condition.variable }}}} {{ condition.operator }} "{{ condition.value }}" %}
-        Content when condition is true
-        {% else %}
-        Content when condition is false
-        {% endif %}
-      </code>
+      <div v-if="previewContent" class="rounded-lg border p-4 bg-muted/50">
+        <div class="flex items-center justify-between mb-2">
+          <h4 class="font-medium">Preview</h4>
+          <span class="text-xs text-muted-foreground">Template syntax</span>
+        </div>
+        <pre class="text-sm overflow-x-auto whitespace-pre-wrap">{{ previewContent }}</pre>
+      </div>
     </div>
-  </div>
+  </Card>
 </template>
+
+<style scoped>
+.conditional-content {
+  padding: 1rem;
+  margin: 0.5rem 0;
+  border-radius: 0.375rem;
+}
+
+.conditional-content.true {
+  background-color: rgba(var(--primary), 0.1);
+  border: 1px solid rgb(var(--primary));
+}
+
+.conditional-content.false {
+  background-color: rgba(var(--muted), 0.1);
+  border: 1px dashed rgb(var(--muted));
+}
+</style>

@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
-import { Editor } from '@tinymce/tinymce-vue'
+import {} from '@tinymce/tinymce-vue'
 import ConditionalBlockEditor from "@/Components/Campaign/ConditionalBlockEditor.vue";
+import {defaultEditorConfig} from "@/config/tinymce";
 
 const props = defineProps<{
   modelValue: string

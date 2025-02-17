@@ -2,6 +2,7 @@
 import { ref, computed } from 'vue'
 import { router } from '@inertiajs/vue3'
 import { toast } from 'vue-sonner'
+import {EmailEditor} from 'vue-email-editor'
 import {
   ArrowLeftIcon,
   ArrowRightIcon,
@@ -10,7 +11,7 @@ import {
   CheckIcon
 } from 'lucide-vue-next'
 import { ScrollArea } from '@/Components/ui/scroll-area'
-import EmailEditor from "@/Components/Campaign/EmailEditor.vue";
+import ConditionalBlockEditor from "@/Components/Campaign/ConditionalBlockEditor.vue";
 
 interface EmailTemplate {
   id: number
@@ -23,6 +24,7 @@ interface EmailTemplate {
   thumbnail?: string
   is_default: boolean
   variables?: Record<string, any>
+  design?: any // For storing unlayer design JSON
 }
 
 const props = defineProps<{
@@ -38,6 +40,7 @@ const emit = defineEmits(['back', 'next'])
 const selectedTemplate = ref<EmailTemplate | null>(props.formData?.template || null)
 const searchQuery = ref('')
 const activeCategory = ref('all')
+const emailEditorRef = ref()
 
 // New template form
 const isCreatingTemplate = ref(false)
@@ -49,7 +52,8 @@ const newTemplate = ref({
   content: '',
   category: 'newsletter',
   is_default: false,
-  variables: {}
+  variables: {},
+  design: null
 } as EmailTemplate)
 const errors = ref({})
 const isLoading = ref(false)
@@ -83,62 +87,174 @@ const filteredTemplates = computed(() => {
 
 const handleTemplateSelect = (template: EmailTemplate) => {
   selectedTemplate.value = template
+  if (template.design && emailEditorRef.value) {
+    emailEditorRef.value.loadDesign(template.design)
+  }
 }
 
-const handleCreateTemplate = () => {
-  isLoading.value = true
-  errors.value = {}
+// Email Editor Configuration
+const emailEditorOptions = {
+  customCSS: [
+    `.unlayer-wrapper { background-color: var(--background); }`,
+    `.unlayer-content { color: var(--foreground); }`,
+  ],
+  features: {
+    textEditor: {
+      spellChecker: true,
+      tables: true,
+      cleanPaste: true,
+    }
+  },
+  appearance: {
+    theme: 'dark',
+    panels: {
+      tools: {
+        dock: 'left'
+      }
+    }
+  },
+  tools: {
+    custom: {
+      title: 'Custom Elements',
+      items: [
+        {
+          name: 'ConditionalBlock',
+          label: 'Conditional',
+          icon: 'fa-solid fa-code-branch',
+          template: ConditionalBlockEditor
+        }
+      ]
+    }
+  },
+  mergeTags: {
+    "subscriber": {
+      "first_name": { name: "First Name", value: "{{subscriber.first_name}}" },
+      "last_name": { name: "Last Name", value: "{{subscriber.last_name}}" },
+      "email": { name: "Email", value: "{{subscriber.email}}" },
+      "custom_fields": { name: "Custom Fields", value: "{{subscriber.custom_fields}}" }
+    },
+    "company": {
+      "name": { name: "Company Name", value: "{{company.name}}" },
+      "address": { name: "Company Address", value: "{{company.address}}" }
+    },
+    "unsubscribe": {
+      "link": { name: "Unsubscribe Link", value: "{{unsubscribe.link}}" }
+    }
+  }
+}
 
-  router.post(route('onboarding.update-step'), {
-    step: 5,
-    data: {
-      template: newTemplate.value
+const onEditorLoaded = (editor: any) => {
+  console.log('Email editor loaded')
+  if (selectedTemplate.value?.design) {
+    editor.loadDesign(selectedTemplate.value.design)
+  }
+}
+
+const onEditorReady = (editor: any) => {
+  emailEditorRef.value = editor
+}
+
+const saveDesign = () => {
+  return new Promise((resolve, reject) => {
+    if (!emailEditorRef.value) {
+      reject(new Error('Editor not ready'))
+      return
     }
-  }, {
-    preserveScroll: true,
-    onSuccess: () => {
-      toast.success('Template created successfully')
-      isCreatingTemplate.value = false
-      emit('next')
-    },
-    onError: (validationErrors) => {
-      errors.value = validationErrors
-      const firstError = Object.values(validationErrors)[0]
-      toast.error(Array.isArray(firstError) ? firstError[0] : firstError)
-    },
-    onFinish: () => {
-      isLoading.value = false
-    }
+
+    emailEditorRef.value.saveDesign((design: any) => {
+      resolve(design)
+    })
   })
 }
 
-const handleNext = () => {
+const exportHtml = () => {
+  return new Promise((resolve, reject) => {
+    if (!emailEditorRef.value) {
+      reject(new Error('Editor not ready'))
+      return
+    }
+
+    emailEditorRef.value.exportHtml((data: any) => {
+      resolve({ html: data.html, design: data.design })
+    })
+  })
+}
+
+const handleCreateTemplate = async () => {
+  try {
+    isLoading.value = true
+    errors.value = {}
+
+    const { html, design } = await exportHtml()
+    newTemplate.value.content = html
+    newTemplate.value.design = design
+
+    router.post(route('onboarding.updateStep'), {
+      step: 5,
+      data: {
+        template: newTemplate.value
+      }
+    }, {
+      preserveScroll: true,
+      onSuccess: () => {
+        toast.success('Template created successfully')
+        isCreatingTemplate.value = false
+        emit('next')
+      },
+      onError: (validationErrors) => {
+        errors.value = validationErrors
+        const firstError = Object.values(validationErrors)[0]
+        toast.error(Array.isArray(firstError) ? firstError[0] : firstError)
+      },
+      onFinish: () => {
+        isLoading.value = false
+      }
+    })
+  } catch (error) {
+    console.error('Failed to create template:', error)
+    toast.error('Failed to create template')
+    isLoading.value = false
+  }
+}
+
+const handleNext = async () => {
   if (!selectedTemplate.value) {
     toast.error('Please select a template to continue')
     return
   }
 
-  isLoading.value = true
-  router.post(route('onboarding.updateStep'), {
-    step: 5,
-    data: {
-      template: selectedTemplate.value
-    }
-  }, {
-    preserveScroll: true,
-    onSuccess: () => {
-      toast.success('Template selected successfully')
-      emit('next')
-    },
-    onError: (validationErrors) => {
-      errors.value = validationErrors
-      const firstError = Object.values(validationErrors)[0]
-      toast.error(Array.isArray(firstError) ? firstError[0] : firstError)
-    },
-    onFinish: () => {
-      isLoading.value = false
-    }
-  })
+  try {
+    isLoading.value = true
+    const { html, design } = await exportHtml()
+
+    selectedTemplate.value.content = html
+    selectedTemplate.value.design = design
+
+    router.post(route('onboarding.updateStep'), {
+      step: 5,
+      data: {
+        template: selectedTemplate.value
+      }
+    }, {
+      preserveScroll: true,
+      onSuccess: () => {
+        toast.success('Template selected successfully')
+        emit('next')
+      },
+      onError: (validationErrors) => {
+        errors.value = validationErrors
+        const firstError = Object.values(validationErrors)[0]
+        toast.error(Array.isArray(firstError) ? firstError[0] : firstError)
+      },
+      onFinish: () => {
+        isLoading.value = false
+      }
+    })
+  } catch (error) {
+    console.error('Failed to save template:', error)
+    toast.error('Failed to save template')
+    isLoading.value = false
+  }
 }
 </script>
 
@@ -172,11 +288,11 @@ const handleNext = () => {
             </Button>
           </DialogTrigger>
 
-          <DialogContent class="max-w-4xl">
+          <DialogContent class="max-w-7xl h-[90vh]">
             <DialogHeader>
               <DialogTitle>Create New Template</DialogTitle>
               <DialogDescription>
-                Design your custom email template with our editor
+                Design your custom email template
               </DialogDescription>
             </DialogHeader>
 
@@ -224,9 +340,6 @@ const handleNext = () => {
                   placeholder="Your Monthly Update from {company_name}"
                   :error="errors['data.template.subject']"
                 />
-                <small class="text-destructive" v-if="errors['data.template.subject']">
-                  {{ errors['data.template.subject'] }}
-                </small>
               </div>
 
               <div>
@@ -238,35 +351,12 @@ const handleNext = () => {
                 />
               </div>
 
-              <div>
-                <Label>Content</Label>
+              <div class="h-[500px] border rounded-lg">
                 <EmailEditor
-                  v-model="newTemplate.content"
-                  api-key="your-tinymce-api-key"
-                  :init="{
-                    height: 400,
-                    menubar: true,
-                    plugins: [
-                      'advlist', 'autolink', 'lists', 'link', 'image', 'charmap', 'preview',
-                      'anchor', 'searchreplace', 'visualblocks', 'code', 'fullscreen',
-                      'insertdatetime', 'media', 'table', 'code', 'help', 'wordcount'
-                    ],
-                    toolbar: 'undo redo | blocks | ' +
-                      'bold italic forecolor | alignleft aligncenter ' +
-                      'alignright alignjustify | bullist numlist outdent indent | ' +
-                      'removeformat | help'
-                  }"
+                  :options="emailEditorOptions"
+                  @loaded="onEditorLoaded"
+                  @ready="onEditorReady"
                 />
-                <small class="text-destructive" v-if="errors['data.template.content']">
-                  {{ errors['data.template.content'] }}
-                </small>
-              </div>
-
-              <div>
-                <Label>Template Variables</Label>
-                <p class="text-sm text-muted-foreground mb-2">
-                  Available variables: {first_name}, {last_name}, {company_name}, {unsubscribe_link}
-                </p>
               </div>
             </div>
 
@@ -364,3 +454,10 @@ const handleNext = () => {
     </CardContent>
   </Card>
 </template>
+
+<style>
+.unlayer-wrapper {
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+</style>

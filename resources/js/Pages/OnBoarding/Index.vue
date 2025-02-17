@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import {type Component, computed, markRaw, ref, watch} from 'vue'
+import {type Component, computed, ref, watch} from 'vue'
 import { Head, router } from '@inertiajs/vue3'
 import AppLayout from '@/Layouts/AppLayout.vue'
 import {

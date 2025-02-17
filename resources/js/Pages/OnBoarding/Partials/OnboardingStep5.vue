@@ -19,20 +19,7 @@ import {
   SheetDescription,
 } from '@/Components/ui/sheet'
 import {useDark, useStorage} from '@vueuse/core'
-
-interface EmailTemplate {
-  id: number
-  name: string
-  description: string
-  subject: string
-  preview_text: string
-  content: string
-  category: string
-  thumbnail?: string
-  is_default: boolean
-  variables?: Record<string, any>
-  design?: any
-}
+import {EmailTemplate} from "@/types/campaign";
 
 const props = defineProps<{
   templates?: EmailTemplate[]
@@ -40,6 +27,28 @@ const props = defineProps<{
     template?: EmailTemplate
   }
 }>()
+
+// Template types with descriptions
+const templateTypes = [
+  {
+    value: 'drag-drop',
+    label: 'Visual Builder',
+    description: 'Design your email using our drag-and-drop builder',
+    icon: 'MousePointerClick'
+  },
+  {
+    value: 'html',
+    label: 'HTML Editor',
+    description: 'Write your email using HTML and CSS',
+    icon: 'Code2'
+  },
+  {
+    value: 'markdown',
+    label: 'Markdown Editor',
+    description: 'Write your email using Markdown syntax',
+    icon: 'FileText'
+  }
+] as const
 
 const emit = defineEmits(['back', 'next'])
 
@@ -61,10 +70,41 @@ const tempTemplate = ref<Partial<EmailTemplate>>({
   subject: '',
   preview_text: '',
   category: 'newsletter',
+  type: 'drag-drop', // Default to drag-drop builder
   is_default: false,
   variables: {},
-  design: null
+  design: null,
+  tags: []
 })
+
+// Show different editors based on template type
+const showTemplateEditor = computed(() => {
+  return tempTemplate.value.type === 'drag-drop'
+})
+
+const showHtmlEditor = computed(() => {
+  return tempTemplate.value.type === 'html'
+})
+
+const showMarkdownEditor = computed(() => {
+  return tempTemplate.value.type === 'markdown'
+})
+
+// Handle type change
+const handleTypeChange = (type: EmailTemplate['type']) => {
+  // Ask for confirmation if changing from drag-drop and design exists
+  if (tempTemplate.value.type === 'drag-drop' &&
+    tempTemplate.value.design &&
+    type !== 'drag-drop') {
+    if (!confirm('Changing template type will reset your current design. Continue?')) {
+      return
+    }
+  }
+
+  tempTemplate.value.type = type
+  tempTemplate.value.design = null
+  tempTemplate.value.content = ''
+}
 
 const validateTemplate = (template: Partial<EmailTemplate>) => {
   const errors: Record<string, string> = {}
@@ -91,6 +131,10 @@ const validateTemplate = (template: Partial<EmailTemplate>) => {
 
   if (!template.category) {
     errors['category'] = 'Please select a template category'
+  }
+
+  if (!template.type) {
+    errors['type'] = 'Please select a template type'
   }
 
   return errors
@@ -435,6 +479,50 @@ const handleNext = async () => {
                   />
                 </div>
               </div>
+
+              <!-- Template Type Selection -->
+              <div class="space-y-3">
+                <Label>Template Type <span class="text-destructive">*</span></Label>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div
+                    v-for="type in templateTypes"
+                    :key="type.value"
+                    class="relative flex flex-col items-start p-4 rounded-lg border-2 cursor-pointer transition-colors"
+                    :class="{
+                      'border-primary bg-primary/5': tempTemplate.type === type.value,
+                      'border-border hover:border-primary/50': tempTemplate.type !== type.value
+                    }"
+                    @click="handleTypeChange(type.value)">
+                    <div class="flex items-center justify-between w-full">
+                      <component
+                        :is="type.icon"
+                        class="h-5 w-5"
+                        :class="{
+                          'text-primary': tempTemplate.type === type.value,
+                          'text-muted-foreground': tempTemplate.type !== type.value
+                        }"
+                      />
+
+                      <div
+                        v-if="tempTemplate.type === type.value"
+                        class="flex h-5 w-5 items-center justify-center rounded-full bg-primary">
+                        <CheckIcon class="h-3 w-3 text-primary-foreground" />
+                      </div>
+                    </div>
+
+                    <h3 class="mt-4 font-medium" :class="{
+                        'text-primary': tempTemplate.type === type.value
+                      }">
+                      {{ type.label }}
+                    </h3>
+
+                    <p class="mt-1 text-sm text-muted-foreground">
+                      {{ type.description }}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
             </div>
           </div>
 
@@ -444,12 +532,42 @@ const handleNext = async () => {
             class="flex-1 h-[calc(100vh-120px)]">
             <EmailEditor
               ref="emailEditorRef"
+              v-if="showTemplateEditor"
               :options="emailEditorOptions"
               :project-id="Number(projectId)"
               @load="onEditorLoaded"
               @ready="onEditorReady"
               class="h-full w-full"
             />
+
+            <!-- HTML Editor -->
+            <div v-else-if="showHtmlEditor" class="h-full">
+              <MonacoEditor
+                v-model="tempTemplate.content"
+                language="html"
+                :options="{
+                  theme: isDark ? 'vs-dark' : 'vs',
+                  minimap: { enabled: false },
+                  lineNumbers: 'on',
+                  fontSize: 14,
+                }"
+              />
+            </div>
+
+            <!-- Markdown Editor -->
+            <div v-else-if="showMarkdownEditor" class="h-full">
+              <MonacoEditor
+                v-model="tempTemplate.content"
+                language="markdown"
+                :options="{
+                  theme: isDark ? 'vs-dark' : 'vs',
+                  minimap: { enabled: false },
+                  lineNumbers: 'on',
+                  fontSize: 14,
+                  wordWrap: 'on'
+                }"
+              />
+            </div>
           </div>
         </SheetContent>
       </Sheet>
@@ -574,6 +692,33 @@ const handleNext = async () => {
 
   .unlayer-toolbar {
     flex-direction: column;
+  }
+}
+
+.editor-type-card {
+  @apply relative flex flex-col items-start p-4 rounded-lg border-2 cursor-pointer transition-colors;
+
+  &:hover {
+    @apply border-primary/50;
+  }
+
+  &.selected {
+    @apply border-primary bg-primary/5;
+
+    .editor-type-icon {
+      @apply text-primary;
+    }
+
+    .editor-type-title {
+      @apply text-primary;
+    }
+  }
+}
+
+/* Monaco editor styles */
+.monaco-editor {
+  .editor-container {
+    @apply h-full;
   }
 }
 </style>

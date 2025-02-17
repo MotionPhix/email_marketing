@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
-import { router } from '@inertiajs/vue3'
-import { toast } from 'vue-sonner'
+import {ref, computed} from 'vue'
+import {router} from '@inertiajs/vue3'
+import {toast} from 'vue-sonner'
 import {EmailEditor} from 'vue-email-editor'
 import {
   ArrowLeftIcon,
@@ -10,8 +10,16 @@ import {
   SearchIcon,
   CheckIcon
 } from 'lucide-vue-next'
-import { ScrollArea } from '@/Components/ui/scroll-area'
+import {ScrollArea} from '@/Components/ui/scroll-area'
 import ConditionalBlockEditor from "@/Components/Campaign/ConditionalBlockEditor.vue";
+import {useStorage} from "@vueuse/core";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+} from '@/Components/ui/sheet'
 
 interface EmailTemplate {
   id: number
@@ -39,8 +47,21 @@ const emit = defineEmits(['back', 'next'])
 // Template selection
 const selectedTemplate = ref<EmailTemplate | null>(props.formData?.template || null)
 const searchQuery = ref('')
-const activeCategory = ref('all')
+const activeCategory = useStorage('template_category', 'all')
 const emailEditorRef = ref()
+const isEditorOpen = ref(false)
+const editorStep = useStorage('editor_step', 1) // 1 = template details, 2 = email editor
+const tempTemplate = ref<Partial<EmailTemplate>>({
+  name: '',
+  description: '',
+  subject: '',
+  preview_text: '',
+  category: 'newsletter',
+  is_default: false,
+  variables: {},
+  design: null
+})
+
 
 // New template form
 const isCreatingTemplate = ref(false)
@@ -59,12 +80,40 @@ const errors = ref({})
 const isLoading = ref(false)
 
 const categories = [
-  { value: 'all', label: 'All Templates' },
-  { value: 'newsletter', label: 'Newsletters' },
-  { value: 'promotional', label: 'Promotional' },
-  { value: 'transactional', label: 'Transactional' },
-  { value: 'notification', label: 'Notifications' }
+  {value: 'all', label: 'All Templates'},
+  {value: 'newsletter', label: 'Newsletters'},
+  {value: 'promotional', label: 'Promotional'},
+  {value: 'transactional', label: 'Transactional'},
+  {value: 'notification', label: 'Notifications'}
 ]
+
+const openTemplateEditor = () => {
+  tempTemplate.value = {
+    name: '',
+    description: '',
+    subject: '',
+    preview_text: '',
+    category: 'newsletter',
+    is_default: false,
+    variables: {},
+    design: null
+  }
+  editorStep.value = 1
+  isEditorOpen.value = true
+}
+
+const handleDetailsSubmit = () => {
+  // Validate template details
+  if (!tempTemplate.value.name || !tempTemplate.value.subject) {
+    toast.error('Please fill in all required fields')
+    return
+  }
+  editorStep.value = 2
+}
+
+const handleEditorBack = () => {
+  editorStep.value = 1
+}
 
 const filteredTemplates = computed(() => {
   let templates = props.templates || []
@@ -128,17 +177,17 @@ const emailEditorOptions = {
   },
   mergeTags: {
     "subscriber": {
-      "first_name": { name: "First Name", value: "{{subscriber.first_name}}" },
-      "last_name": { name: "Last Name", value: "{{subscriber.last_name}}" },
-      "email": { name: "Email", value: "{{subscriber.email}}" },
-      "custom_fields": { name: "Custom Fields", value: "{{subscriber.custom_fields}}" }
+      "first_name": {name: "First Name", value: "{{subscriber.first_name}}"},
+      "last_name": {name: "Last Name", value: "{{subscriber.last_name}}"},
+      "email": {name: "Email", value: "{{subscriber.email}}"},
+      "custom_fields": {name: "Custom Fields", value: "{{subscriber.custom_fields}}"}
     },
     "company": {
-      "name": { name: "Company Name", value: "{{company.name}}" },
-      "address": { name: "Company Address", value: "{{company.address}}" }
+      "name": {name: "Company Name", value: "{{company.name}}"},
+      "address": {name: "Company Address", value: "{{company.address}}"}
     },
     "unsubscribe": {
-      "link": { name: "Unsubscribe Link", value: "{{unsubscribe.link}}" }
+      "link": {name: "Unsubscribe Link", value: "{{unsubscribe.link}}"}
     }
   }
 }
@@ -175,7 +224,7 @@ const exportHtml = () => {
     }
 
     emailEditorRef.value.exportHtml((data: any) => {
-      resolve({ html: data.html, design: data.design })
+      resolve({html: data.html, design: data.design})
     })
   })
 }
@@ -185,20 +234,23 @@ const handleCreateTemplate = async () => {
     isLoading.value = true
     errors.value = {}
 
-    const { html, design } = await exportHtml()
-    newTemplate.value.content = html
-    newTemplate.value.design = design
+    const {html, design} = await exportHtml()
+    const templateData = {
+      ...tempTemplate.value,
+      content: html,
+      design: design
+    }
 
     router.post(route('onboarding.updateStep'), {
       step: 5,
       data: {
-        template: newTemplate.value
+        template: templateData
       }
     }, {
       preserveScroll: true,
       onSuccess: () => {
         toast.success('Template created successfully')
-        isCreatingTemplate.value = false
+        isEditorOpen.value = false
         emit('next')
       },
       onError: (validationErrors) => {
@@ -225,7 +277,7 @@ const handleNext = async () => {
 
   try {
     isLoading.value = true
-    const { html, design } = await exportHtml()
+    const {html, design} = await exportHtml()
 
     selectedTemplate.value.content = html
     selectedTemplate.value.design = design
@@ -271,7 +323,7 @@ const handleNext = async () => {
       <div class="flex items-center space-x-4">
         <div class="flex-1">
           <div class="relative">
-            <SearchIcon class="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+            <SearchIcon class="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground"/>
             <Input
               v-model="searchQuery"
               class="pl-8"
@@ -280,28 +332,70 @@ const handleNext = async () => {
           </div>
         </div>
 
-        <Dialog v-model:open="isCreatingTemplate">
-          <DialogTrigger asChild>
-            <Button>
-              <PlusIcon class="mr-2 h-4 w-4" />
-              Create Template
-            </Button>
-          </DialogTrigger>
+        <Button @click="openTemplateEditor" class="flex items-center space-x-2">
+          <PlusIcon class="mr-2 h-4 w-4"/>
+          <span>Create Template</span>
+        </Button>
+      </div>
 
-          <DialogContent class="max-w-7xl h-[90vh]">
-            <DialogHeader>
-              <DialogTitle>Create New Template</DialogTitle>
-              <DialogDescription>
-                Design your custom email template
-              </DialogDescription>
-            </DialogHeader>
+      <!-- Full-screen Template Editor -->
+      <Sheet
+        :open="isEditorOpen"
+        @update:open="isEditorOpen = $event">
+        <SheetContent
+          class="w-screen p-0 flex flex-col" side="top">
+          <SheetHeader class="p-6 border-b">
+            <div class="flex items-center justify-between">
+              <div>
+                <SheetTitle>{{ editorStep === 1 ? 'Template Details' : 'Design Email Template' }}</SheetTitle>
+                <SheetDescription>
+                  {{
+                    editorStep === 1 ? 'Enter basic information about your template' : 'Design your email using the visual editor'
+                  }}
+                </SheetDescription>
+              </div>
 
-            <div class="grid gap-6 py-4">
-              <div class="grid grid-cols-2 gap-4">
+              <div class="flex items-center space-x-2">
+                <Button
+                  v-if="editorStep === 2"
+                  variant="outline"
+                  @click="handleEditorBack"
+                >
+                  <ArrowLeftIcon class="mr-2 h-4 w-4"/>
+                  Back to Details
+                </Button>
+
+                <Button
+                  v-if="editorStep === 1"
+                  @click="handleDetailsSubmit"
+                  :disabled="!tempTemplate.name || !tempTemplate.subject"
+                >
+                  Continue to Editor
+                  <ArrowRightIcon class="ml-2 h-4 w-4"/>
+                </Button>
+
+                <Button
+                  v-else
+                  @click="handleCreateTemplate"
+                  :disabled="isLoading"
+                >
+                  {{ isLoading ? 'Saving...' : 'Save Template' }}
+                </Button>
+              </div>
+            </div>
+          </SheetHeader>
+
+          <!-- Template Details Form -->
+          <div
+            v-if="editorStep === 1"
+            class="flex-1 p-6 overflow-y-auto"
+          >
+            <div class="max-w-2xl mx-auto space-y-6">
+              <div class="space-y-4">
                 <div>
-                  <Label>Template Name</Label>
+                  <Label>Template Name <span class="text-destructive">*</span></Label>
                   <Input
-                    v-model="newTemplate.name"
+                    v-model="tempTemplate.name"
                     placeholder="Monthly Newsletter"
                     :error="errors['data.template.name']"
                   />
@@ -313,7 +407,7 @@ const handleNext = async () => {
                 <div>
                   <Label>Category</Label>
                   <select
-                    v-model="newTemplate.category"
+                    v-model="tempTemplate.category"
                     class="w-full rounded-md border border-input bg-background px-3 py-2"
                   >
                     <option value="newsletter">Newsletter</option>
@@ -322,76 +416,56 @@ const handleNext = async () => {
                     <option value="notification">Notification</option>
                   </select>
                 </div>
-              </div>
 
-              <div>
-                <Label>Description</Label>
-                <Input
-                  v-model="newTemplate.description"
-                  placeholder="A brief description of this template"
-                  :error="errors['data.template.description']"
-                />
-              </div>
+                <div>
+                  <Label>Description</Label>
+                  <Input
+                    v-model="tempTemplate.description"
+                    placeholder="A brief description of this template"
+                    :error="errors['data.template.description']"
+                  />
+                </div>
 
-              <div>
-                <Label>Subject Line</Label>
-                <Input
-                  v-model="newTemplate.subject"
-                  placeholder="Your Monthly Update from {company_name}"
-                  :error="errors['data.template.subject']"
-                />
-              </div>
+                <div>
+                  <Label>Subject Line <span class="text-destructive">*</span></Label>
+                  <Input
+                    v-model="tempTemplate.subject"
+                    placeholder="Your Monthly Update from {company_name}"
+                    :error="errors['data.template.subject']"
+                  />
+                </div>
 
-              <div>
-                <Label>Preview Text</Label>
-                <Input
-                  v-model="newTemplate.preview_text"
-                  placeholder="See what's new this month..."
-                  :error="errors['data.template.preview_text']"
-                />
-              </div>
-
-              <div class="h-[500px] border rounded-lg">
-                <EmailEditor
-                  :options="emailEditorOptions"
-                  @loaded="onEditorLoaded"
-                  @ready="onEditorReady"
-                />
+                <div>
+                  <Label>Preview Text</Label>
+                  <Input
+                    v-model="tempTemplate.preview_text"
+                    placeholder="See what's new this month..."
+                    :error="errors['data.template.preview_text']"
+                  />
+                </div>
               </div>
             </div>
+          </div>
 
-            <div class="flex justify-end space-x-4">
-              <Button
-                variant="outline"
-                @click="isCreatingTemplate = false"
-              >
-                Cancel
-              </Button>
-              <Button
-                @click="handleCreateTemplate"
-                :disabled="isLoading"
-              >
-                {{ isLoading ? 'Creating...' : 'Create Template' }}
-              </Button>
+          <!-- Email Editor -->
+          <div
+            v-else
+            id="example"
+            class="flex-1 h-full bg-gray-100">
+            <div class="container">
+              <EmailEditor
+                :options="emailEditorOptions"
+                @loaded="onEditorLoaded"
+                @ready="onEditorReady"
+                style="height: 100%;"
+              />
             </div>
-          </DialogContent>
-        </Dialog>
-      </div>
-
-      <Tabs v-model="activeCategory" class="w-full">
-        <TabsList class="grid w-full grid-cols-5">
-          <TabsTrigger
-            v-for="category in categories"
-            :key="category.value"
-            :value="category.value"
-          >
-            {{ category.label }}
-          </TabsTrigger>
-        </TabsList>
-      </Tabs>
+          </div>
+        </SheetContent>
+      </Sheet>
 
       <ScrollArea class="h-[400px] rounded-md border p-4">
-        <div class="grid grid-cols-2 gap-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div
             v-for="template in filteredTemplates"
             :key="template.id"
@@ -400,7 +474,7 @@ const handleNext = async () => {
             @click="handleTemplateSelect(template)"
           >
             <div class="absolute top-2 right-2" v-if="selectedTemplate?.id === template.id">
-              <CheckIcon class="h-4 w-4 text-primary" />
+              <CheckIcon class="h-4 w-4 text-primary"/>
             </div>
 
             <div class="space-y-2">
@@ -439,7 +513,7 @@ const handleNext = async () => {
           variant="outline"
           @click="$emit('back')"
         >
-          <ArrowLeftIcon class="mr-2 h-4 w-4" />
+          <ArrowLeftIcon class="mr-2 h-4 w-4"/>
           Back
         </Button>
 
@@ -448,16 +522,40 @@ const handleNext = async () => {
           :disabled="!selectedTemplate || isLoading"
         >
           {{ isLoading ? 'Processing...' : 'Continue' }}
-          <ArrowRightIcon v-if="!isLoading" class="ml-2 h-4 w-4" />
+          <ArrowRightIcon v-if="!isLoading" class="ml-2 h-4 w-4"/>
         </Button>
       </div>
     </CardContent>
   </Card>
 </template>
 
-<style>
-.unlayer-wrapper {
-  border-radius: 0.5rem;
-  overflow: hidden;
+<style lang="scss">
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+}
+
+#app, #example {
+  height: 100% !important;
+}
+
+#example .container {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  @apply h-screen;
+}
+
+#bar {
+  flex: 1;
+  display: flex;
+  max-height: 50px;
+  @apply py-5;
+}
+
+a.blockbuilder-branding {
+  display: none !important;
+  @apply hidden;
 }
 </style>

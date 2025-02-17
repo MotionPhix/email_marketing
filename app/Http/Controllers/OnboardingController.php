@@ -3,9 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Exceptions\OnboardingException;
-use App\Http\Requests\Onboarding\UpdateStepRequest;
+use App\Http\Requests\Onboarding\Step6Request;
 use App\Services\OnboardingService;
+use App\Services\OnboardingStepRequestResolver;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
@@ -15,7 +17,8 @@ use Throwable;
 class OnboardingController extends Controller
 {
   public function __construct(
-    protected OnboardingService $onboardingService
+    protected OnboardingService $onboardingService,
+    protected OnboardingStepRequestResolver $stepResolver
   ) {}
 
   public function index(): Response
@@ -81,17 +84,21 @@ class OnboardingController extends Controller
     }
   }
 
-  public function updateStep(UpdateStepRequest $request)
+  public function updateStep(Request $request)
   {
-    dd($request->all());
+    // Resolve and validate the appropriate request for this step
+    $stepRequest = $this->stepResolver->resolve($request);
+    $validated = $stepRequest->validated();
+
+    dd($validated);
 
     try {
       DB::beginTransaction();
 
       $progress = $this->onboardingService->updateStep(
         $request->user(),
-        $request->step,
-        $request->validated('data')
+        $validated['step'],
+        $validated['data']
       );
 
       DB::commit();

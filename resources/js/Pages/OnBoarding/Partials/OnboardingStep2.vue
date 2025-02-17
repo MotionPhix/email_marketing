@@ -2,14 +2,22 @@
 import { ref } from 'vue'
 import { useForm } from '@inertiajs/vue3'
 import { toast } from 'vue-sonner'
-import { Card, CardContent, CardFooter } from '@/Components/ui/card'
-import { Button } from '@/Components/ui/button'
-import { Input } from '@/Components/ui/input'
-import { Label } from '@/Components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/Components/ui/select'
 
 const props = defineProps<{
-  formData?: any
+  formData?: {
+    sender_settings?: {
+      default_sender_name: string
+      default_sender_email: string
+    }
+    email_settings?: {
+      from_name: string
+      reply_to: string
+    }
+    preferences?: {
+      language: string
+      timezone: string
+    }
+  }
   disabledBack?: boolean
 }>()
 
@@ -45,7 +53,14 @@ const languages = [
 ]
 
 const handleSubmit = () => {
-  form.post(route('onboarding.update-step'), {
+  form
+    .transform(data => {
+      return {
+        step: 2,
+        data: data
+      }
+    })
+    .post(route('onboarding.update-step'), {
     preserveScroll: true,
     onSuccess: () => {
       toast.success('Account settings saved successfully')

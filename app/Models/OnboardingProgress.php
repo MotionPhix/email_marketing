@@ -13,6 +13,7 @@ class OnboardingProgress extends Model
     'skipped_steps',
     'form_data',
     'is_completed',
+    'current_step',
     'completed_at',
   ];
 

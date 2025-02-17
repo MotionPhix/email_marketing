@@ -16,9 +16,7 @@ class OnboardingController extends Controller
 {
   public function __construct(
     protected OnboardingService $onboardingService
-  )
-  {
-  }
+  ) {}
 
   public function index(): Response
   {
@@ -26,7 +24,14 @@ class OnboardingController extends Controller
       $progress = $this->onboardingService->getOrCreateProgress(auth()->user());
 
       return Inertia::render('OnBoarding/Index', [
-        'progress' => $progress,
+        'progress' =>  [
+          'current_step' => $progress->current_step,
+          'completed_steps' => $progress->completed_steps ?? [],
+          'skipped_steps' => $progress->skipped_steps ?? [],
+          'form_data' => $progress->form_data ?? [],
+          'is_completed' => $progress->is_completed,
+        ],
+        'required_steps' => OnboardingService::REQUIRED_STEPS,
         'userSettings' => auth()->user()->settings,
       ]);
     } catch (Throwable $e) {
@@ -76,31 +81,32 @@ class OnboardingController extends Controller
     }
   }
 
-  public function updateStep(UpdateStepRequest $request): JsonResponse
+  public function updateStep(UpdateStepRequest $request)
   {
+    dd($request->all());
+
     try {
       DB::beginTransaction();
 
       $progress = $this->onboardingService->updateStep(
-        auth()->user(),
+        $request->user(),
         $request->step,
         $request->validated('data')
       );
 
       DB::commit();
 
-      return response()->json([
+      return back()->with([
         'message' => 'Step updated successfully',
         'progress' => $progress->fresh(),
       ]);
     } catch (OnboardingException $e) {
       DB::rollBack();
 
-      return response()->json([
-        'message' => $e->getMessage(),
-        'step' => $e->getStep(),
+      return back()->withErrors([
+        'step' => $e->getMessage(),
         'errors' => $e->getErrors(),
-      ], 422);
+      ]);
     } catch (Throwable $e) {
       DB::rollBack();
       Log::error('Failed to update onboarding step', [
@@ -109,9 +115,9 @@ class OnboardingController extends Controller
         'user_id' => auth()->id(),
       ]);
 
-      return response()->json([
+      return back()->withErrors([
         'message' => 'Failed to update step. Please try again.',
-      ], 500);
+      ]);
     }
   }
 

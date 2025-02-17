@@ -1,132 +1,184 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import {ArrowLeftIcon, ArrowRightIcon, UploadCloudIcon, FileIcon} from "lucide-vue-next"
+import { useForm } from '@inertiajs/vue3'
+import { toast } from 'vue-sonner'
+import { Card, CardContent, CardFooter } from '@/Components/ui/card'
+import { Button } from '@/Components/ui/button'
+import { Input } from '@/Components/ui/input'
+import { Label } from '@/Components/ui/label'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/Components/ui/select'
 
-const emit = defineEmits(['next', 'back'])
-const importMethod = ref<'upload' | 'paste' | 'manual'>('upload')
-const file = ref<File | null>(null)
-const isUploading = ref(false)
-const uploadProgress = ref(0)
+const props = defineProps<{
+  formData?: any
+  disabledBack?: boolean
+}>()
 
-const handleFileChange = (event: Event) => {
-  const input = event.target as HTMLInputElement
-  if (input.files?.length) {
-    file.value = input.files[0]
+const emit = defineEmits(['back', 'next'])
+
+const form = useForm({
+  sender_settings: {
+    default_sender_name: props.formData?.sender_settings?.default_sender_name || '',
+    default_sender_email: props.formData?.sender_settings?.default_sender_email || '',
+  },
+  email_settings: {
+    from_name: props.formData?.email_settings?.from_name || '',
+    reply_to: props.formData?.email_settings?.reply_to || '',
+  },
+  preferences: {
+    language: props.formData?.preferences?.language || 'en',
+    timezone: props.formData?.preferences?.timezone || 'UTC',
   }
-}
+})
 
-const handleUpload = async () => {
-  if (!file.value) return
+const timezones = [
+  { value: 'UTC', label: 'UTC' },
+  { value: 'America/New_York', label: 'Eastern Time (ET)' },
+  { value: 'America/Chicago', label: 'Central Time (CT)' },
+  { value: 'America/Denver', label: 'Mountain Time (MT)' },
+  { value: 'America/Los_Angeles', label: 'Pacific Time (PT)' },
+]
 
-  isUploading.value = true
-  // Simulated upload progress
-  const interval = setInterval(() => {
-    if (uploadProgress.value < 100) {
-      uploadProgress.value += 10
-    } else {
-      clearInterval(interval)
-      isUploading.value = false
+const languages = [
+  { value: 'en', label: 'English' },
+  { value: 'es', label: 'Spanish' },
+  { value: 'fr', label: 'French' },
+]
+
+const handleSubmit = () => {
+  form.post(route('onboarding.update-step'), {
+    preserveScroll: true,
+    onSuccess: () => {
+      toast.success('Account settings saved successfully')
       emit('next')
+    },
+    onError: (errors) => {
+      toast.error('Please fix the errors below')
     }
-  }, 500)
+  })
 }
 </script>
 
 <template>
   <Card>
-    <CardHeader>
-      <CardTitle>Import Your Contacts</CardTitle>
-      <CardDescription>
-        Choose how you'd like to add your subscribers
-      </CardDescription>
-    </CardHeader>
-    <CardContent class="space-y-6">
-      <Tabs v-model="importMethod" class="w-full">
-        <TabsList class="grid w-full grid-cols-3">
-          <TabsTrigger value="upload">CSV Upload</TabsTrigger>
-          <TabsTrigger value="paste">Paste Data</TabsTrigger>
-          <TabsTrigger value="manual">Manual Entry</TabsTrigger>
-        </TabsList>
-        <TabsContent value="upload" class="space-y-4">
-          <div class="grid w-full place-items-center gap-4 rounded-lg border border-dashed p-6">
-            <UploadCloudIcon class="h-10 w-10 text-muted-foreground" />
-            <div class="text-center">
-              <p class="text-sm font-medium">
-                Drop your CSV file here or click to upload
-              </p>
-              <p class="text-xs text-muted-foreground">
-                Supported formats: CSV, Excel
-              </p>
-            </div>
+    <CardContent class="p-6 space-y-6">
+      <div class="space-y-4">
+        <h3 class="text-lg font-semibold">Email Sender Settings</h3>
+        <p class="text-sm text-muted-foreground">
+          These settings will be used as defaults when sending emails to your subscribers.
+        </p>
+
+        <div class="space-y-4">
+          <div>
+            <Label for="default_sender_name">Default Sender Name</Label>
             <Input
-              type="file"
-              accept=".csv,.xlsx"
-              class="max-w-xs"
-              @change="handleFileChange"
+              id="default_sender_name"
+              v-model="form.sender_settings.default_sender_name"
+              placeholder="John from Company"
+              :error="form.errors['sender_settings.default_sender_name']"
             />
           </div>
 
-          <Alert v-if="file">
-            <FileIcon class="h-4 w-4" />
-            <AlertTitle>Selected file</AlertTitle>
-            <AlertDescription>
-              {{ file.name }} ({{ (file.size / 1024).toFixed(2) }}KB)
-            </AlertDescription>
-          </Alert>
-
-          <Progress
-            v-if="isUploading"
-            :value="uploadProgress"
-            class="h-2"
-          />
-        </TabsContent>
-
-        <TabsContent value="paste" class="space-y-4">
-          <FormField
-            placeholder="Paste your subscriber data here..."
-            type="textarea"
-            rows="10"
-          />
-          <p class="text-xs text-muted-foreground">
-            Format: Email, First Name, Last Name (one per line)
-          </p>
-        </TabsContent>
-
-        <TabsContent value="manual" class="space-y-4">
-          <div class="space-y-2">
-            <FormField>
-              <Label>Email</Label>
-              <Input type="email" placeholder="subscriber@example.com" />
-            </FormField>
-
-            <FormField>
-              <Label>First Name</Label>
-              <Input type="text" placeholder="John" />
-            </FormField>
-
-            <FormField>
-              <Label>Last Name</Label>
-              <Input type="text" placeholder="Doe" />
-            </FormField>
+          <div>
+            <Label for="default_sender_email">Default Sender Email</Label>
+            <Input
+              id="default_sender_email"
+              type="email"
+              v-model="form.sender_settings.default_sender_email"
+              placeholder="newsletters@yourcompany.com"
+              :error="form.errors['sender_settings.default_sender_email']"
+            />
           </div>
-        </TabsContent>
-      </Tabs>
 
-      <div class="flex justify-between">
-        <Button
-          variant="outline"
-          @click="$emit('back')" >
-          <ArrowLeftIcon class="mr-2 h-4 w-4" />
-          Back
-        </Button>
+          <div>
+            <Label for="from_name">From Name</Label>
+            <Input
+              id="from_name"
+              v-model="form.email_settings.from_name"
+              placeholder="Marketing Team"
+              :error="form.errors['email_settings.from_name']"
+            />
+          </div>
 
-        <Button
-          @click="importMethod === 'upload' ? handleUpload() : $emit('next')"
-          :disabled="importMethod === 'upload' && !file" >
-          Continue
-          <ArrowRightIcon class="ml-2 h-4 w-4" />
-        </Button>
+          <div>
+            <Label for="reply_to">Reply-To Email</Label>
+            <Input
+              id="reply_to"
+              type="email"
+              v-model="form.email_settings.reply_to"
+              placeholder="support@yourcompany.com"
+              :error="form.errors['email_settings.reply_to']"
+            />
+          </div>
+        </div>
+      </div>
+
+      <div class="space-y-4">
+        <h3 class="text-lg font-semibold">Preferences</h3>
+        <p class="text-sm text-muted-foreground">
+          Set your preferred language and timezone for better experience.
+        </p>
+
+        <div class="grid gap-4 sm:grid-cols-2">
+          <div>
+            <Label for="language">Language</Label>
+            <Select
+              v-model="form.preferences.language"
+              :error="form.errors['preferences.language']"
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select language" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem
+                  v-for="lang in languages"
+                  :key="lang.value"
+                  :value="lang.value"
+                >
+                  {{ lang.label }}
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div>
+            <Label for="timezone">Timezone</Label>
+            <Select
+              v-model="form.preferences.timezone"
+              :error="form.errors['preferences.timezone']"
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select timezone" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem
+                  v-for="tz in timezones"
+                  :key="tz.value"
+                  :value="tz.value"
+                >
+                  {{ tz.label }}
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
       </div>
     </CardContent>
+
+    <CardFooter class="flex justify-between">
+      <Button
+        variant="outline"
+        @click="emit('back')"
+        :disabled="props.disabledBack">
+        Back
+      </Button>
+
+      <Button
+        type="submit"
+        @click="handleSubmit"
+        :loading="form.processing"
+      >
+        Continue
+      </Button>
+    </CardFooter>
   </Card>
 </template>

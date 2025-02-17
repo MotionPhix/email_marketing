@@ -1,22 +1,37 @@
 <script setup lang="ts">
-import {type Component, computed, markRaw, watch} from 'vue'
+import {type Component, computed, markRaw, ref, watch} from 'vue'
 import { Head, router } from '@inertiajs/vue3'
 import AppLayout from '@/Layouts/AppLayout.vue'
-import {WavesIcon, UsersIcon, GlobeIcon, LayoutTemplateIcon, SendIcon, CheckIcon} from "lucide-vue-next";
-import {toast} from "vue-sonner";
-import {useStorage} from "@vueuse/core";
+import {
+  UsersIcon,
+  GlobeIcon,
+  LayoutTemplateIcon,
+  SendIcon,
+  CheckIcon,
+  HandshakeIcon,
+  Settings2Icon
+} from "lucide-vue-next";
 import OnboardingStep1 from "@/Pages/OnBoarding/Partials/OnboardingStep1.vue";
 import OnboardingStep2 from "@/Pages/OnBoarding/Partials/OnboardingStep2.vue";
 import OnboardingStep3 from "@/Pages/OnBoarding/Partials/OnboardingStep3.vue";
 import OnboardingStep4 from "@/Pages/OnBoarding/Partials/OnboardingStep4.vue";
 import OnboardingStep5 from "@/Pages/OnBoarding/Partials/OnboardingStep5.vue";
+import OnboardingStep6 from "@/Pages/OnBoarding/Partials/OnboardingStep6.vue";
+import {toast} from "vue-sonner";
 
 const props = defineProps<{
-  progress: any,
-  userSettings: object
+  progress: {
+    current_step: number;
+    completed_steps: number[];
+    skipped_steps: number[];
+    form_data: Record<string, any>;
+    is_completed: boolean;
+  };
+  userSettings: object;
+  required_steps: number[];
 }>()
 
-const currentStep = useStorage('onboardingStep', 1)
+const currentStep = ref(props.progress.current_step)
 let currentComponent: Component = OnboardingStep1
 
 console.log(props.userSettings)
@@ -26,28 +41,35 @@ const steps = [
     id: 1,
     title: 'Welcome',
     description: 'Get started with your email marketing journey',
-    icon: WavesIcon,
+    icon: HandshakeIcon,
   },
   {
     id: 2,
+    title: 'Account Setup',
+    description: 'Configure your email sender settings',
+    icon: Settings2Icon,
+    required: true
+  },
+  {
+    id: 3,
     title: 'Import Contacts',
     description: 'Import your existing email subscribers',
     icon: UsersIcon,
   },
   {
-    id: 3,
+    id: 4,
     title: 'Setup Sending Domain',
     description: 'Configure your sending domain for better deliverability',
     icon: GlobeIcon,
   },
   {
-    id: 4,
+    id: 5,
     title: 'Create Template',
     description: 'Design your first email template',
     icon: LayoutTemplateIcon,
   },
   {
-    id: 5,
+    id: 6,
     title: 'Test Campaign',
     description: 'Send a test campaign to yourself',
     icon: SendIcon,
@@ -55,8 +77,31 @@ const steps = [
 ]
 
 const progress = computed(() => {
-  return (currentStep.value / steps.length) * 100
+  const completedCount = props.progress.completed_steps.length
+  const skippedCount = props.progress.skipped_steps.length
+  return ((completedCount + skippedCount) / steps.length) * 100
 })
+
+const isStepCompleted = (stepId: number) => {
+  return props.progress.completed_steps.includes(stepId)
+}
+
+const isStepSkipped = (stepId: number) => {
+  return props.progress.skipped_steps.includes(stepId)
+}
+
+const canAccessStep = (stepId: number) => {
+  if (stepId === 1) return true
+
+  // Check if all previous required steps are completed
+  const previousRequiredSteps = steps
+    .filter(s => s.id < stepId && s.required)
+    .map(s => s.id)
+
+  return previousRequiredSteps.every(step =>
+    isStepCompleted(step) || isStepSkipped(step)
+  )
+}
 
 const skipOnboarding = () => {
   router.post(route('onboarding.skip', currentStep.value), {}, {
@@ -68,7 +113,34 @@ const skipOnboarding = () => {
   })
 }
 
+// Handle back/next navigation
+const handleBack = () => {
+  const previousStep = steps
+    .filter(s => s.id < currentStep.value)
+    .reverse()
+    .find(s => !isStepCompleted(s.id))?.id
+
+  if (previousStep) {
+    currentStep.value = previousStep
+  }
+}
+
+const handleNext = () => {
+  const nextStep = steps
+    .filter(s => s.id > currentStep.value)
+    .find(s => !isStepCompleted(s.id) && !isStepSkipped(s.id))?.id
+
+  if (nextStep) {
+    currentStep.value = nextStep
+  }
+}
+
 watch(currentStep, (newStep) => {
+  if (!canAccessStep(newStep)) {
+    toast.error('Please complete previous required steps first')
+    return
+  }
+
   switch (newStep) {
     case 1:
       return currentComponent = OnboardingStep1
@@ -84,6 +156,9 @@ watch(currentStep, (newStep) => {
 
     case 5:
       return currentComponent = OnboardingStep5
+
+    case 6:
+      return currentComponent = OnboardingStep6
   }
 }, { immediate: true })
 </script>
@@ -126,7 +201,8 @@ watch(currentStep, (newStep) => {
                     : 'hover:bg-muted',
                   step.id < currentStep && 'text-muted-foreground'
                 ]"
-                @click="currentStep = step.id">
+                @click="canAccessStep(step.id) && (currentStep = step.id)"
+                :disabled="!canAccessStep(step.id)">
                 <component
                   :is="step.icon"
                   class="h-5 w-5 shrink-0"
@@ -153,8 +229,10 @@ watch(currentStep, (newStep) => {
           <KeepAlive>
             <component
               :is="currentComponent"
-              @next="currentStep++"
-              @back="currentStep--"
+              @next="handleNext"
+              @back="handleBack"
+              :disabled-back="isStepCompleted(currentStep)"
+              :form-data="props.progress?.form_data[`step_${currentStep}`]"
             />
           </KeepAlive>
         </div>

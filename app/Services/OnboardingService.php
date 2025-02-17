@@ -15,15 +15,16 @@ use Throwable;
 class OnboardingService
 {
   // Define which steps are required
-  private const REQUIRED_STEPS = [
-    1, // Account setup
-    2, // Contact import
+  public const REQUIRED_STEPS = [
+    2, // Account setup
+    3, // Contact import
   ];
 
   private const OPTIONAL_STEPS = [
-    3, // Domain setup
-    4, // Template creation
-    5, // Test campaign
+    1, // Welcome
+    4, // Domain setup
+    5, // Template creation
+    6, // Test campaign
   ];
 
   public function getOrCreateProgress(User $user): OnboardingProgress
@@ -32,6 +33,7 @@ class OnboardingService
       'user_id' => $user->id,
       'completed_steps' => [],
       'skipped_steps' => [],
+      'current_step' => 1,
       'form_data' => [],
     ]);
   }
@@ -39,6 +41,14 @@ class OnboardingService
   public function updateStep(User $user, int $step, array $data): OnboardingProgress
   {
     $progress = $this->getOrCreateProgress($user);
+
+    // Don't allow repeating completed steps
+    if (in_array($step, $progress->completed_steps ?? [])) {
+      throw new OnboardingException(
+        'This step has already been completed',
+        $step
+      );
+    }
 
     // Validate step sequence
     if (!$this->isStepSequenceValid($progress, $step)) {
@@ -64,9 +74,13 @@ class OnboardingService
     $formData = $progress->form_data;
     $formData["step_{$step}"] = $data;
 
+    // Calculate next step
+    $nextStep = $this->calculateNextStep($completedSteps->toArray(), $progress->skipped_steps ?? []);
+
     $progress->update([
       'completed_steps' => $completedSteps->toArray(),
       'skipped_steps' => $skippedSteps->toArray(),
+      'current_step' => $nextStep,
       'form_data' => $formData,
     ]);
 
@@ -98,8 +112,12 @@ class OnboardingService
       $skippedSteps->push($step);
     }
 
+    // Calculate next step
+    $nextStep = $this->calculateNextStep($progress->completed_steps ?? [], $skippedSteps->toArray());
+
     $progress->update([
-      'skipped_steps' => $skippedSteps->toArray(),
+      'skipped_steps' => $skippedSteps->unique()->toArray(),
+      'current_step' => $nextStep,
     ]);
 
     return $progress;
@@ -116,20 +134,20 @@ class OnboardingService
     $previousRequiredSteps = collect(self::REQUIRED_STEPS)
       ->filter(fn($step) => $step < $currentStep);
 
-    // return $completedSteps->contains($currentStep - 1);
-
     // All previous required steps must be completed
-    return $previousRequiredSteps->every(fn($step) => $completedSteps->contains($step));
+    return $previousRequiredSteps->every(fn($s) => $completedSteps->contains($s) || $skippedSteps->contains($s)
+    );
   }
 
   private function processStepData(User $user, int $step, array $data): void
   {
     try {
       match ($step) {
-        2 => $this->processContactImport($user, $data),
-        3 => $this->processDomainSetup($user, $data),
-        4 => $this->processTemplateCreation($user, $data),
-        5 => $this->processTestCampaign($user, $data),
+        2 => $this->processEmailDefaultSettings($user, $data),
+        3 => $this->processContactImport($user, $data),
+        4 => $this->processDomainSetup($user, $data),
+        5 => $this->processTemplateCreation($user, $data),
+        6 => $this->processTestCampaign($user, $data),
         default => null
       };
     } catch (Throwable $e) {
@@ -144,6 +162,24 @@ class OnboardingService
         $step
       );
     }
+  }
+
+  private function processEmailDefaultSettings(User $user, array $data): void
+  {
+    $user->settings()->update([
+      'sender_settings' => array_merge(
+        $user->settings->sender_settings ?? [],
+        $data['sender_settings'] ?? []
+      ),
+      'email_settings' => array_merge(
+        $user->settings->email_settings ?? [],
+        $data['email_settings'] ?? []
+      ),
+      'preferences' => array_merge(
+        $user->settings->preferences ?? [],
+        $data['preferences'] ?? []
+      ),
+    ]);
   }
 
   private function processContactImport(User $user, array $data): void
@@ -167,6 +203,14 @@ class OnboardingService
 
     // Queue import job
     ImportContacts::dispatch($user, $data['contacts']);
+  }
+
+  private function calculateNextStep(array $completedSteps, array $skippedSteps): int
+  {
+    $allSteps = range(1, 5);
+    $remainingSteps = array_diff($allSteps, $completedSteps, $skippedSteps);
+
+    return empty($remainingSteps) ? max($completedSteps) : min($remainingSteps);
   }
 
   private function processDomainSetup(User $user, array $data): void
@@ -233,8 +277,11 @@ class OnboardingService
     $completedSteps = collect($progress->completed_steps);
     $skippedSteps = collect($progress->skipped_steps);
 
+    // $missingRequiredSteps = collect(self::REQUIRED_STEPS)
+    //  ->reject(fn($step) => $completedSteps->contains($step));
+
     $missingRequiredSteps = collect(self::REQUIRED_STEPS)
-      ->reject(fn($step) => $completedSteps->contains($step));
+      ->diff($completedSteps);
 
     if ($missingRequiredSteps->isNotEmpty()) {
       throw new OnboardingException(
@@ -245,9 +292,12 @@ class OnboardingService
 
     // All optional steps should either be completed or skipped
     $missingOptionalSteps = collect(self::OPTIONAL_STEPS)
-      ->reject(fn($step) =>
-        $completedSteps->contains($step) || $skippedSteps->contains($step)
+      ->reject(fn($step) => $completedSteps->contains($step) || $skippedSteps->contains($step)
       );
+
+    /*$missingOptionalSteps = collect(self::OPTIONAL_STEPS)
+      ->diff($completedSteps)
+      ->diff($skippedSteps);*/
 
     if ($missingOptionalSteps->isNotEmpty()) {
       throw new OnboardingException(

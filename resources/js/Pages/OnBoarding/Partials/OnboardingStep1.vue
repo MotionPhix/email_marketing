@@ -41,8 +41,7 @@ const features = [
         <Card
           v-for="feature in features"
           :key="feature.title"
-          class="border-2"
-        >
+          class="border-2">
           <CardHeader>
             <div class="flex items-center gap-2">
               <component

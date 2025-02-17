@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import {ref, computed} from 'vue'
-import {router} from '@inertiajs/vue3'
-import {toast} from 'vue-sonner'
-import {EmailEditor} from 'vue-email-editor'
+import { ref, computed } from 'vue'
+import { router } from '@inertiajs/vue3'
+import { toast } from 'vue-sonner'
+import { EmailEditor } from 'vue-email-editor'
 import {
   ArrowLeftIcon,
   ArrowRightIcon,
@@ -10,9 +10,11 @@ import {
   SearchIcon,
   CheckIcon
 } from 'lucide-vue-next'
-import {ScrollArea} from '@/Components/ui/scroll-area'
-import ConditionalBlockEditor from "@/Components/Campaign/ConditionalBlockEditor.vue";
-import {useStorage} from "@vueuse/core";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/Components/ui/card'
+import { Input } from '@/Components/ui/input'
+import { Label } from '@/Components/ui/label'
+import { Button } from '@/Components/ui/button'
+import { ScrollArea } from '@/Components/ui/scroll-area'
 import {
   Sheet,
   SheetContent,
@@ -20,6 +22,8 @@ import {
   SheetTitle,
   SheetDescription,
 } from '@/Components/ui/sheet'
+import {useDark, useStorage} from '@vueuse/core'
+import ConditionalBlockEditor from '@/Components/Campaign/ConditionalBlockEditor.vue'
 
 interface EmailTemplate {
   id: number
@@ -32,7 +36,7 @@ interface EmailTemplate {
   thumbnail?: string
   is_default: boolean
   variables?: Record<string, any>
-  design?: any // For storing unlayer design JSON
+  design?: any
 }
 
 const props = defineProps<{
@@ -44,13 +48,19 @@ const props = defineProps<{
 
 const emit = defineEmits(['back', 'next'])
 
-// Template selection
+// Template selection and editor state
 const selectedTemplate = ref<EmailTemplate | null>(props.formData?.template || null)
 const searchQuery = ref('')
 const activeCategory = useStorage('template_category', 'all')
 const emailEditorRef = ref()
+const editorInstance = ref()
 const isEditorOpen = ref(false)
-const editorStep = useStorage('editor_step', 1) // 1 = template details, 2 = email editor
+const editorStep = useStorage('editor_step', 1)
+const isLoading = ref(false)
+const errors = ref({})
+const projectId = import.meta.env.VITE_UNLAYER_PROJECT_ID
+const isDark = useDark()
+
 const tempTemplate = ref<Partial<EmailTemplate>>({
   name: '',
   description: '',
@@ -62,59 +72,68 @@ const tempTemplate = ref<Partial<EmailTemplate>>({
   design: null
 })
 
-
-// New template form
-const isCreatingTemplate = ref(false)
-const newTemplate = ref({
-  name: '',
-  description: '',
-  subject: '',
-  preview_text: '',
-  content: '',
-  category: 'newsletter',
-  is_default: false,
-  variables: {},
-  design: null
-} as EmailTemplate)
-const errors = ref({})
-const isLoading = ref(false)
-
 const categories = [
-  {value: 'all', label: 'All Templates'},
-  {value: 'newsletter', label: 'Newsletters'},
-  {value: 'promotional', label: 'Promotional'},
-  {value: 'transactional', label: 'Transactional'},
-  {value: 'notification', label: 'Notifications'}
+  { value: 'all', label: 'All Templates' },
+  { value: 'newsletter', label: 'Newsletters' },
+  { value: 'promotional', label: 'Promotional' },
+  { value: 'transactional', label: 'Transactional' },
+  { value: 'notification', label: 'Notifications' }
 ]
 
-const openTemplateEditor = () => {
-  tempTemplate.value = {
-    name: '',
-    description: '',
-    subject: '',
-    preview_text: '',
-    category: 'newsletter',
-    is_default: false,
-    variables: {},
-    design: null
+// Editor configuration
+const emailEditorOptions = {
+  minHeight: '500px',
+  displayMode: 'email',
+  appearance: {
+    theme: isDark.value ? 'dark' : 'light',
+    panels: {
+      tools: {
+        dock: 'right'
+      }
+    }
+  },
+  features: {
+    previewDesktop: true,
+    previewMobile: true,
+    textEditor: {
+      spellChecker: true,
+      tables: true,
+      cleanPaste: true,
+    }
+  },
+  tools: {
+    form: { enabled: false },
+    countdown: { enabled: false },
+    custom: {
+      title: 'Custom Elements',
+      items: [
+        {
+          name: 'ConditionalBlock',
+          label: 'Conditional',
+          icon: 'fa-solid fa-code-branch',
+          template: ConditionalBlockEditor
+        }
+      ]
+    }
+  },
+  mergeTags: {
+    subscriber: {
+      first_name: { name: 'First Name', value: '{{subscriber.first_name}}' },
+      last_name: { name: 'Last Name', value: '{{subscriber.last_name}}' },
+      email: { name: 'Email', value: '{{subscriber.email}}' },
+      custom_fields: { name: 'Custom Fields', value: '{{subscriber.custom_fields}}' }
+    },
+    company: {
+      name: { name: 'Company Name', value: '{{company.name}}' },
+      address: { name: 'Company Address', value: '{{company.address}}' }
+    },
+    unsubscribe: {
+      link: { name: 'Unsubscribe Link', value: '{{unsubscribe.link}}' }
+    }
   }
-  editorStep.value = 1
-  isEditorOpen.value = true
 }
 
-const handleDetailsSubmit = () => {
-  // Validate template details
-  if (!tempTemplate.value.name || !tempTemplate.value.subject) {
-    toast.error('Please fill in all required fields')
-    return
-  }
-  editorStep.value = 2
-}
-
-const handleEditorBack = () => {
-  editorStep.value = 1
-}
-
+// Computed properties
 const filteredTemplates = computed(() => {
   let templates = props.templates || []
 
@@ -134,139 +153,107 @@ const filteredTemplates = computed(() => {
   return templates
 })
 
-const handleTemplateSelect = (template: EmailTemplate) => {
-  selectedTemplate.value = template
-  if (template.design && emailEditorRef.value) {
-    emailEditorRef.value.loadDesign(template.design)
-  }
-}
-
-// Email Editor Configuration
-const emailEditorOptions = {
-  customCSS: [
-    `.unlayer-wrapper { background-color: var(--background); }`,
-    `.unlayer-content { color: var(--foreground); }`,
-  ],
-  features: {
-    textEditor: {
-      spellChecker: true,
-      tables: true,
-      cleanPaste: true,
-    }
-  },
-  appearance: {
-    theme: 'dark',
-    panels: {
-      tools: {
-        dock: 'left'
-      }
-    }
-  },
-  tools: {
-    custom: {
-      title: 'Custom Elements',
-      items: [
-        {
-          name: 'ConditionalBlock',
-          label: 'Conditional',
-          icon: 'fa-solid fa-code-branch',
-          template: ConditionalBlockEditor
-        }
-      ]
-    }
-  },
-  mergeTags: {
-    "subscriber": {
-      "first_name": {name: "First Name", value: "{{subscriber.first_name}}"},
-      "last_name": {name: "Last Name", value: "{{subscriber.last_name}}"},
-      "email": {name: "Email", value: "{{subscriber.email}}"},
-      "custom_fields": {name: "Custom Fields", value: "{{subscriber.custom_fields}}"}
-    },
-    "company": {
-      "name": {name: "Company Name", value: "{{company.name}}"},
-      "address": {name: "Company Address", value: "{{company.address}}"}
-    },
-    "unsubscribe": {
-      "link": {name: "Unsubscribe Link", value: "{{unsubscribe.link}}"}
-    }
-  }
-}
-
-const onEditorLoaded = (editor: any) => {
-  console.log('Email editor loaded')
-  if (selectedTemplate.value?.design) {
-    editor.loadDesign(selectedTemplate.value.design)
+// Event handlers
+const onEditorLoaded = () => {
+  console.log('Editor loaded')
+  if (tempTemplate.value?.design) {
+    emailEditorRef.value?.editor.loadDesign(tempTemplate.value.design)
   }
 }
 
 const onEditorReady = (editor: any) => {
+  console.log('Editor ready')
+  editorInstance.value = editor
   emailEditorRef.value = editor
 }
 
-const saveDesign = () => {
-  return new Promise((resolve, reject) => {
-    if (!emailEditorRef.value) {
-      reject(new Error('Editor not ready'))
-      return
-    }
-
-    emailEditorRef.value.saveDesign((design: any) => {
-      resolve(design)
-    })
-  })
+const openTemplateEditor = () => {
+  tempTemplate.value = {
+    name: '',
+    description: '',
+    subject: '',
+    preview_text: '',
+    category: 'newsletter',
+    is_default: false,
+    variables: {},
+    design: null
+  }
+  editorStep.value = 1
+  isEditorOpen.value = true
 }
 
-const exportHtml = () => {
-  return new Promise((resolve, reject) => {
-    if (!emailEditorRef.value) {
-      reject(new Error('Editor not ready'))
-      return
-    }
+const handleDetailsSubmit = () => {
+  if (!tempTemplate.value.name || !tempTemplate.value.subject) {
+    toast.error('Please fill in all required fields')
+    return
+  }
 
-    emailEditorRef.value.exportHtml((data: any) => {
-      resolve({html: data.html, design: data.design})
-    })
-  })
+  editorStep.value = 2
 }
 
-const handleCreateTemplate = async () => {
-  try {
+const handleEditorBack = () => {
+  editorStep.value = 1
+}
+
+const handleTemplateSelect = (template: EmailTemplate) => {
+  selectedTemplate.value = template
+  if (template.design && emailEditorRef.value) {
+    emailEditorRef.value.editor.loadDesign(template.design)
+  }
+}
+
+const handleCreateTemplate = () => {
+  // try {
+    /*if (!emailEditorRef.value) {
+      toast.error('Editor not ready')
+      return
+    }*/
+
     isLoading.value = true
     errors.value = {}
 
-    const {html, design} = await exportHtml()
-    const templateData = {
-      ...tempTemplate.value,
-      content: html,
-      design: design
-    }
+    // Get both HTML and design
+    emailEditorRef.value.editor.exportHtml((data: any) => {
+      console.log(data)
+      return;
 
-    router.post(route('onboarding.updateStep'), {
-      step: 5,
-      data: {
-        template: templateData
-      }
-    }, {
-      preserveScroll: true,
-      onSuccess: () => {
-        toast.success('Template created successfully')
-        isEditorOpen.value = false
-        emit('next')
-      },
-      onError: (validationErrors) => {
-        errors.value = validationErrors
-        const firstError = Object.values(validationErrors)[0]
-        toast.error(Array.isArray(firstError) ? firstError[0] : firstError)
-      },
-      onFinish: () => {
-        isLoading.value = false
-      }
+      setTimeout(() => {
+
+        const templateData = {
+          ...tempTemplate.value,
+          content: data.html,
+          design: data.design
+        }
+
+        router.post(route('onboarding.update-step'), {
+          step: 5,
+          data: {
+            template: templateData
+          }
+        }, {
+          preserveScroll: true,
+          onSuccess: () => {
+            toast.success('Template created successfully')
+            isEditorOpen.value = false
+            emit('next')
+          },
+          onError: (validationErrors) => {
+            errors.value = validationErrors
+            const firstError = Object.values(validationErrors)[0]
+            toast.error(Array.isArray(firstError) ? firstError[0] : firstError)
+          }
+        })
+
+      }, 300)
     })
-  } catch (error) {
-    console.error('Failed to create template:', error)
-    toast.error('Failed to create template')
-    isLoading.value = false
-  }
+
+
+  // } catch (error) {
+  //   console.error('Failed to create template:', error)
+  //   toast.error('Failed to create template')
+  // } finally {
+  //   isLoading.value = false
+  // }
 }
 
 const handleNext = async () => {
@@ -277,12 +264,16 @@ const handleNext = async () => {
 
   try {
     isLoading.value = true
-    const {html, design} = await exportHtml()
+    const { html, design } = await new Promise((resolve) => {
+      emailEditorRef.value.editor.exportHtml((data: any) => {
+        resolve(data)
+      })
+    })
 
     selectedTemplate.value.content = html
     selectedTemplate.value.design = design
 
-    router.post(route('onboarding.updateStep'), {
+    router.post(route('onboarding.update-step'), {
       step: 5,
       data: {
         template: selectedTemplate.value
@@ -297,14 +288,12 @@ const handleNext = async () => {
         errors.value = validationErrors
         const firstError = Object.values(validationErrors)[0]
         toast.error(Array.isArray(firstError) ? firstError[0] : firstError)
-      },
-      onFinish: () => {
-        isLoading.value = false
       }
     })
   } catch (error) {
     console.error('Failed to save template:', error)
     toast.error('Failed to save template')
+  } finally {
     isLoading.value = false
   }
 }
@@ -323,7 +312,7 @@ const handleNext = async () => {
       <div class="flex items-center space-x-4">
         <div class="flex-1">
           <div class="relative">
-            <SearchIcon class="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground"/>
+            <SearchIcon class="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
               v-model="searchQuery"
               class="pl-8"
@@ -332,9 +321,9 @@ const handleNext = async () => {
           </div>
         </div>
 
-        <Button @click="openTemplateEditor" class="flex items-center space-x-2">
-          <PlusIcon class="mr-2 h-4 w-4"/>
-          <span>Create Template</span>
+        <Button @click="openTemplateEditor">
+          <PlusIcon class="mr-2 h-4 w-4" />
+          Create Template
         </Button>
       </div>
 
@@ -343,15 +332,14 @@ const handleNext = async () => {
         :open="isEditorOpen"
         @update:open="isEditorOpen = $event">
         <SheetContent
-          class="w-screen p-0 flex flex-col" side="top">
+          class="w-screen h-screen p-0 flex flex-col"
+          side="top">
           <SheetHeader class="p-6 border-b">
             <div class="flex items-center justify-between">
               <div>
                 <SheetTitle>{{ editorStep === 1 ? 'Template Details' : 'Design Email Template' }}</SheetTitle>
                 <SheetDescription>
-                  {{
-                    editorStep === 1 ? 'Enter basic information about your template' : 'Design your email using the visual editor'
-                  }}
+                  {{ editorStep === 1 ? 'Enter basic information about your template' : 'Design your email using the visual editor' }}
                 </SheetDescription>
               </div>
 
@@ -359,26 +347,23 @@ const handleNext = async () => {
                 <Button
                   v-if="editorStep === 2"
                   variant="outline"
-                  @click="handleEditorBack"
-                >
-                  <ArrowLeftIcon class="mr-2 h-4 w-4"/>
+                  @click="handleEditorBack">
+                  <ArrowLeftIcon class="mr-2 h-4 w-4" />
                   Back to Details
                 </Button>
 
                 <Button
                   v-if="editorStep === 1"
                   @click="handleDetailsSubmit"
-                  :disabled="!tempTemplate.name || !tempTemplate.subject"
-                >
+                  :disabled="!tempTemplate.name || !tempTemplate.subject">
                   Continue to Editor
-                  <ArrowRightIcon class="ml-2 h-4 w-4"/>
+                  <ArrowRightIcon class="ml-2 h-4 w-4" />
                 </Button>
 
                 <Button
                   v-else
                   @click="handleCreateTemplate"
-                  :disabled="isLoading"
-                >
+                  :disabled="isLoading">
                   {{ isLoading ? 'Saving...' : 'Save Template' }}
                 </Button>
               </div>
@@ -388,8 +373,7 @@ const handleNext = async () => {
           <!-- Template Details Form -->
           <div
             v-if="editorStep === 1"
-            class="flex-1 p-6 overflow-y-auto"
-          >
+            class="flex-1 p-6 overflow-y-auto">
             <div class="max-w-2xl mx-auto space-y-6">
               <div class="space-y-4">
                 <div>
@@ -408,8 +392,7 @@ const handleNext = async () => {
                   <Label>Category</Label>
                   <select
                     v-model="tempTemplate.category"
-                    class="w-full rounded-md border border-input bg-background px-3 py-2"
-                  >
+                    class="w-full rounded-md border border-input bg-background px-3 py-2">
                     <option value="newsletter">Newsletter</option>
                     <option value="promotional">Promotional</option>
                     <option value="transactional">Transactional</option>
@@ -450,16 +433,15 @@ const handleNext = async () => {
           <!-- Email Editor -->
           <div
             v-else
-            id="example"
-            class="flex-1 h-full bg-gray-100">
-            <div class="container">
-              <EmailEditor
-                :options="emailEditorOptions"
-                @loaded="onEditorLoaded"
-                @ready="onEditorReady"
-                style="height: 100%;"
-              />
-            </div>
+            class="flex-1 h-[calc(100vh-120px)]">
+            <EmailEditor
+              ref="emailEditorRef"
+              :options="emailEditorOptions"
+              :project-id="Number(projectId)"
+              v-on:load="onEditorLoaded"
+              v-on:ready="onEditorReady"
+              class="h-full w-full"
+            />
           </div>
         </SheetContent>
       </Sheet>
@@ -468,13 +450,12 @@ const handleNext = async () => {
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div
             v-for="template in filteredTemplates"
-            :key="template.id"
             class="relative rounded-lg border p-4 cursor-pointer hover:border-primary transition-colors"
             :class="{ 'border-primary': selectedTemplate?.id === template.id }"
             @click="handleTemplateSelect(template)"
-          >
+            :key="template.id">
             <div class="absolute top-2 right-2" v-if="selectedTemplate?.id === template.id">
-              <CheckIcon class="h-4 w-4 text-primary"/>
+              <CheckIcon class="h-4 w-4 text-primary" />
             </div>
 
             <div class="space-y-2">
@@ -502,8 +483,7 @@ const handleNext = async () => {
 
         <div
           v-if="filteredTemplates.length === 0"
-          class="flex flex-col items-center justify-center h-full py-8"
-        >
+          class="flex flex-col items-center justify-center h-full py-8">
           <p class="text-muted-foreground">No templates found</p>
         </div>
       </ScrollArea>
@@ -511,18 +491,19 @@ const handleNext = async () => {
       <div class="flex justify-between">
         <Button
           variant="outline"
-          @click="$emit('back')"
-        >
-          <ArrowLeftIcon class="mr-2 h-4 w-4"/>
+          @click="$emit('back')">
+          <ArrowLeftIcon class="mr-2 h-4 w-4" />
           Back
         </Button>
 
         <Button
           @click="handleNext"
-          :disabled="!selectedTemplate || isLoading"
-        >
+          :disabled="!selectedTemplate || isLoading">
           {{ isLoading ? 'Processing...' : 'Continue' }}
-          <ArrowRightIcon v-if="!isLoading" class="ml-2 h-4 w-4"/>
+          <ArrowRightIcon
+            v-if="!isLoading"
+            class="ml-2 h-4 w-4"
+          />
         </Button>
       </div>
     </CardContent>
@@ -530,32 +511,62 @@ const handleNext = async () => {
 </template>
 
 <style lang="scss">
-html, body {
-  margin: 0;
-  padding: 0;
-  height: 100%;
+/* Editor Styles */
+.unlayer-wrapper {
+  height: 100% !important;
+  min-height: 500px;
+  background-color: var(--background);
 }
 
-#app, #example {
+.unlayer-editor {
   height: 100% !important;
 }
 
-#example .container {
-  display: flex;
-  flex-direction: column;
-  position: relative;
-  @apply h-screen;
+.unlayer-editor-window {
+  width: 100% !important;
 }
 
-#bar {
-  flex: 1;
-  display: flex;
-  max-height: 50px;
-  @apply py-5;
-}
-
-a.blockbuilder-branding {
+/* Hide unlayer branding */
+.blockbuilder-branding {
   display: none !important;
-  @apply hidden;
+}
+
+/* Dark theme adjustments */
+.dark {
+  .unlayer-wrapper {
+    background: var(--background);
+  }
+
+  .unlayer-sidebar {
+    background: var(--card);
+    border-color: var(--border);
+  }
+
+  .unlayer-toolbar {
+    background: var(--card);
+    border-color: var(--border);
+  }
+
+  .unlayer-property-editor {
+    background: var(--card);
+    border-color: var(--border);
+  }
+
+  .unlayer-context-menu {
+    background: var(--card);
+    border-color: var(--border);
+  }
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+  .unlayer-wrapper {
+    min-height: 400px;
+  }
+
+  .unlayer-toolbar {
+    flex-direction: column;
+  }
 }
 </style>
+

@@ -23,6 +23,8 @@
     @routes
       @vite(['resources/js/app.js'])
     @inertiaHead
+
+    <script src="https://editor.unlayer.com/embed.js"></script>
   </head>
 
   <body class="font-sans antialiased min-h-screen">

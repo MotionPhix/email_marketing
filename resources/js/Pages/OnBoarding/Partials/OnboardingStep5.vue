@@ -10,10 +10,6 @@ import {
   SearchIcon,
   CheckIcon
 } from 'lucide-vue-next'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/Components/ui/card'
-import { Input } from '@/Components/ui/input'
-import { Label } from '@/Components/ui/label'
-import { Button } from '@/Components/ui/button'
 import { ScrollArea } from '@/Components/ui/scroll-area'
 import {
   Sheet,
@@ -23,7 +19,6 @@ import {
   SheetDescription,
 } from '@/Components/ui/sheet'
 import {useDark, useStorage} from '@vueuse/core'
-import ConditionalBlockEditor from '@/Components/Campaign/ConditionalBlockEditor.vue'
 
 interface EmailTemplate {
   id: number
@@ -53,7 +48,6 @@ const selectedTemplate = ref<EmailTemplate | null>(props.formData?.template || n
 const searchQuery = ref('')
 const activeCategory = useStorage('template_category', 'all')
 const emailEditorRef = ref()
-const editorInstance = ref()
 const isEditorOpen = ref(false)
 const editorStep = useStorage('editor_step', 1)
 const isLoading = ref(false)
@@ -99,22 +93,11 @@ const emailEditorOptions = {
       spellChecker: true,
       tables: true,
       cleanPaste: true,
-    }
+    },
   },
   tools: {
     form: { enabled: false },
     countdown: { enabled: false },
-    custom: {
-      title: 'Custom Elements',
-      items: [
-        {
-          name: 'ConditionalBlock',
-          label: 'Conditional',
-          icon: 'fa-solid fa-code-branch',
-          template: ConditionalBlockEditor
-        }
-      ]
-    }
   },
   mergeTags: {
     subscriber: {
@@ -155,16 +138,13 @@ const filteredTemplates = computed(() => {
 
 // Event handlers
 const onEditorLoaded = () => {
-  console.log('Editor loaded')
   if (tempTemplate.value?.design) {
-    emailEditorRef.value?.editor.loadDesign(tempTemplate.value.design)
+    emailEditorRef.value.editor.loadDesign(JSON.parse(tempTemplate.design));
   }
 }
 
-const onEditorReady = (editor: any) => {
+const onEditorReady = () => {
   console.log('Editor ready')
-  editorInstance.value = editor
-  emailEditorRef.value = editor
 }
 
 const openTemplateEditor = () => {
@@ -203,20 +183,17 @@ const handleTemplateSelect = (template: EmailTemplate) => {
 }
 
 const handleCreateTemplate = () => {
-  // try {
-    /*if (!emailEditorRef.value) {
+  try {
+    if (!emailEditorRef.value) {
       toast.error('Editor not ready')
       return
-    }*/
+    }
 
     isLoading.value = true
     errors.value = {}
 
     // Get both HTML and design
     emailEditorRef.value.editor.exportHtml((data: any) => {
-      console.log(data)
-      return;
-
       setTimeout(() => {
 
         const templateData = {
@@ -244,16 +221,16 @@ const handleCreateTemplate = () => {
           }
         })
 
-      }, 300)
+      }, 100)
     })
 
 
-  // } catch (error) {
-  //   console.error('Failed to create template:', error)
-  //   toast.error('Failed to create template')
-  // } finally {
-  //   isLoading.value = false
-  // }
+  } catch (error) {
+    console.error('Failed to create template:', error)
+    toast.error('Failed to create template')
+  } finally {
+    isLoading.value = false
+  }
 }
 
 const handleNext = async () => {
@@ -438,8 +415,8 @@ const handleNext = async () => {
               ref="emailEditorRef"
               :options="emailEditorOptions"
               :project-id="Number(projectId)"
-              v-on:load="onEditorLoaded"
-              v-on:ready="onEditorReady"
+              @load="onEditorLoaded"
+              @ready="onEditorReady"
               class="h-full w-full"
             />
           </div>

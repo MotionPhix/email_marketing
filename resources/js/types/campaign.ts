@@ -34,13 +34,21 @@ export interface CampaignStats {
 }
 
 export interface EmailTemplate {
-  id: string
+  id?: number
   name: string
+  description?: string
   subject: string
+  preview_text?: string
   content: string
-  previewText?: string
-  createdAt: string
-  updatedAt: string
+  category: 'newsletter' | 'promotional' | 'transactional' | 'notification'
+  type: 'html' | 'markdown' | 'drag-drop'
+  thumbnail?: string
+  is_default: boolean
+  variables?: Record<string, any>
+  design?: any
+  tags?: string[]
+  created_at?: string
+  updated_at?: string
 }
 
 export interface CampaignDraft {
@@ -65,5 +73,3 @@ export interface CampaignDraft {
     ipPool?: string
   }
 }
-
-export type CampaignStatus = 'draft' | 'scheduled' | 'sending' | 'sent' | 'failed'

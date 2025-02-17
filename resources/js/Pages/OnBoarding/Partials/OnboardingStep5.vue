@@ -66,13 +66,35 @@ const tempTemplate = ref<Partial<EmailTemplate>>({
   design: null
 })
 
-const categories = [
-  { value: 'all', label: 'All Templates' },
-  { value: 'newsletter', label: 'Newsletters' },
-  { value: 'promotional', label: 'Promotional' },
-  { value: 'transactional', label: 'Transactional' },
-  { value: 'notification', label: 'Notifications' }
-]
+const validateTemplate = (template: Partial<EmailTemplate>) => {
+  const errors: Record<string, string> = {}
+
+  if (!template.name) {
+    errors['name'] = 'Template name is required'
+  } else if (template.name.length > 255) {
+    errors['name'] = 'Template name cannot exceed 255 characters'
+  }
+
+  if (!template.subject) {
+    errors['subject'] = 'Subject line is required'
+  } else if (template.subject.length > 255) {
+    errors['subject'] = 'Subject line cannot exceed 255 characters'
+  }
+
+  if (template.description && template.description.length > 500) {
+    errors['description'] = 'Description cannot exceed 500 characters'
+  }
+
+  if (template.preview_text && template.preview_text.length > 255) {
+    errors['preview_text'] = 'Preview text cannot exceed 255 characters'
+  }
+
+  if (!template.category) {
+    errors['category'] = 'Please select a template category'
+  }
+
+  return errors
+}
 
 // Editor configuration
 const emailEditorOptions = {
@@ -186,6 +208,15 @@ const handleCreateTemplate = () => {
   try {
     if (!emailEditorRef.value) {
       toast.error('Editor not ready')
+      return
+    }
+
+    const validationErrors = validateTemplate(tempTemplate.value)
+
+    if (Object.keys(validationErrors).length > 0) {
+      errors.value = validationErrors
+      const firstError = Object.values(validationErrors)[0]
+      toast.error(firstError)
       return
     }
 

@@ -10,31 +10,47 @@ class EmailTemplateController extends Controller
 {
   public function index()
   {
-    $templates = EmailTemplate::latest()->get();
+    $templates = EmailTemplate::query()
+      ->where('team_id', Auth::user()->currentTeam->id)
+      ->latest()
+      ->get();
 
     return Inertia::render('Templates/Index', [
-      'templates' => $templates
+      'templates' => $templates,
+      'categories' => EmailTemplate::CATEGORIES,
+      'types' => EmailTemplate::TYPES,
     ]);
   }
 
   public function create()
   {
-    return Inertia::render('Templates/Form');
+    return Inertia::render('Templates/Form', [
+      'categories' => EmailTemplate::CATEGORIES,
+      'types' => EmailTemplate::TYPES,
+    ]);
   }
 
   public function store(Request $request)
   {
     $validated = $request->validate([
       'name' => 'required|string|max:255',
-      'description' => 'nullable|string',
+      'description' => 'nullable|string|max:500',
       'subject' => 'required|string|max:255',
-      'content' => 'required|string',
+      'content' => 'required|string|min:50',
       'preview_text' => 'nullable|string|max:255',
-      'category' => 'required|string|in:newsletter,promotional,transactional',
+      'category' => 'required|string|in:' . implode(',', EmailTemplate::CATEGORIES),
+      'type' => 'required|string|in:' . implode(',', EmailTemplate::TYPES),
+      'is_default' => 'boolean',
       'variables' => 'nullable|array',
+      'design' => 'nullable|array',
+      'tags' => 'nullable|array',
+      'tags.*' => 'string|max:50',
     ]);
 
-    EmailTemplate::create($validated);
+    $template = new EmailTemplate($validated);
+    $template->team_id = Auth::user()->currentTeam->id;
+    $template->user_id = Auth::id();
+    $template->save();
 
     return redirect()->route('templates.index')
       ->with('success', 'Template created successfully.');
@@ -42,21 +58,32 @@ class EmailTemplateController extends Controller
 
   public function edit(EmailTemplate $template)
   {
+    $this->authorize('update', $template);
+
     return Inertia::render('Templates/Form', [
-      'template' => $template
+      'template' => $template,
+      'categories' => EmailTemplate::CATEGORIES,
+      'types' => EmailTemplate::TYPES,
     ]);
   }
 
   public function update(Request $request, EmailTemplate $template)
   {
+    $this->authorize('update', $template);
+
     $validated = $request->validate([
       'name' => 'required|string|max:255',
-      'description' => 'nullable|string',
+      'description' => 'nullable|string|max:500',
       'subject' => 'required|string|max:255',
-      'content' => 'required|string',
+      'content' => 'required|string|min:50',
       'preview_text' => 'nullable|string|max:255',
-      'category' => 'required|string|in:newsletter,promotional,transactional',
+      'category' => 'required|string|in:' . implode(',', EmailTemplate::CATEGORIES),
+      'type' => 'required|string|in:' . implode(',', EmailTemplate::TYPES),
+      'is_default' => 'boolean',
       'variables' => 'nullable|array',
+      'design' => 'nullable|array',
+      'tags' => 'nullable|array',
+      'tags.*' => 'string|max:50',
     ]);
 
     $template->update($validated);
@@ -67,6 +94,8 @@ class EmailTemplateController extends Controller
 
   public function destroy(EmailTemplate $template)
   {
+    $this->authorize('delete', $template);
+
     $template->delete();
 
     return redirect()->route('templates.index')
@@ -75,8 +104,12 @@ class EmailTemplateController extends Controller
 
   public function duplicate(EmailTemplate $template)
   {
+    $this->authorize('create', EmailTemplate::class);
+
     $newTemplate = $template->replicate();
     $newTemplate->name = "{$template->name} (Copy)";
+    $newTemplate->team_id = Auth::user()->currentTeam->id;
+    $newTemplate->user_id = Auth::id();
     $newTemplate->save();
 
     return redirect()->route('templates.index')
@@ -85,6 +118,8 @@ class EmailTemplateController extends Controller
 
   public function preview(EmailTemplate $template)
   {
+    $this->authorize('view', $template);
+
     return Inertia::render('Templates/Preview', [
       'template' => $template
     ]);
@@ -93,18 +128,24 @@ class EmailTemplateController extends Controller
   public function variables()
   {
     return response()->json([
-      'user' => [
+      'subscriber' => [
         'first_name' => 'First Name',
         'last_name' => 'Last Name',
         'email' => 'Email Address',
-        'company' => 'Company Name',
+        'custom_fields' => 'Custom Fields',
+      ],
+      'company' => [
+        'name' => 'Company Name',
+        'address' => 'Company Address',
       ],
       'campaign' => [
         'name' => 'Campaign Name',
         'subject' => 'Email Subject',
-        'unsubscribe_url' => 'Unsubscribe URL',
       ],
-      'custom' => [
+      'unsubscribe' => [
+        'link' => 'Unsubscribe URL',
+      ],
+      'system' => [
         'current_date' => 'Current Date',
         'website_url' => 'Website URL',
       ],

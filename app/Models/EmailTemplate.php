@@ -20,11 +20,29 @@ class EmailTemplate extends Model
     'thumbnail',
     'is_default',
     'variables',
+    'design',
+    'type',
+    'tags',
   ];
 
   protected $casts = [
     'is_default' => 'boolean',
     'variables' => 'array',
+    'design' => 'array',
+    'tags' => 'array',
+  ];
+
+  const CATEGORIES = [
+    'newsletter',
+    'promotional',
+    'transactional',
+    'notification',
+  ];
+
+  const TYPES = [
+    'html',
+    'markdown',
+    'drag-drop',
   ];
 
   public function user()

@@ -12,6 +12,10 @@ use App\Http\Controllers\SubscriberController;
 use App\Http\Controllers\TeamInvitationController;
 use Illuminate\Support\Facades\Route;
 
+Route::get('/', function () {
+  return redirect()->route('settings.account');
+});
+
 Route::middleware(['auth'])->group(function () {
   // Dashboard
   Route::get(

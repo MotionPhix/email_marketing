@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\SettingsUpdateRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Inertia\Inertia;
@@ -31,40 +32,24 @@ class SettingsController extends Controller
   /**
    * Handles account and brand settings update
    */
-  public function updateAccount(Request $request)
+  public function updateAccount(SettingsUpdateRequest $request)
   {
-    $validator = Validator::make($request->all(), [
-      'sender_settings.default_sender_name' => 'required|string|max:255',
-      'sender_settings.default_sender_email' => 'required|email',
-      'company_settings.company_name' => 'nullable|string|max:255',
-      'company_settings.industry' => 'nullable|string|max:255',
-      'company_settings.company_size' => 'nullable|string',
-      'company_settings.website' => 'nullable|url',
-      'company_settings.phone' => 'nullable|string',
-      'company_settings.role' => 'nullable|string|max:255',
-      'branding_settings.logo_url' => 'nullable|string',
-      'branding_settings.primary_color' => 'nullable|string',
-      'branding_settings.accent_color' => 'nullable|string',
-    ]);
-
-    if ($validator->fails()) {
-      return back()->withErrors($validator);
-    }
+    $validated = $request->validated();
 
     $user = auth()->user();
 
     $user->settings()->update([
       'sender_settings' => array_merge(
         $user->settings->sender_settings ?? [],
-        $request->sender_settings
+        $validated['sender_settings']
       ),
       'company_settings' => array_merge(
         $user->settings->company_settings ?? [],
-        $request->company_settings
+        $validated['company_settings']
       ),
       'branding_settings' => array_merge(
         $user->settings->branding_settings ?? [],
-        $request->branding_settings ?? []
+        $validated['branding_settings'] ?? []
       )
     ]);
 

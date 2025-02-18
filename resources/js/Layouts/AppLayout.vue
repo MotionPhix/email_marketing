@@ -43,14 +43,15 @@ defineProps({
 
             </div>
 
-            <div class="hidden sm:flex sm:items-center gap-2 sm:ms-6">
-              <ThemeToggle />
-              <!-- Settings Dropdown -->
-              <UserNav />
-
+            <div class="hidden sm:flex sm:items-center gap-x-2 sm:ms-6">
               <Notifications
                 :notifications="$page.props.notifications"
               />
+
+              <ThemeToggle />
+
+              <!-- Settings Dropdown -->
+              <UserNav />
             </div>
 
             <!-- Hamburger -->

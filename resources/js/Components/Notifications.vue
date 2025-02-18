@@ -78,18 +78,21 @@ const getNotificationColor = (type: string) => {
 <template>
   <DropdownMenu>
     <DropdownMenuTrigger class="relative">
-      <IconBell class="h-5 w-5" />
+      <IconBell class="h-4 w-4" />
       <Badge
         v-if="unreadCount > 0"
-        class="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center p-0"
-      >
+        class="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center p-0">
         {{ unreadCount }}
       </Badge>
     </DropdownMenuTrigger>
-    <DropdownMenuContent align="end" class="w-80">
-      <div v-if="notifications.length === 0" class="p-4 text-center text-sm text-muted-foreground">
+
+    <DropdownMenuContent align="end">
+      <div
+        v-if="notifications.length === 0"
+        class="p-2 text-center text-sm text-muted-foreground">
         No notifications
       </div>
+
       <template v-else>
         <DropdownMenuItem
           v-for="notification in notifications"
@@ -98,8 +101,7 @@ const getNotificationColor = (type: string) => {
             'flex items-start gap-2 p-3',
             !notification.read_at && 'bg-muted/50'
           ]"
-          @click="markAsRead(notification)"
-        >
+          @click="markAsRead(notification)">
           <component
             :is="getNotificationIcon(notification.data.type)"
             :class="[
@@ -107,10 +109,12 @@ const getNotificationColor = (type: string) => {
               getNotificationColor(notification.data.type)
             ]"
           />
+
           <div class="flex-1">
             <p class="text-sm font-medium">
               {{ notification.data.message }}
             </p>
+
             <p class="text-xs text-muted-foreground mt-1">
               Plan: {{ notification.data.plan_name }} -
               {{ new Intl.NumberFormat('en-MW', {
@@ -118,6 +122,7 @@ const getNotificationColor = (type: string) => {
               currency: 'MWK'
             }).format(notification.data.amount) }}
             </p>
+
             <p class="text-xs text-muted-foreground mt-1">
               {{ new Date(notification.created_at).toLocaleDateString() }}
             </p>

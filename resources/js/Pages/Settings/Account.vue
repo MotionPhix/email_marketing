@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { ref } from 'vue'
 import { useForm } from '@inertiajs/vue3'
 import AppLayout from '@/Layouts/AppLayout.vue'
 import { toast } from 'vue-sonner'
+import PhoneInput from "@/Components/PhoneInput.vue";
 
 const props = defineProps<{
   settings: {
@@ -71,30 +71,26 @@ const submit = () => {
 
           <div class="grid grid-cols-1 gap-y-6 sm:grid-cols-2 sm:gap-x-8">
             <div>
-              <label for="default_sender_name" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                Sender Name
-              </label>
-              <input
-                id="default_sender_name"
+              <FormField
+                label="Sender Name"
+                placeholder="The name to appear in the sent email campaigns"
                 v-model="form.sender_settings.default_sender_name"
-                type="text"
                 required
-                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm dark:bg-gray-800 dark:border-gray-700"
               />
             </div>
 
             <div>
-              <label for="default_sender_email" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                Sender Email
-              </label>
-              <input
-                id="default_sender_email"
+              <FormField
+                label="Sender Email"
                 v-model="form.sender_settings.default_sender_email"
+                placeholder="The email address to use when sending email campaigns"
                 type="email"
                 required
-                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm dark:bg-gray-800 dark:border-gray-700"
               />
-              <p v-if="!settings?.sender_settings?.email_verified" class="mt-2 text-sm text-red-600">
+
+              <p
+                v-if="!settings?.sender_settings?.email_verified"
+                class="text-sm text-red-600">
                 Email needs to be verified
               </p>
             </div>
@@ -109,80 +105,65 @@ const submit = () => {
 
           <div class="grid grid-cols-1 gap-y-6 sm:grid-cols-2 sm:gap-x-8">
             <div>
-              <label for="company_name" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                Company Name
-              </label>
-              <input
-                id="company_name"
+              <FormField
+                label="Company Name"
                 v-model="form.company_settings.company_name"
-                type="text"
-                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm dark:bg-gray-800 dark:border-gray-700"
+                placeholder="Your company name to appear in the footer of sent emails"
               />
             </div>
 
             <div>
-              <label for="industry" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                Industry
-              </label>
-              <input
-                id="industry"
+              <FormField
+                label="Industry"
                 v-model="form.company_settings.industry"
-                type="text"
-                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm dark:bg-gray-800 dark:border-gray-700"
+                placeholder="The category your company falls in"
               />
             </div>
 
             <div>
-              <label for="company_size" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                Company Size
-              </label>
-              <select
-                id="company_size"
+              <FormField
+                type="select"
+                label="Company Size"
+                placeholder="Specify your company size"
                 v-model="form.company_settings.company_size"
-                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm dark:bg-gray-800 dark:border-gray-700"
-              >
-                <option value="">Select size</option>
-                <option value="1-10">1-10 employees</option>
-                <option value="11-50">11-50 employees</option>
-                <option value="51-200">51-200 employees</option>
-                <option value="201-500">201-500 employees</option>
-                <option value="501+">501+ employees</option>
-              </select>
+                :options="[
+                  { value: '1-10', label: '1-10 employees' },
+                  { value: '11-50', label: '11-50 employees' },
+                  { value: '51-200', label: '51-200 employees' },
+                  { value: '201-500', label: '201-500 employees' },
+                  { value: '501+', label: '501+ employees' }
+                ]"
+              />
             </div>
 
             <div>
-              <label for="website" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                Website
-              </label>
-              <input
-                id="website"
+              <FormField
+                label="Website"
                 v-model="form.company_settings.website"
                 type="url"
-                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm dark:bg-gray-800 dark:border-gray-700"
+                placeholder="Your company website if available"
               />
             </div>
 
             <div>
-              <label for="phone" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              <Label
+                for="phone"
+                class="block mb-2">
                 Phone
-              </label>
-              <input
+              </Label>
+
+              <PhoneInput
                 id="phone"
                 v-model="form.company_settings.phone"
-                type="tel"
-                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm dark:bg-gray-800 dark:border-gray-700"
               />
             </div>
 
             <div>
-              <label for="role" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                Your Role
-              </label>
-              <input
-                id="role"
+              <FormField
+                label="Your Role"
                 v-model="form.company_settings.role"
-                type="text"
-                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm dark:bg-gray-800 dark:border-gray-700"
+                placeholder="Your role in this system"
+                readonly
               />
             </div>
           </div>
@@ -197,13 +178,12 @@ const submit = () => {
           <div class="space-y-4">
             <div class="relative flex items-start">
               <div class="flex items-center h-5">
-                <input
+                <Checkbox
                   id="email_updates"
-                  v-model="form.marketing_settings.email_updates"
-                  type="checkbox"
-                  class="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500 dark:border-gray-600"
+                  v-model:checked="form.marketing_settings.email_updates"
                 />
               </div>
+
               <div class="ml-3 text-sm">
                 <label for="email_updates" class="font-medium text-gray-700 dark:text-gray-300">
                   Email Updates
@@ -214,13 +194,12 @@ const submit = () => {
 
             <div class="relative flex items-start">
               <div class="flex items-center h-5">
-                <input
+                <Checkbox
                   id="product_news"
-                  v-model="form.marketing_settings.product_news"
-                  type="checkbox"
-                  class="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500 dark:border-gray-600"
+                  v-model:checked="form.marketing_settings.product_news"
                 />
               </div>
+
               <div class="ml-3 text-sm">
                 <label for="product_news" class="font-medium text-gray-700 dark:text-gray-300">
                   Product News
@@ -231,13 +210,12 @@ const submit = () => {
 
             <div class="relative flex items-start">
               <div class="flex items-center h-5">
-                <input
+                <Checkbox
                   id="marketing_communications"
-                  v-model="form.marketing_settings.marketing_communications"
-                  type="checkbox"
-                  class="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500 dark:border-gray-600"
+                  v-model:checked="form.marketing_settings.marketing_communications"
                 />
               </div>
+
               <div class="ml-3 text-sm">
                 <label for="marketing_communications" class="font-medium text-gray-700 dark:text-gray-300">
                   Marketing Communications
@@ -249,12 +227,10 @@ const submit = () => {
         </div>
 
         <div class="flex justify-end">
-          <button
-            type="submit"
-            class="ml-3 inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 dark:focus:ring-offset-gray-900"
-          >
+          <Button
+            type="submit">
             Save Settings
-          </button>
+          </Button>
         </div>
       </form>
     </div>

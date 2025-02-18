@@ -4,7 +4,6 @@ import { Link, router } from '@inertiajs/vue3'
 import pickBy from 'lodash/pickBy'
 import throttle from 'lodash/throttle'
 import AppLayout from '@/Layouts/AppLayout.vue'
-import { Checkbox } from '@/Components/ui/checkbox'
 import ImportErrorsModal from '@/Pages/Subscribers/Components/ImportErrorsModal.vue'
 import {
   Users,
@@ -298,7 +297,8 @@ const downloadTemplate = () => {
               class="w-[300px]"
             />
 
-            <Select v-model="selectedStatus">
+            <Select
+              v-model="selectedStatus">
               <SelectTrigger class="w-[180px]">
                 <SelectValue placeholder="Filter by status" />
               </SelectTrigger>
@@ -306,8 +306,7 @@ const downloadTemplate = () => {
                 <SelectItem
                   v-for="status in statuses"
                   :key="status.value"
-                  :value="status.value"
-                >
+                  :value="status.value">
                   {{ status.label }}
                 </SelectItem>
               </SelectContent>
@@ -364,9 +363,9 @@ const downloadTemplate = () => {
               <TableRow>
                 <TableHead class="w-[40px]">
                   <Checkbox
-                    :checked="selectedSubscribers.length === subscribers.data.length"
-                    :indeterminate="selectedSubscribers.length > 0 && selectedSubscribers.length < subscribers.data.length"
-                    @change="(checked: boolean) => {
+                    :checked="selectedSubscribers.length && selectedSubscribers.length === subscribers.data.length"
+                    :indeterminate="selectedSubscribers.length && selectedSubscribers.length > 0 && selectedSubscribers.length < subscribers.data.length"
+                    @update:checked="(checked: boolean) => {
                       selectedSubscribers = checked ? subscribers.data.map(s => s.id) : []
                     }"
                   />

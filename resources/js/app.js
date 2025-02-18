@@ -8,7 +8,7 @@ import {ModalLink, renderApp} from '@inertiaui/modal-vue'
 import VueApexCharts from "vue3-apexcharts";
 import {createPinia} from "pinia";
 
-import { install as VueMonacoEditorPlugin } from '@guolao/vue-monaco-editor'
+import {install as VueMonacoEditorPlugin} from '@guolao/vue-monaco-editor'
 import {setupCalendar, Calendar as VCalendar, DatePicker} from 'v-calendar';
 import 'v-calendar/style.css';
 
@@ -43,6 +43,18 @@ import {
   DropdownMenuShortcut,
   DropdownMenuTrigger,
 } from '@/Components/ui/dropdown-menu'
+
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableEmpty,
+  TableHead,
+  TableRow,
+  TableHeader,
+  TableCaption,
+  TableFooter,
+} from '@/Components/ui/table'
 
 // Additional shadcn components useful for billing
 import {
@@ -126,6 +138,15 @@ createInertiaApp({
       })
 
       // Existing components
+      .component('Table', Table)
+      .component('TableBody', TableBody)
+      .component('TableCell', TableCell)
+      .component('TableEmpty', TableEmpty)
+      .component('TableHead', TableHead)
+      .component('TableRow', TableRow)
+      .component('TableHeader', TableHeader)
+      .component('TableCaption', TableCaption)
+      .component('TableFooter', TableFooter)
       .component('VCalendar', VCalendar)
       .component('VDatePicker', DatePicker)
       .component('GlobalModal', GlobalModal)

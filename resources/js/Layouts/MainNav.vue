@@ -1,11 +1,10 @@
 <script setup lang="ts">
 import { Link } from '@inertiajs/vue3'
-import { computed } from 'vue'
 import {
-  IconHome,
+  IconSmartHome,
   IconMail,
   IconUsers,
-  IconFileAnalytics,
+  IconLayoutKanban,
   IconChartLine,
   IconUsersGroup
 } from '@tabler/icons-vue'
@@ -14,7 +13,7 @@ const navigation = [
   {
     name: 'Dashboard',
     href: route('dashboard'),
-    icon: IconHome,
+    icon: IconSmartHome,
     active: route().current('dashboard')
   },
   {
@@ -32,7 +31,7 @@ const navigation = [
   {
     name: 'Templates',
     href: route('templates.index'),
-    icon: IconFileAnalytics,
+    icon: IconLayoutKanban,
     active: route().current('templates.*')
   },
   // {

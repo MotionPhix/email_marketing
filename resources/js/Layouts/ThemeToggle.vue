@@ -1,12 +1,4 @@
 <script setup lang="ts">
-import {Button} from '@/Components/ui/button'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuShortcut,
-  DropdownMenuTrigger
-} from '@/Components/ui/dropdown-menu'
 import {MoonIcon, SunIcon} from "@radix-icons/vue";
 import {useColorMode} from '@vueuse/core'
 
@@ -17,7 +9,7 @@ withDefaults(
   }>(),
   {
     isRounded: false,
-    size: '1.2rem'
+    size: '0.75rem'
   }
 )
 

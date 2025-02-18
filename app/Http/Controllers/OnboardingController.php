@@ -50,37 +50,47 @@ class OnboardingController extends Controller
     }
   }
 
-  public function skip(int $step)
+  public function skip()
   {
     try {
       DB::beginTransaction();
 
-      $progress = $this->onboardingService->skipStep(
-        auth()->user(),
-        $step
-      );
+      $user = auth()->user();
+      $progress = $this->onboardingService->getOrCreateProgress($user);
+
+      // Mark all steps as skipped (including required ones)
+      $allSteps = range(1, 6);
+      foreach ($allSteps as $step) {
+        if (!in_array($step, $progress->skipped_steps ?? [])) {
+          $progress->skipped_steps = array_merge($progress->skipped_steps ?? [], [$step]);
+        }
+      }
+
+      // Mark onboarding as completed but flag settings as incomplete
+      $progress->is_completed = true;
+      $progress->completed_at = now();
+      $progress->settings_pending = true; // Add this flag to track pending settings
+      $progress->save();
+
+      // Update user settings to indicate required setup is pending
+      $user->settings()->update([
+        'account_setup_completed' => false
+      ]);
 
       DB::commit();
 
-      return back()->with([
-        'message' => 'Step skipped successfully',
-        'progress' => $progress->fresh(),
-      ]);
-    } catch (OnboardingException $e) {
-      DB::rollBack();
-
-      return back()->withErrors(['step' => $e->getMessage()], 'default');
+      return redirect()->route('settings.account')->with('warning',
+        'Please configure your account settings before sending campaigns.');
     } catch (Throwable $e) {
       DB::rollBack();
-      Log::error('Failed to skip onboarding step', [
+      Log::error('Failed to skip onboarding', [
         'error' => $e->getMessage(),
-        'step' => $step,
         'user_id' => auth()->id(),
       ]);
 
-      return response()->json([
-        'message' => 'Failed to skip step. Please try again.',
-      ], 500);
+      return back()->withErrors([
+        'message' => 'Failed to skip onboarding. Please try again.',
+      ]);
     }
   }
 

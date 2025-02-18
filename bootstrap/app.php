@@ -18,8 +18,9 @@ return Application::configure(basePath: dirname(__DIR__))
       \Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets::class,
     ]);
 
-    $middleware->append([
+    $middleware->alias([
       'onboarding.complete' => \App\Http\Middleware\EnsureOnboardingIsComplete::class,
+      'settings.completed' => \App\Http\Middleware\CheckSettings::class,
     ]);
 
     $middleware->validateCsrfTokens(except: [

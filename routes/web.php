@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\V1\TeamMemberController;
 use App\Http\Controllers\CampaignController;
 use App\Http\Controllers\EmailTemplateController;
 use App\Http\Controllers\OnboardingController;
+use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\SubscriberController;
 use App\Http\Controllers\TeamInvitationController;
 use Illuminate\Support\Facades\Route;
@@ -14,7 +15,7 @@ use Illuminate\Support\Facades\Route;
 Route::middleware(['auth'])->group(function () {
   // Dashboard
   Route::get(
-    '/',
+    '/dashboard',
     \App\Http\Controllers\Analytics::class
   )->name('dashboard');
 
@@ -170,6 +171,21 @@ Route::middleware(['auth'])->group(function () {
   Route::prefix('quotas')->group(function () {
     Route::get('/', [QuotaController::class, 'show']);
     Route::get('/usage', [QuotaController::class, 'usage']);
+  });
+
+  Route::prefix('settings')->name('settings.')->middleware(['auth'])->group(function () {
+    Route::get('/', [SettingsController::class, 'index'])->name('index');
+
+    // Account & Brand Settings
+    Route::get('/account', [SettingsController::class, 'account'])->name('account');
+    Route::post('/account', [SettingsController::class, 'updateAccount'])->name('account.update');
+
+    // Preferences & Notifications
+    Route::get('/preferences', [SettingsController::class, 'preferences'])->name('preferences');
+    Route::post('/preferences', [SettingsController::class, 'updatePreferences'])->name('preferences.update');
+
+    // Email Verification
+    Route::post('/verify-sender', [SettingsController::class, 'verifySenderEmail'])->name('verify-sender');
   });
 });
 

@@ -40,6 +40,7 @@ import {
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
+  DropdownMenuShortcut,
   DropdownMenuTrigger,
 } from '@/Components/ui/dropdown-menu'
 
@@ -61,6 +62,12 @@ import {
 } from "@/Components/ui/alert"
 
 import {
+  Avatar,
+  AvatarImage,
+  AvatarFallback,
+} from "@/Components/ui/avatar"
+
+import {
   Toast,
   ToastAction,
   ToastClose,
@@ -76,6 +83,15 @@ import {
   TabsContent,
   TabsTrigger,
 } from "@/Components/ui/tabs"
+
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+  SheetDescription
+} from '@/Components/ui/sheet'
 
 import {Badge} from "@/Components/ui/badge"
 import {Checkbox} from "@/Components/ui/checkbox"
@@ -135,6 +151,7 @@ createInertiaApp({
       .component('DropdownMenuLabel', DropdownMenuLabel)
       .component('DropdownMenuSeparator', DropdownMenuSeparator)
       .component('DropdownMenuTrigger', DropdownMenuTrigger)
+      .component('DropdownMenuShortcut', DropdownMenuShortcut)
       .component('FormField', FormField)
       .component('Checkbox', Checkbox)
       .component('Calendar', Calendar)
@@ -143,6 +160,12 @@ createInertiaApp({
       .component('Label', Label)
 
       // New shadcn components
+      .component('Sheet', Sheet)
+      .component('SheetContent', SheetContent)
+      .component('SheetHeader', SheetHeader)
+      .component('SheetTitle', SheetTitle)
+      .component('SheetTrigger', SheetTrigger)
+      .component('SheetDescription', SheetDescription)
       .component('Dialog', Dialog)
       .component('DialogContent', DialogContent)
       .component('DialogDescription', DialogDescription)
@@ -167,6 +190,9 @@ createInertiaApp({
       .component('TabsTrigger', TabsTrigger)
       .component('TabsList', TabsList)
       .component('TabsContent', TabsContent)
+      .component('Avatar', Avatar)
+      .component('AvatarImage', AvatarImage)
+      .component('AvatarFallback', AvatarFallback)
       .mount(el);
   },
   progress: {

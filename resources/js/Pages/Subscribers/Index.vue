@@ -1,10 +1,9 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { Head } from '@inertiajs/vue3'
+import {Head, router} from '@inertiajs/vue3'
 import AppLayout from '@/Layouts/AppLayout.vue'
-import { useToast } from '@/hooks/useToast'
-
-const { toast } = useToast()
+import {toast} from "vue-sonner";
+import {DownloadIcon, PlusIcon, UploadIcon, PencilIcon, MoreHorizontalIcon, TrashIcon} from "lucide-vue-next";
 
 const props = defineProps<{
   subscribers: {
@@ -39,11 +38,10 @@ const handleFileChange = (event: Event) => {
 
 const submitImport = () => {
   if (!importFile.value) {
-    toast({
-      title: "Error",
-      description: "Please select a file to import",
-      variant: "destructive",
+    toast.error("Error", {
+      description: 'Please select a file to import'
     })
+
     return
   }
 

@@ -1,23 +1,21 @@
 <script setup lang="ts">
+import { Link } from '@inertiajs/vue3'
 import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-} from '@/Components/ui/avatar'
-import {Button} from '@/Components/ui/button'
-import {Link} from '@inertiajs/vue3'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuShortcut,
-  DropdownMenuTrigger,
-} from '@/Components/ui/dropdown-menu'
-import {UserIcon, SettingsIcon} from "lucide-vue-next";
-import {getInitials} from "@/lib/stringUtils";
+  User,
+  Settings,
+  Key,
+  CreditCard,
+  LifeBuoy,
+  LogOut
+} from 'lucide-vue-next'
+import { getInitials } from '@/lib/stringUtils'
+import { usePage } from '@inertiajs/vue3'
+
+const user = {
+  name: `${usePage().props.auth.user.first_name} ${usePage().props.auth.user.last_name}`,
+  email: usePage().props.auth.user.email,
+  imageUrl: usePage().props.auth.user.profile_photo_url
+}
 </script>
 
 <template>
@@ -25,64 +23,84 @@ import {getInitials} from "@/lib/stringUtils";
     <DropdownMenuTrigger as-child>
       <Button
         variant="ghost"
-        class="relative h-10 w-10 rounded-full">
-        <Avatar class="h-10 w-10">
-
+        class="relative h-8 w-8 rounded-full">
+        <Avatar class="h-8 w-8">
           <AvatarImage
-            :src="$page.props.auth.user.profile_photo_url"
-            :alt="`${$page.props.auth.user.name}`"
+            :src="user.imageUrl"
+            :alt="user.name"
           />
-
           <AvatarFallback>
-            {{ `${$page.props.auth.user.name}` }}
+            {{ getInitials(user.name) }}
           </AvatarFallback>
-
         </Avatar>
       </Button>
     </DropdownMenuTrigger>
 
-    <DropdownMenuContent class="w-48" align="end">
-      <DropdownMenuLabel class="font-normal flex">
+    <DropdownMenuContent class="w-56" align="end">
+      <DropdownMenuLabel class="font-normal">
         <div class="flex flex-col space-y-1">
-          <p class="font-medium leading-none">
-            {{ `${$page.props.auth.user.first_name} ${$page.props.auth.user.last_name}` }}
-          </p>
-
+          <p class="text-sm font-medium leading-none">{{ user.name }}</p>
           <p class="text-xs leading-none text-muted-foreground">
-            {{ $page.props.auth.user.email }}
+            {{ user.email }}
           </p>
         </div>
       </DropdownMenuLabel>
 
-      <DropdownMenuSeparator/>
+      <DropdownMenuSeparator />
 
       <DropdownMenuGroup>
-        <DropdownMenuItem
-          :href="route('profile.show')"
-          as-child>
-          <Link as="button" class="w-full">
-            <UserIcon/>
-            Profile
+        <DropdownMenuItem as-child>
+          <Link as="button" :href="route('profile.show')" class="w-full">
+            <User class="mr-2 h-4 w-4" />
+            <span>Profile</span>
+            <DropdownMenuShortcut>⇧⌘P</DropdownMenuShortcut>
           </Link>
         </DropdownMenuItem>
 
-        <DropdownMenuItem as-child
-                          :href="route('settings.index')">
-          <Link as="button" class="w-full">
-            <SettingsIcon/>
-            Settings
+        <DropdownMenuItem as-child>
+          <Link as="button" :href="route('settings.index')" class="w-full">
+            <Settings class="mr-2 h-4 w-4" />
+            <span>Settings</span>
+            <DropdownMenuShortcut>⌘S</DropdownMenuShortcut>
+          </Link>
+        </DropdownMenuItem>
+
+        <DropdownMenuItem as-child>
+          <Link as="button" :href="route('api-tokens.index')" class="w-full">
+            <Key class="mr-2 h-4 w-4" />
+            <span>API Tokens</span>
           </Link>
         </DropdownMenuItem>
       </DropdownMenuGroup>
 
-      <DropdownMenuSeparator/>
+      <DropdownMenuSeparator />
+
+      <DropdownMenuGroup>
+<!--        <DropdownMenuItem as-child>-->
+<!--          <Link :href="route('billing.index')" class="w-full">-->
+<!--            <CreditCard class="mr-2 h-4 w-4" />-->
+<!--            <span>Billing</span>-->
+<!--          </Link>-->
+<!--        </DropdownMenuItem>-->
+
+        <DropdownMenuItem as-child>
+          <a href="https://help.emailmarketing.com" target="_blank" class="w-full">
+            <LifeBuoy class="mr-2 h-4 w-4" />
+            <span>Support</span>
+          </a>
+        </DropdownMenuItem>
+      </DropdownMenuGroup>
+
+      <DropdownMenuSeparator />
 
       <DropdownMenuItem as-child>
         <Link
-          as="button"
+          :href="route('logout')"
           method="post"
-          :href="route('logout')" class="w-full">
-          Log out
+          as="button"
+          class="w-full">
+          <LogOut class="mr-2 h-4 w-4" />
+          <span>Log out</span>
           <DropdownMenuShortcut>⇧⌘Q</DropdownMenuShortcut>
         </Link>
       </DropdownMenuItem>

@@ -8,6 +8,7 @@ import {ModalLink, renderApp} from '@inertiaui/modal-vue'
 import VueApexCharts from "vue3-apexcharts";
 import {createPinia} from "pinia";
 
+import { install as VueMonacoEditorPlugin } from '@guolao/vue-monaco-editor'
 import {setupCalendar, Calendar as VCalendar, DatePicker} from 'v-calendar';
 import 'v-calendar/style.css';
 
@@ -101,6 +102,12 @@ createInertiaApp({
       .use(pinia)
       .use(VueApexCharts)
       .use(setupCalendar, {})
+      .use(VueMonacoEditorPlugin, {
+        paths: {
+          // The recommended CDN config
+          vs: 'https://cdn.jsdelivr.net/npm/monaco-editor@0.43.0/min/vs'
+        },
+      })
 
       // Existing components
       .component('VCalendar', VCalendar)

@@ -34,7 +34,7 @@ const props = defineProps<{
 const currentStep = ref(props.progress.current_step)
 let currentComponent: Component = OnboardingStep1
 
-console.log(props.userSettings)
+console.log(props.progress)
 
 const steps = [
   {

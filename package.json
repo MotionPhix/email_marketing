@@ -6,6 +6,7 @@
     "dev": "vite"
   },
   "devDependencies": {
+    "@guolao/vue-monaco-editor": "^1.5.4",
     "@inertiajs/vue3": "^1.0.14",
     "@inertiaui/modal-vue": "file:vendor/inertiaui/modal/vue",
     "@popperjs/core": "^2.11.8",

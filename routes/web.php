@@ -37,9 +37,14 @@ Route::middleware(['auth'])->group(function () {
     )->name('onboarding.complete');
 
     Route::post(
-      '/skip/{step}',
+      '/skip-onboarding',
       [OnboardingController::class, 'skip']
     )->name('onboarding.skip');
+
+    Route::post(
+      '/skip-current-step/{step}',
+      [OnboardingController::class, 'skipCurrent']
+    )->name('onboarding.skip-current');
 
   });
 

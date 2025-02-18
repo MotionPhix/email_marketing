@@ -84,6 +84,36 @@ class OnboardingController extends Controller
     }
   }
 
+  public function skipCurrent(Request $request)
+  {
+    try {
+      DB::beginTransaction();
+
+      $progress = $this->onboardingService->skipCurrentStep($request->user());
+
+      DB::commit();
+
+      return back()->with([
+        'message' => 'Step skipped successfully',
+        'progress' => $progress->fresh(),
+      ]);
+    } catch (OnboardingException $e) {
+      DB::rollBack();
+
+      return back()->withErrors(['step' => $e->getMessage()], 'default');
+    } catch (Throwable $e) {
+      DB::rollBack();
+      Log::error('Failed to skip current onboarding step', [
+        'error' => $e->getMessage(),
+        'user_id' => auth()->id(),
+      ]);
+
+      return back()->withErrors([
+        'message' => 'Failed to skip step. Please try again.',
+      ]);
+    }
+  }
+
   public function updateStep(Request $request)
   {
     // Resolve and validate the appropriate request for this step

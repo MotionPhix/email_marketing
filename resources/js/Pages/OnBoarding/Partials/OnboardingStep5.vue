@@ -11,6 +11,7 @@ import {
   CheckIcon
 } from 'lucide-vue-next'
 import { ScrollArea } from '@/Components/ui/scroll-area'
+import { VueMonacoEditor as MonacoEditor } from '@guolao/vue-monaco-editor'
 import {
   Sheet,
   SheetContent,

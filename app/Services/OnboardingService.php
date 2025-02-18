@@ -207,10 +207,51 @@ class OnboardingService
 
   private function calculateNextStep(array $completedSteps, array $skippedSteps): int
   {
-    $allSteps = range(1, 5);
+    // Get all available steps
+    $allSteps = array_merge(self::REQUIRED_STEPS, self::OPTIONAL_STEPS);
+
+    // Sort steps to ensure proper sequence
+    sort($allSteps);
+
+    // Get remaining steps that are neither completed nor skipped
     $remainingSteps = array_diff($allSteps, $completedSteps, $skippedSteps);
 
-    return empty($remainingSteps) ? max($completedSteps) : min($remainingSteps);
+    if (empty($remainingSteps)) {
+      // If all steps are either completed or skipped, stay on the last completed step
+      return !empty($completedSteps) ? max($completedSteps) : max($allSteps);
+    }
+
+    // Find the first remaining step that follows the sequence
+    foreach ($allSteps as $step) {
+      if (in_array($step, $remainingSteps)) {
+        // Check if we can access this step (all previous required steps completed)
+        $previousRequiredSteps = array_filter(self::REQUIRED_STEPS, fn($s) => $s < $step);
+
+        if (empty($previousRequiredSteps) ||
+          array_intersect($previousRequiredSteps, $completedSteps) == $previousRequiredSteps) {
+          return $step;
+        }
+      }
+    }
+
+    // If no valid next step found, return the last completed step
+    return !empty($completedSteps) ? max($completedSteps) : 1;
+  }
+
+  public function skipCurrentStep(User $user): OnboardingProgress
+  {
+    $progress = $this->getOrCreateProgress($user);
+    $currentStep = $progress->current_step;
+
+    // Can't skip required steps
+    if (in_array($currentStep, self::REQUIRED_STEPS)) {
+      throw new OnboardingException(
+        'This step cannot be skipped',
+        $currentStep
+      );
+    }
+
+    return $this->skipStep($user, $currentStep);
   }
 
   private function processDomainSetup(User $user, array $data): void

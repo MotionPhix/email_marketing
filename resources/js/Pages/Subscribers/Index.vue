@@ -556,10 +556,19 @@ const downloadTemplate = () => {
                         <span class="sr-only">Open menu</span>
                       </Button>
                     </DropdownMenuTrigger>
+
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem @click="editingSubscriber = subscriber; isEditDialogOpen = true">
+                      <DropdownMenuItem
+                        @click="router.visit(route('subscribers.show', subscriber.id))">
+                        Show
+                      </DropdownMenuItem>
+
+                      <DropdownMenuItem
+                        @click="editingSubscriber = subscriber; isEditDialogOpen = true">
                         Edit
                       </DropdownMenuItem>
+
+
                       <DropdownMenuItem @click="deleteSubscriber(subscriber.id)">
                         Delete
                       </DropdownMenuItem>

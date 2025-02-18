@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Imports\SubscribersImport;
 use App\Models\Subscriber;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -16,6 +17,8 @@ use Maatwebsite\Excel\Facades\Excel;
 
 class SubscriberController extends Controller
 {
+  use AuthorizesRequests;
+
   public function index(Request $request)
   {
     $query = Subscriber::query()
@@ -82,32 +85,118 @@ class SubscriberController extends Controller
     ]);
   }
 
+  public function show(Subscriber $subscriber)
+  {
+    $this->authorize('view', $subscriber);
+
+    // Get campaign events for this subscriber
+    $campaignEvents = $subscriber->campaignEvents()
+      ->with('campaign')
+      ->orderBy('created_at', 'desc')
+      ->get();
+
+    // Calculate statistics
+    $totalCampaigns = $subscriber->campaigns()->count();
+
+    $stats = [
+      'total_campaigns' => $totalCampaigns,
+      'open_rate' => $totalCampaigns > 0
+        ? $campaignEvents->where('type', 'open')->unique('campaign_id')->count() / $totalCampaigns
+        : 0,
+      'click_rate' => $totalCampaigns > 0
+        ? $campaignEvents->where('type', 'click')->unique('campaign_id')->count() / $totalCampaigns
+        : 0,
+      'bounce_rate' => $totalCampaigns > 0
+        ? $campaignEvents->where('type', 'bounce')->count() / $totalCampaigns
+        : 0,
+      'spam_rate' => $totalCampaigns > 0
+        ? $campaignEvents->where('type', 'complaint')->count() / $totalCampaigns
+        : 0,
+    ];
+
+    // Get campaigns data
+    $campaigns = $subscriber->campaigns()
+      ->with(['events' => function ($query) use ($subscriber) {
+        $query->where('subscriber_id', $subscriber->id);
+      }])
+      ->orderBy('sent_at', 'desc')
+      ->get()
+      ->map(function ($campaign) {
+        return [
+          'id' => $campaign->id,
+          'name' => $campaign->name,
+          'subject' => $campaign->subject,
+          'sent_at' => $campaign->sent_at,
+          'stats' => [
+            'opens' => $campaign->events->where('type', 'open')->count(),
+            'clicks' => $campaign->events->where('type', 'click')->count(),
+            'bounces' => $campaign->events->where('type', 'bounce')->count(),
+            'complaints' => $campaign->events->where('type', 'complaint')->count(),
+          ],
+        ];
+      });
+
+    // Get activity timeline
+    $activity = $campaignEvents
+      ->map(function ($event) {
+        return [
+          'id' => $event->id,
+          'type' => $event->type,
+          'campaign_name' => $event->campaign->name,
+          'created_at' => $event->created_at,
+        ];
+      });
+
+    return inertia('Subscribers/Show', [
+      'subscriber' => array_merge($subscriber->toArray(), [
+        'stats' => $stats,
+        'campaigns' => $campaigns,
+        'activity' => $activity,
+      ]),
+    ]);
+  }
+
+  public function update(Request $request, Subscriber $subscriber)
+  {
+    $this->authorize('update', $subscriber);
+
+    $validated = $request->validate([
+      'email' => ['required', 'email', Rule::unique('subscribers')
+        ->where('team_id', $request->user()->currentTeam->id)
+        ->ignore($subscriber->id)],
+      'first_name' => ['required', 'string', 'max:255'],
+      'last_name' => ['required', 'string', 'max:255'],
+      'company' => ['nullable', 'string', 'max:255'],
+      'status' => ['required', Rule::in([
+        Subscriber::STATUS_SUBSCRIBED,
+        Subscriber::STATUS_UNSUBSCRIBED,
+        Subscriber::STATUS_BOUNCED,
+        Subscriber::STATUS_COMPLAINED,
+      ])],
+    ]);
+
+    $subscriber->update($validated);
+
+    return redirect()->back();
+  }
+
+  public function unsubscribe(Subscriber $subscriber)
+  {
+    $this->authorize('update', $subscriber);
+
+    $subscriber->update([
+      'status' => Subscriber::STATUS_UNSUBSCRIBED,
+      'unsubscribed_at' => now(),
+    ]);
+
+    return redirect()->back();
+  }
+
   public function store(StoreSubscriberRequest $request)
   {
     $subscriber = $request->user()->currentTeam->subscribers()->create($request->validated());
 
     return back()->with('success', 'Subscriber added successfully.');
-  }
-
-  public function update(Request $request, Subscriber $subscriber)
-  {
-    $validated = $request->validate([
-      'email' => ['required', 'email', Rule::unique('subscribers')->ignore($subscriber->id)],
-      'first_name' => 'required|string|max:255',
-      'last_name' => 'required|string|max:255',
-      'company' => 'nullable|string|max:255',
-      'status' => ['required', Rule::in([
-        Subscriber::STATUS_SUBSCRIBED,
-        Subscriber::STATUS_UNSUBSCRIBED,
-        Subscriber::STATUS_BOUNCED,
-        Subscriber::STATUS_COMPLAINED
-      ])],
-      'metadata' => 'nullable|array'
-    ]);
-
-    $subscriber->update($validated);
-
-    return back()->with('success', 'Subscriber updated successfully.');
   }
 
   public function destroy(Subscriber $subscriber)
@@ -165,8 +254,8 @@ class SubscriberController extends Controller
       ]
     ]);
 
-//    try {
-//      DB::beginTransaction();
+    try {
+      DB::beginTransaction();
 
       $team = $request->user()->currentTeam;
       $file = $request->file('file');
@@ -191,7 +280,7 @@ class SubscriberController extends Controller
         $importResults = $this->processCsvFile($file, $team);
       }
 
-//      DB::commit();
+      DB::commit();
 
       // Prepare response message
       $message = $this->prepareImportResponseMessage($importResults);
@@ -205,11 +294,11 @@ class SubscriberController extends Controller
 
       return back()->with('success', $message);
 
-//    } catch (\Exception $e) {
-//      DB::rollBack();
-//      report($e);
-//      return back()->with('error', 'Import failed: ' . $e->getMessage());
-//    }
+    } catch (\Exception $e) {
+      DB::rollBack();
+      report($e);
+      return back()->with('error', 'Import failed: ' . $e->getMessage());
+    }
   }
 
   /**

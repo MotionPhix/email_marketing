@@ -135,11 +135,12 @@ Route::middleware(['auth'])->group(function () {
   // Subscriber routes
   Route::prefix('subscribers')->name('subscribers.')->middleware(['auth'])->group(function () {
     Route::get('/', [SubscriberController::class, 'index'])->name('index');
-    Route::get('/create', [SubscriberController::class, 'create'])->name('create');
+    Route::get('/new-subscriber', [SubscriberController::class, 'create'])->name('create');
     Route::post('/', [SubscriberController::class, 'store'])->name('store');
-    Route::get('/{subscriber}/edit', [SubscriberController::class, 'edit'])->name('edit');
-    Route::put('/{subscriber}', [SubscriberController::class, 'update'])->name('update');
-    Route::delete('/{subscriber}', [SubscriberController::class, 'destroy'])->name('destroy');
+    Route::get('/e/{subscriber}', [SubscriberController::class, 'edit'])->name('edit');
+    Route::put('/u/{subscriber}', [SubscriberController::class, 'update'])->name('update');
+    Route::get('/s/{subscriber}', [SubscriberController::class, 'show'])->name('show');
+    Route::delete('/d/{subscriber}', [SubscriberController::class, 'destroy'])->name('destroy');
 
     // Import and Export routes
     Route::post('/import', [SubscriberController::class, 'import'])->name('import');
@@ -148,6 +149,7 @@ Route::middleware(['auth'])->group(function () {
     // Bulk actions
     Route::post('/bulk-destroy', [SubscriberController::class, 'bulkDestroy'])->name('bulk-destroy');
     Route::post('/bulk-update', [SubscriberController::class, 'bulkUpdate'])->name('bulk-update');
+
   });
 
   // Team Management
@@ -211,3 +213,8 @@ Route::get('/team-invitations/{token}', [TeamInvitationController::class, 'accep
 
 Route::post('/team-invitations/{token}/register', [TeamInvitationController::class, 'register'])
   ->name('team-invitations.register');
+
+Route::patch(
+  'unsubscribe/{subscriber}',
+  [SubscriberController::class, 'unsubscribe']
+)->name('subscribers.unsubscribe');

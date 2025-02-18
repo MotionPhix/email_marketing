@@ -3,8 +3,8 @@ import {ref, computed} from 'vue'
 import {useForm} from '@inertiajs/vue3'
 import AppLayout from '@/Layouts/AppLayout.vue'
 import {format} from 'date-fns'
-import RecipientSelector from "@/Components/Campaign/RecipientSelector.vue";
 import EmailEditor from "@/Components/Campaign/EmailEditor.vue";
+import {availableVariables} from "@/config/variables";
 
 interface Props {
   campaign?: {

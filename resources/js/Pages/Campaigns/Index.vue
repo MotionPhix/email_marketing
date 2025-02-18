@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { Link } from '@inertiajs/vue3'
-import { Icon } from '@tabler/icons-vue'
 import { format } from 'date-fns'
 import AppLayout from '@/Layouts/AppLayout.vue'
+import {IconEdit, IconDotsVertical} from "@tabler/icons-vue";
 
 interface Campaign {
   id: number
@@ -178,13 +178,13 @@ onMounted(fetchCampaigns)
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" size="icon">
-                      <Icon name="dots-vertical" class="h-4 w-4" />
+                      <IconDotsVertical class="h-4 w-4" />
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent>
                     <DropdownMenuItem asChild>
                       <Link :href="route('campaigns.edit', campaign.id)">
-                        <Icon name="edit" class="mr-2 h-4 w-4" />
+                        <IconEdit class="mr-2 h-4 w-4" />
                         Edit
                       </Link>
                     </DropdownMenuItem>

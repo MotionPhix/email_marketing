@@ -67,8 +67,7 @@ fetchSegments()
             selectedLists.includes(list.id)
               ? selectedLists = selectedLists.filter(id => id !== list.id)
               : selectedLists.push(list.id)
-          "
-        >
+          ">
           <CardContent class="p-4">
             <div class="flex items-center justify-between">
               <div>
@@ -103,8 +102,7 @@ fetchSegments()
             selectedSegments.includes(segment.id)
               ? selectedSegments = selectedSegments.filter(id => id !== segment.id)
               : selectedSegments.push(segment.id)
-          "
-        >
+          ">
           <CardContent class="p-4">
             <div class="flex items-center justify-between">
               <div>
@@ -132,8 +130,7 @@ fetchSegments()
         multiple
         :options="lists.filter(list => !selectedLists.includes(list.id))"
         option-label="name"
-        option-value="id"
-      >
+        option-value="id">
         <template #trigger>
           <Button variant="outline" class="w-full justify-start">
             {{ excludedLists.length ? `${excludedLists.length} lists excluded` : 'Select lists to exclude' }}

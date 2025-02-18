@@ -4,7 +4,7 @@ import { Icon } from '@tabler/icons-vue'
 import { useForm } from '@inertiajs/vue3'
 import type { CampaignDraft } from '@/types/campaign'
 import EmailEditor from '@/Components/EmailEditor.vue'
-import RecipientSelector from '@/Components/RecipientSelector.vue'
+import RecipientSelector from '@/Components/SubscriberSelector.vue'
 import ScheduleSelector from '@/Components/ScheduleSelector.vue'
 
 const currentStep = ref(1)
@@ -272,8 +272,7 @@ const submit = () => {
                       v-for="list in form.recipients.lists"
                       :key="list"
                       variant="secondary"
-                      class="ml-2"
-                    >
+                      class="ml-2" >
                       {{ list }}
                     </Badge>
                   </div>
@@ -283,8 +282,7 @@ const submit = () => {
                       v-for="segment in form.recipients.segments"
                       :key="segment"
                       variant="secondary"
-                      class="ml-2"
-                    >
+                      class="ml-2">
                       {{ segment }}
                     </Badge>
                   </div>
@@ -307,25 +305,24 @@ const submit = () => {
         <Button
           v-if="currentStep > 1"
           variant="outline"
-          @click="currentStep--"
-        >
+          @click="currentStep--">
           <Icon name="arrow-left" class="mr-2 h-4 w-4" />
           Previous
         </Button>
+
         <div class="flex justify-end space-x-4">
           <Button
             v-if="currentStep < steps.length"
             :disabled="!canGoNext"
-            @click="currentStep++"
-          >
+            @click="currentStep++">
             Next
             <Icon name="arrow-right" class="ml-2 h-4 w-4" />
           </Button>
+
           <Button
             v-if="currentStep === steps.length"
             :disabled="form.processing"
-            @click="submit"
-          >
+            @click="submit">
             <Icon
               v-if="form.processing"
               name="loader-2"

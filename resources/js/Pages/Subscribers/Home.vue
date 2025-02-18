@@ -2,9 +2,7 @@
 import { ref } from 'vue'
 import { Head } from '@inertiajs/vue3'
 import AppLayout from '@/Layouts/AppLayout.vue'
-import { useToast } from '@/hooks/useToast'
-
-const { toast } = useToast()
+import {toast} from "vue-sonner";
 
 const props = defineProps<{
   segments: {
@@ -54,8 +52,7 @@ const submitForm = () => {
     form.put(route('segments.update', editingSegment.value), {
       onSuccess: () => {
         showCreateModal.value = false
-        toast({
-          title: "Success",
+        toast.success("Success",{
           description: "Segment updated successfully"
         })
       }
@@ -64,8 +61,7 @@ const submitForm = () => {
     form.post(route('segments.store'), {
       onSuccess: () => {
         showCreateModal.value = false
-        toast({
-          title: "Success",
+        toast.success("Success", {
           description: "Segment created successfully"
         })
       }
@@ -112,32 +108,37 @@ const submitForm = () => {
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
                     @click="deleteSegment(segment.id)"
-                    class="text-destructive"
-                  >
+                    class="text-destructive">
                     <TrashIcon class="h-4 w-4 mr-2" />
                     Delete
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             </CardTitle>
+
             <CardDescription>
               {{ segment.description || 'No description' }}
             </CardDescription>
           </CardHeader>
+
           <CardContent>
             <div class="space-y-4">
               <div class="flex items-center justify-between text-sm">
                 <span class="text-muted-foreground">Subscribers</span>
                 <Badge>{{ segment.subscriber_count }}</Badge>
               </div>
+
               <Separator />
+
               <div class="space-y-2">
                 <p class="text-sm font-medium">Conditions:</p>
                 <div v-for="(condition, index) in segment.conditions" :key="index" class="text-sm">
                   <Badge variant="secondary" class="mr-2">
                     {{ condition.field }}
                   </Badge>
+
                   {{ condition.operator }}
+
                   <Badge variant="outline" class="ml-2">
                     {{ condition.value }}
                   </Badge>
@@ -184,8 +185,7 @@ const submitForm = () => {
                 <div
                   v-for="(condition, index) in form.conditions"
                   :key="index"
-                  class="flex items-center gap-2"
-                >
+                  class="flex items-center gap-2">
                   <Select v-model="condition.field" class="w-1/3">
                     <SelectTrigger>
                       <SelectValue />
@@ -221,8 +221,7 @@ const submitForm = () => {
                     variant="ghost"
                     size="icon"
                     @click="removeCondition(index)"
-                    :disabled="form.conditions.length === 1"
-                  >
+                    :disabled="form.conditions.length === 1">
                     <XIcon class="h-4 w-4" />
                   </Button>
                 </div>
@@ -231,8 +230,7 @@ const submitForm = () => {
                   type="button"
                   variant="outline"
                   @click="addCondition"
-                  class="w-full"
-                >
+                  class="w-full">
                   <PlusIcon class="h-4 w-4 mr-2" />
                   Add Condition
                 </Button>
@@ -243,11 +241,13 @@ const submitForm = () => {
               <Button
                 type="button"
                 variant="outline"
-                @click="showCreateModal = false"
-              >
+                @click="showCreateModal = false">
                 Cancel
               </Button>
-              <Button type="submit" :disabled="form.processing">
+
+              <Button
+                type="submit"
+                :disabled="form.processing">
                 {{ editingSegment ? 'Update' : 'Create' }}
               </Button>
             </DialogFooter>

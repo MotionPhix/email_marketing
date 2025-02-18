@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 use App\Http\Requests\StoreSubscriberRequest;
 use Illuminate\Validation\Rule;
@@ -147,167 +148,193 @@ class SubscriberController extends Controller
     return back()->with('success', 'Selected subscribers updated successfully.');
   }
 
+  /**
+   * Import subscribers from a file
+   *
+   * @param Request $request
+   * @return \Illuminate\Http\RedirectResponse
+   */
   public function import(Request $request)
   {
-    $request->validate([
+    $validated = $request->validate([
       'file' => [
         'required',
         'file',
-        'max:10240', // 10MB max size
-        'mimes:csv,txt,xlsx,xls' // Allow Excel and CSV files
+        'mimes:csv,txt,xlsx,xls',  // Allow Excel and CSV files
+        'max:10240', // 10MB max
       ]
     ]);
 
-    try {
-      // Start database transaction
-      DB::beginTransaction();
+//    try {
+//      DB::beginTransaction();
 
+      $team = $request->user()->currentTeam;
       $file = $request->file('file');
       $extension = $file->getClientOriginalExtension();
-      $rows = [];
+
+      // Prepare import results tracking
+      $importResults = [
+        'total' => 0,
+        'imported' => 0,
+        'updated' => 0,
+        'failed' => 0,
+        'errors' => []
+      ];
 
       if (in_array($extension, ['xlsx', 'xls'])) {
-        // Handle Excel files
-        $rows = Excel::toCollection(new SubscribersImport, $file)->first();
+        // Handle Excel files using Laravel Excel
+        $import = new SubscribersImport($team, $importResults);
+        Excel::import($import, $file);
+        $importResults = $import->getResults();
       } else {
         // Handle CSV files
-        $rows = $this->parseCsvFile($file);
+        $importResults = $this->processCsvFile($file, $team);
       }
 
-      // Remove header row if present
-      if ($rows->count() > 0 && $this->isHeaderRow($rows->first())) {
-        $rows = $rows->slice(1);
-      }
-
-      $team_id = $request->user()->currentTeam->id;
-      $importedCount = 0;
-      $updatedCount = 0;
-      $errorCount = 0;
-      $errors = [];
-
-      foreach ($rows as $index => $row) {
-        try {
-          // Map row data to subscriber fields
-          $subscriberData = $this->mapRowToSubscriberData($row);
-
-          // Validate each row
-          $validator = Validator::make($subscriberData, [
-            'email' => ['required', 'email', 'max:255'],
-            'first_name' => ['required', 'string', 'max:255'],
-            'last_name' => ['required', 'string', 'max:255'],
-            'company' => ['nullable', 'string', 'max:255'],
-            'status' => ['nullable', Rule::in([
-              Subscriber::STATUS_SUBSCRIBED,
-              Subscriber::STATUS_UNSUBSCRIBED,
-              Subscriber::STATUS_BOUNCED,
-              Subscriber::STATUS_COMPLAINED
-            ])]
-          ]);
-
-          if ($validator->fails()) {
-            $errors[] = [
-              'row' => $index + 2, // Account for 1-based index and header row
-              'errors' => $validator->errors()->toArray(),
-              'data' => $subscriberData
-            ];
-            $errorCount++;
-            continue;
-          }
-
-          // Check for existing subscriber
-          $subscriber = Subscriber::where('email', $subscriberData['email'])
-            ->where('team_id', $team_id)
-            ->first();
-
-          if ($subscriber) {
-            // Update existing subscriber
-            $subscriber->update($subscriberData);
-            $updatedCount++;
-          } else {
-            // Create new subscriber
-            $subscriberData['team_id'] = $team_id;
-            Subscriber::create($subscriberData);
-            $importedCount++;
-          }
-
-        } catch (\Exception $e) {
-          $errors[] = [
-            'row' => $index + 2,
-            'errors' => ['system' => $e->getMessage()],
-            'data' => $subscriberData ?? $row
-          ];
-          $errorCount++;
-        }
-      }
-
-      DB::commit();
+//      DB::commit();
 
       // Prepare response message
-      $message = "Import completed. ";
-      $message .= $importedCount > 0 ? "{$importedCount} subscribers imported. " : "";
-      $message .= $updatedCount > 0 ? "{$updatedCount} subscribers updated. " : "";
+      $message = $this->prepareImportResponseMessage($importResults);
 
-      if ($errorCount > 0) {
-        // Store errors in session for detailed view
-        session()->flash('import_errors', $errors);
+      if ($importResults['failed'] > 0) {
         return back()->with([
-          'warning' => $message . "{$errorCount} rows had errors. View details below.",
-          'import_summary' => [
-            'imported' => $importedCount,
-            'updated' => $updatedCount,
-            'errors' => $errorCount
-          ]
+          'warning' => $message,
+          'import_errors' => $importResults['errors']
         ]);
       }
 
       return back()->with('success', $message);
 
-    } catch (\Exception $e) {
-      DB::rollBack();
-      report($e);
-      return back()->with('error', 'Import failed. Please check your file and try again.');
-    }
+//    } catch (\Exception $e) {
+//      DB::rollBack();
+//      report($e);
+//      return back()->with('error', 'Import failed: ' . $e->getMessage());
+//    }
   }
 
-  private function parseCsvFile($file)
+  /**
+   * Process CSV file for import
+   *
+   * @param \Illuminate\Http\UploadedFile $file
+   * @param \App\Models\Team $team
+   * @return array
+   */
+  protected function processCsvFile($file, $team)
   {
-    $rows = new Collection();
+    $results = [
+      'total' => 0,
+      'imported' => 0,
+      'updated' => 0,
+      'failed' => 0,
+      'errors' => []
+    ];
+
     $handle = fopen($file->getPathname(), 'r');
+    $headers = null;
+    $row = 1;
 
     while (($data = fgetcsv($handle)) !== false) {
-      $rows->push($data);
+      if (!$headers) {
+        $headers = $this->normalizeHeaders($data);
+        continue;
+      }
+
+      $results['total']++;
+      $row++;
+
+      try {
+        $subscriberData = $this->mapRowToSubscriberData($data, $headers);
+
+        // Validate the data
+        $validator = Validator::make($subscriberData, [
+          'email' => ['required', 'email', Rule::unique('subscribers', 'email')
+            ->where('team_id', $team->id)
+            ->ignore(optional(Subscriber::where('email', $subscriberData['email'])
+              ->where('team_id', $team->id)
+              ->first())->id)],
+          'first_name' => 'required|string|max:255',
+          'last_name' => 'required|string|max:255',
+          'company' => 'nullable|string|max:255',
+          'status' => [
+            'nullable',
+            Rule::in([
+              Subscriber::STATUS_SUBSCRIBED,
+              Subscriber::STATUS_UNSUBSCRIBED,
+              Subscriber::STATUS_BOUNCED,
+              Subscriber::STATUS_COMPLAINED
+            ])
+          ]
+        ]);
+
+        if ($validator->fails()) {
+          $results['failed']++;
+          $results['errors'][] = [
+            'row' => $row,
+            'data' => $subscriberData,
+            'errors' => $validator->errors()->toArray()
+          ];
+          continue;
+        }
+
+        // Set default status if not provided
+        $subscriberData['status'] ??= Subscriber::STATUS_SUBSCRIBED;
+
+        // Try to find existing subscriber
+        $subscriber = Subscriber::where('email', $subscriberData['email'])
+          ->where('team_id', $team->id)
+          ->first();
+
+        if ($subscriber) {
+          $subscriber->update($subscriberData);
+          $results['updated']++;
+        } else {
+          $team->subscribers()->create(array_merge($subscriberData, [
+            'user_id' => auth()->id()
+          ]));
+
+          $results['imported']++;
+        }
+
+      } catch (\Exception $e) {
+
+        $results['failed']++;
+
+        $results['errors'][] = [
+          'row' => $row,
+          'data' => $data,
+          'errors' => ['system' => [$e->getMessage()]]
+        ];
+      }
     }
 
     fclose($handle);
-    return $rows;
+    return $results;
   }
 
-  private function isHeaderRow($row)
+  /**
+   * Normalize CSV headers
+   *
+   * @param array $headers
+   * @return array
+   */
+  protected function normalizeHeaders($headers)
   {
-    // Check if the first row contains headers
-    $possibleHeaders = ['email', 'first_name', 'last_name', 'company', 'status'];
-    $rowValues = collect($row)->map(fn($value) => strtolower(trim($value)));
-
-    return $rowValues->intersect($possibleHeaders)->isNotEmpty();
+    return array_map(function ($header) {
+      return Str::snake(strtolower(trim($header)));
+    }, $headers);
   }
 
-  private function mapRowToSubscriberData($row)
+  /**
+   * Map CSV row data to subscriber fields
+   *
+   * @param array $row
+   * @param array $headers
+   * @return array
+   */
+  protected function mapRowToSubscriberData($row, $headers)
   {
-    // Convert array or object to array
-    $data = is_array($row) ? $row : $row->toArray();
+    $data = array_combine($headers, $row);
 
-    // If it's a CSV row, map by position
-    if (isset($data[0])) {
-      return [
-        'email' => $data[0] ?? null,
-        'first_name' => $data[1] ?? null,
-        'last_name' => $data[2] ?? null,
-        'company' => $data[3] ?? null,
-        'status' => $data[4] ?? Subscriber::STATUS_SUBSCRIBED,
-      ];
-    }
-
-    // If it's an Excel row with headers, map by key
     return [
       'email' => $data['email'] ?? null,
       'first_name' => $data['first_name'] ?? null,
@@ -315,6 +342,31 @@ class SubscriberController extends Controller
       'company' => $data['company'] ?? null,
       'status' => $data['status'] ?? Subscriber::STATUS_SUBSCRIBED,
     ];
+  }
+
+  /**
+   * Prepare import response message
+   *
+   * @param array $results
+   * @return string
+   */
+  protected function prepareImportResponseMessage($results)
+  {
+    $message = [];
+
+    if ($results['imported'] > 0) {
+      $message[] = "{$results['imported']} subscribers imported";
+    }
+
+    if ($results['updated'] > 0) {
+      $message[] = "{$results['updated']} subscribers updated";
+    }
+
+    if ($results['failed'] > 0) {
+      $message[] = "{$results['failed']} rows failed";
+    }
+
+    return implode(', ', $message) . '.';
   }
 
   public function export(Request $request)

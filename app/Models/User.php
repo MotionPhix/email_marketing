@@ -105,6 +105,31 @@ class User extends Authenticatable implements MustVerifyEmail
     return $this->hasMany(RegistrationData::class);
   }
 
+  // Team relationships
+  public function ownedTeams()
+  {
+    return $this->hasMany(Team::class, 'owner_id');
+  }
+
+  public function teams()
+  {
+    return $this->belongsToMany(Team::class)
+      ->withPivot('role')
+      ->withTimestamps();
+  }
+
+  public function currentTeam()
+  {
+    return $this->belongsTo(Team::class, 'current_team_id');
+  }
+
+  // Subscriber relationship
+  public function subscribers()
+  {
+    return $this->hasMany(Subscriber::class)->latest();
+  }
+
+  // Settings relationship
   public function settings()
   {
     return $this->hasOne(Setting::class)->withDefault([
@@ -126,6 +151,17 @@ class User extends Authenticatable implements MustVerifyEmail
         'accent_color' => '#818CF8',
       ],
     ]);
+  }
+
+// Campaign relationships
+  public function campaignStats()
+  {
+    return $this->hasManyThrough(CampaignStats::class, Campaign::class);
+  }
+
+  public function campaignEvents()
+  {
+    return $this->hasManyThrough(CampaignEvent::class, Campaign::class);
   }
 
   public function trackingEvents()
@@ -151,21 +187,6 @@ class User extends Authenticatable implements MustVerifyEmail
   public function sentTeamInvitations()
   {
     return $this->hasMany(InvitedTeamMember::class, 'user_id');
-  }
-
-  public function campaignStats()
-  {
-    return $this->hasManyThrough(CampaignStats::class, Campaign::class);
-  }
-
-  public function campaignEvents()
-  {
-    return $this->hasManyThrough(CampaignEvent::class, Campaign::class);
-  }
-
-  public function subscribers()
-  {
-    return $this->hasMany(Subscriber::class);
   }
 
   // Keep existing computed attributes

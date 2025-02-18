@@ -5,13 +5,14 @@ import pickBy from 'lodash/pickBy'
 import throttle from 'lodash/throttle'
 import AppLayout from '@/Layouts/AppLayout.vue'
 import ImportErrorsModal from '@/Pages/Subscribers/Components/ImportErrorsModal.vue'
+import EmptyState from "@/Pages/Subscribers/Components/EmptyState.vue";
 import {
   Users,
   UserPlus,
   Download,
   Upload,
   MoreHorizontal,
-  Mail,
+  FileTextIcon,
   Check,
   AlertTriangle,
   XCircle,
@@ -196,8 +197,8 @@ const downloadExport = () => {
   window.location.href = route('subscribers.export')
 }
 
-const downloadTemplate = () => {
-  const headers = ['email', 'first_name', 'last_name', 'company', 'status']
+/*const downloadTemplate = () => {
+  const headers = ['Email', 'First Name', 'Last Name', 'Company', 'Status']
   const sample = ['john@example.com', 'John', 'Doe', 'ACME Inc', 'subscribed']
 
   const csv = [
@@ -211,6 +212,48 @@ const downloadTemplate = () => {
   a.href = url
   a.download = 'subscribers-template.csv'
   a.click()
+  window.URL.revokeObjectURL(url)
+}*/
+
+const downloadTemplate = () => {
+  // Headers with descriptions
+  const headers = [
+    'email,first_name,last_name,company,status',
+    '# Required,Required,Required,Optional,Optional (default: subscribed)',
+    '# Valid email,String,String,String,One of: subscribed|unsubscribed|bounced|complained',
+    ''
+  ]
+
+  // Sample data rows
+  const sampleData = [
+    'john.doe@example.com,John,Doe,ACME Inc,subscribed',
+    'jane.smith@example.com,Jane,Smith,Tech Corp,subscribed',
+    'mike.jones@example.com,Mike,Jones,,unsubscribed',
+    'sarah.wilson@example.com,Sarah,Wilson,StartUp Ltd,bounced'
+  ]
+
+  const csv = [
+    ...headers,
+    ...sampleData
+  ].join('\n')
+
+  // Create file metadata object with BOM for Excel compatibility
+  const blob = new Blob(['\ufeff' + csv], {
+    type: 'text/csv;charset=utf-8'
+  })
+
+  // Create download link
+  const url = window.URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  const timestamp = new Date().toISOString().split('T')[0]
+
+  link.href = url
+  link.setAttribute('download', `subscribers-template-${timestamp}.csv`)
+  document.body.appendChild(link)
+  link.click()
+
+  // Cleanup
+  document.body.removeChild(link)
   window.URL.revokeObjectURL(url)
 }
 </script>
@@ -234,6 +277,7 @@ const downloadTemplate = () => {
               </CardTitle>
               <Users class="h-4 w-4 text-muted-foreground" />
             </CardHeader>
+
             <CardContent>
               <div class="text-2xl font-bold">{{ stats.total }}</div>
             </CardContent>
@@ -302,6 +346,7 @@ const downloadTemplate = () => {
               <SelectTrigger class="w-[180px]">
                 <SelectValue placeholder="Filter by status" />
               </SelectTrigger>
+
               <SelectContent>
                 <SelectItem
                   v-for="status in statuses"
@@ -313,19 +358,40 @@ const downloadTemplate = () => {
             </Select>
           </div>
 
+          <!-- Actions Dropdown -->
           <div class="flex items-center gap-2">
-            <Button @click="isAddDialogOpen = true">
-              <UserPlus class="mr-2 h-4 w-4" />
-              Add Subscriber
-            </Button>
-            <Button variant="outline" @click="isImportDialogOpen = true">
-              <Upload class="mr-2 h-4 w-4" />
-              Import
-            </Button>
-            <Button variant="outline" @click="downloadExport">
-              <Download class="mr-2 h-4 w-4" />
-              Export
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline">
+                  Actions
+                  <ChevronDown class="ml-2 h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+
+              <DropdownMenuContent align="end" class="w-[200px]">
+                <DropdownMenuItem @click="isAddDialogOpen = true">
+                  <UserPlus class="mr-2 h-4 w-4" />
+                  Add Subscriber
+                </DropdownMenuItem>
+
+                <DropdownMenuItem @click="isImportDialogOpen = true">
+                  <Upload class="mr-2 h-4 w-4" />
+                  Import Subscribers
+                </DropdownMenuItem>
+
+                <DropdownMenuItem @click="downloadExport">
+                  <Download class="mr-2 h-4 w-4" />
+                  Export Subscribers
+                </DropdownMenuItem>
+
+                <DropdownMenuSeparator />
+
+                <DropdownMenuItem @click="downloadTemplate">
+                  <FileTextIcon class="mr-2 h-4 w-4" />
+                  Download Template
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
 
@@ -356,26 +422,57 @@ const downloadTemplate = () => {
           </span>
         </div>
 
+        <div v-if="subscribers.data.length === 0 && !search" class="mt-6">
+          <EmptyState
+            @add="isAddDialogOpen = true"
+            @import="isImportDialogOpen = true"
+            @template="downloadTemplate"
+          />
+        </div>
+
+        <div v-else-if="subscribers.data.length === 0 && search" class="mt-6">
+          <div class="flex min-h-[400px] flex-col items-center justify-center rounded-md border border-dashed p-8 text-center animate-in fade-in-50">
+            <div class="mx-auto flex max-w-[420px] flex-col items-center justify-center text-center">
+              <div class="flex h-20 w-20 items-center justify-center rounded-full bg-muted">
+                <Users class="h-10 w-10 text-muted-foreground" />
+              </div>
+
+              <h3 class="mt-4 text-lg font-semibold">No results found</h3>
+              <p class="mt-2 text-sm text-muted-foreground">
+                No subscribers found matching your search: "{{ search }}"
+              </p>
+
+              <div class="mt-6">
+                <Button variant="outline" @click="search = ''">
+                  Clear search
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- Subscribers Table -->
-        <div class="rounded-md border">
+        <div
+          v-else
+          class="rounded-md border">
           <Table>
             <TableHeader>
               <TableRow>
                 <TableHead class="w-[40px]">
                   <Checkbox
-                    :checked="selectedSubscribers.length && selectedSubscribers.length === subscribers.data.length"
+                    :checked="Boolean(selectedSubscribers.length && selectedSubscribers.length === subscribers.data.length)"
                     :indeterminate="selectedSubscribers.length && selectedSubscribers.length > 0 && selectedSubscribers.length < subscribers.data.length"
                     @update:checked="(checked: boolean) => {
                       selectedSubscribers = checked ? subscribers.data.map(s => s.id) : []
                     }"
                   />
                 </TableHead>
+
                 <TableHead>
                   <div class="flex items-center gap-1">
                     <button
                       class="inline-flex items-center"
-                      @click="sortBy('email')"
-                    >
+                      @click="sortBy('email')">
                       Email
                       <component
                         :is="sort === 'email' ? (direction === 'asc' ? ChevronUp : ChevronDown) : null"
@@ -384,16 +481,28 @@ const downloadTemplate = () => {
                     </button>
                   </div>
                 </TableHead>
-                <TableHead>Name</TableHead>
-                <TableHead>Company</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Campaign Stats</TableHead>
+
                 <TableHead>
                   <div class="flex items-center gap-1">
                     <button
                       class="inline-flex items-center"
-                      @click="sortBy('created_at')"
-                    >
+                      @click="sortBy('first_name')">
+                      Name
+                      <component
+                        :is="sort === 'first_name' ? (direction === 'asc' ? ChevronUp : ChevronDown) : null"
+                        class="ml-1 h-4 w-4"
+                      />
+                    </button>
+                  </div>
+                </TableHead>
+
+                <TableHead>Company</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>
+                  <div class="flex items-center gap-1">
+                    <button
+                      class="inline-flex items-center"
+                      @click="sortBy('created_at')">
                       Joined
                       <component
                         :is="sort === 'created_at' ? (direction === 'asc' ? ChevronUp : ChevronDown) : null"
@@ -405,37 +514,40 @@ const downloadTemplate = () => {
                 <TableHead class="w-[70px]"></TableHead>
               </TableRow>
             </TableHeader>
+
             <TableBody>
               <TableRow
                 v-for="subscriber in subscribers.data"
-                :key="subscriber.id"
-              >
+                :key="subscriber.id">
                 <TableCell>
                   <Checkbox
                     :checked="selectedSubscribers.includes(subscriber.id)"
-                    @change="(checked: boolean) => {
+                    @update:checked="(checked: boolean) => {
                       selectedSubscribers = checked
                         ? [...selectedSubscribers, subscriber.id]
                         : selectedSubscribers.filter(id => id !== subscriber.id)
                     }"
                   />
                 </TableCell>
+
                 <TableCell>{{ subscriber.email }}</TableCell>
+
                 <TableCell>{{ subscriber.first_name }} {{ subscriber.last_name }}</TableCell>
+
                 <TableCell>{{ subscriber.company || '-' }}</TableCell>
+
                 <TableCell>
-                  <Badge :variant="statusColors[subscriber.status]">
+                  <Badge
+                    :variant="statusColors[subscriber.status]"
+                    class="capitalize">
                     {{ subscriber.status }}
                   </Badge>
                 </TableCell>
+
                 <TableCell>
-                  <div class="space-y-1 text-sm">
-                    <div>Received: {{ subscriber.campaign_stats.total_received }}</div>
-                    <div>Opened: {{ subscriber.campaign_stats.total_opened }}</div>
-                    <div>Clicked: {{ subscriber.campaign_stats.total_clicked }}</div>
-                  </div>
+                  {{ new Date(subscriber.created_at).toLocaleDateString() }}
                 </TableCell>
-                <TableCell>{{ new Date(subscriber.created_at).toLocaleDateString() }}</TableCell>
+
                 <TableCell>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>

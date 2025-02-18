@@ -48,16 +48,6 @@ class Team extends Model
     return $this->hasMany(Subscriber::class);
   }
 
-  public function automations()
-  {
-    return $this->hasMany(Automation::class);
-  }
-
-  public function settings()
-  {
-    return $this->hasOne(Setting::class);
-  }
-
   public function invitations(): HasMany
   {
     return $this->hasMany(InvitedTeamMember::class);

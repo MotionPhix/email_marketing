@@ -1,204 +1,634 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-import {Head, router} from '@inertiajs/vue3'
+import { ref, watch } from 'vue'
+import { Link, router } from '@inertiajs/vue3'
+import pickBy from 'lodash/pickBy'
+import throttle from 'lodash/throttle'
 import AppLayout from '@/Layouts/AppLayout.vue'
-import {toast} from "vue-sonner";
-import {DownloadIcon, PlusIcon, UploadIcon, PencilIcon, MoreHorizontalIcon, TrashIcon} from "lucide-vue-next";
+import { Checkbox } from '@/Components/ui/checkbox'
+import ImportErrorsModal from '@/Pages/Subscribers/Components/ImportErrorsModal.vue'
+import {
+  Users,
+  UserPlus,
+  Download,
+  Upload,
+  MoreHorizontal,
+  Mail,
+  Check,
+  AlertTriangle,
+  XCircle,
+  AlertCircle,
+  ChevronUp,
+  ChevronDown,
+} from 'lucide-vue-next'
+import { toast } from 'vue-sonner'
 
 const props = defineProps<{
   subscribers: {
     data: Array<{
       id: number
       email: string
-      first_name: string | null
-      last_name: string | null
+      first_name: string
+      last_name: string
       company: string | null
       status: string
+      metadata: Record<string, any> | null
+      unsubscribed_at: string | null
       created_at: string
+      campaign_stats: {
+        total_received: number
+        total_opened: number
+        total_clicked: number
+      }
     }>
-    links: Array<{
-      url: string | null
-      label: string
-      active: boolean
-    }>
+    links: Array<{ url: string | null; label: string; active: boolean }>
+    total: number
+  }
+  filters: {
+    search: string
+    status: string
+    sort: string
+    direction: 'asc' | 'desc'
+  }
+  stats: {
+    total: number
+    subscribed: number
+    unsubscribed: number
+    bounced: number
+    complained: number
   }
 }>()
 
-const showImportModal = ref(false)
+const search = ref(props.filters.search)
+const selectedStatus = ref(props.filters.status || 'all')
+const sort = ref(props.filters.sort || 'created_at')
+const direction = ref(props.filters.direction || 'desc')
+const selectedSubscribers = ref<number[]>([])
+const isImportDialogOpen = ref(false)
+const isAddDialogOpen = ref(false)
+const isEditDialogOpen = ref(false)
+const editingSubscriber = ref<typeof props.subscribers.data[0] | null>(null)
 const importFile = ref<File | null>(null)
-const fileError = ref('')
 
-const handleFileChange = (event: Event) => {
-  const target = event.target as HTMLInputElement
-  if (target.files?.length) {
-    importFile.value = target.files[0]
-    fileError.value = ''
+const statuses = [
+  { value: 'all', label: 'All' },
+  { value: 'subscribed', label: 'Subscribed' },
+  { value: 'unsubscribed', label: 'Unsubscribed' },
+  { value: 'bounced', label: 'Bounced' },
+  { value: 'complained', label: 'Complained' },
+]
+
+const statusColors = {
+  subscribed: 'success',
+  unsubscribed: 'default',
+  bounced: 'warning',
+  complained: 'destructive'
+} as const
+
+const form = ref({
+  email: '',
+  first_name: '',
+  last_name: '',
+  company: '',
+  status: 'subscribed'
+})
+
+watch(search, throttle((value) => {
+  router.get(
+    route('subscribers.index'),
+    pickBy({ search: value, status: selectedStatus.value }),
+    { preserveState: true, preserveScroll: true }
+  )
+}, 300))
+
+watch(selectedStatus, (value) => {
+  router.get(
+    route('subscribers.index'),
+    pickBy({ search: search.value, status: value }),
+    { preserveState: true, preserveScroll: true }
+  )
+})
+
+const sortBy = (field: string) => {
+  direction.value = sort.value === field && direction.value === 'asc' ? 'desc' : 'asc'
+  sort.value = field
+
+  router.get(
+    route('subscribers.index'),
+    pickBy({
+      search: search.value,
+      status: selectedStatus.value,
+      sort: sort.value,
+      direction: direction.value
+    }),
+    { preserveState: true, preserveScroll: true }
+  )
+}
+
+const addSubscriber = () => {
+  router.post(route('subscribers.store'), form.value, {
+    onSuccess: () => {
+      isAddDialogOpen.value = false
+      form.value = {
+        email: '',
+        first_name: '',
+        last_name: '',
+        company: '',
+        status: 'subscribed'
+      }
+    }
+  })
+}
+
+const updateSubscriber = () => {
+  if (!editingSubscriber.value) return
+
+  router.put(route('subscribers.update', editingSubscriber.value.id), editingSubscriber.value, {
+    onSuccess: () => {
+      isEditDialogOpen.value = false
+      editingSubscriber.value = null
+    }
+  })
+}
+
+const deleteSubscriber = (id: number) => {
+  if (confirm('Are you sure you want to delete this subscriber?')) {
+    router.delete(route('subscribers.destroy', id))
   }
 }
 
-const submitImport = () => {
-  if (!importFile.value) {
-    toast.error("Error", {
-      description: 'Please select a file to import'
+const bulkDelete = () => {
+  if (confirm('Are you sure you want to delete the selected subscribers?')) {
+    router.post(route('subscribers.bulk-destroy'), {
+      ids: selectedSubscribers.value
+    }, {
+      onSuccess: () => {
+        selectedSubscribers.value = []
+      }
     })
-
-    return
   }
+}
+
+const bulkUpdateStatus = (status: string) => {
+  router.post(route('subscribers.bulk-update'), {
+    ids: selectedSubscribers.value,
+    status
+  }, {
+    onSuccess: () => {
+      selectedSubscribers.value = []
+    }
+  })
+}
+
+const handleImport = () => {
+  if (!importFile.value) return
 
   const formData = new FormData()
   formData.append('file', importFile.value)
-  // Submit form logic here
+
+  router.post(route('subscribers.import'), formData, {
+    onSuccess: () => {
+      isImportDialogOpen.value = false
+      importFile.value = null
+    }
+  })
 }
 
-const getStatusColor = (status: string) => {
-  switch (status) {
-    case 'subscribed':
-      return 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-300'
-    case 'unsubscribed':
-      return 'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-300'
-    case 'bounced':
-      return 'bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-300'
-    default:
-      return 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-300'
-  }
+const downloadExport = () => {
+  window.location.href = route('subscribers.export')
+}
+
+const downloadTemplate = () => {
+  const headers = ['email', 'first_name', 'last_name', 'company', 'status']
+  const sample = ['john@example.com', 'John', 'Doe', 'ACME Inc', 'subscribed']
+
+  const csv = [
+    headers.join(','),
+    sample.join(',')
+  ].join('\n')
+
+  const blob = new Blob([csv], { type: 'text/csv' })
+  const url = window.URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = 'subscribers-template.csv'
+  a.click()
+  window.URL.revokeObjectURL(url)
 }
 </script>
 
 <template>
   <AppLayout title="Subscribers">
-    <Head title="Subscribers" />
+    <template #header>
+      <h2 class="text-xl font-semibold leading-tight text-gray-800 dark:text-gray-200">
+        Subscribers
+      </h2>
+    </template>
 
-    <div class="container space-y-6 p-4 md:p-8">
-      <div class="flex items-center justify-between">
-        <div>
-          <h2 class="text-3xl font-bold tracking-tight">Subscribers</h2>
-          <p class="text-muted-foreground">Manage your email subscribers and lists</p>
+    <div class="py-12">
+      <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+        <!-- Stats Cards -->
+        <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-5 mb-6">
+          <Card>
+            <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle class="text-sm font-medium">
+                Total Subscribers
+              </CardTitle>
+              <Users class="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div class="text-2xl font-bold">{{ stats.total }}</div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle class="text-sm font-medium">
+                Active
+              </CardTitle>
+              <Check class="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div class="text-2xl font-bold">{{ stats.subscribed }}</div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle class="text-sm font-medium">
+                Unsubscribed
+              </CardTitle>
+              <XCircle class="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div class="text-2xl font-bold">{{ stats.unsubscribed }}</div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle class="text-sm font-medium">
+                Bounced
+              </CardTitle>
+              <AlertTriangle class="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div class="text-2xl font-bold">{{ stats.bounced }}</div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle class="text-sm font-medium">
+                Complained
+              </CardTitle>
+              <AlertCircle class="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div class="text-2xl font-bold">{{ stats.complained }}</div>
+            </CardContent>
+          </Card>
         </div>
 
-        <div class="flex items-center gap-4">
-          <Button variant="outline" @click="router.get(route('subscribers.export'))">
-            <span class="sr-only">Export subscribers</span>
-            <DownloadIcon class="h-4 w-4 mr-2" />
-            Export
-          </Button>
+        <!-- Actions and Filters -->
+        <div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div class="flex items-center gap-4">
+            <Input
+              v-model="search"
+              placeholder="Search subscribers..."
+              class="w-[300px]"
+            />
 
-          <Button variant="outline" @click="showImportModal = true">
-            <span class="sr-only">Import subscribers</span>
-            <UploadIcon class="h-4 w-4 mr-2" />
-            Import
-          </Button>
+            <Select v-model="selectedStatus">
+              <SelectTrigger class="w-[180px]">
+                <SelectValue placeholder="Filter by status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem
+                  v-for="status in statuses"
+                  :key="status.value"
+                  :value="status.value"
+                >
+                  {{ status.label }}
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
 
-          <Button @click="router.get(route('subscribers.create'))">
-            <PlusIcon class="h-4 w-4 mr-2" />
-            Add Subscriber
-          </Button>
+          <div class="flex items-center gap-2">
+            <Button @click="isAddDialogOpen = true">
+              <UserPlus class="mr-2 h-4 w-4" />
+              Add Subscriber
+            </Button>
+            <Button variant="outline" @click="isImportDialogOpen = true">
+              <Upload class="mr-2 h-4 w-4" />
+              Import
+            </Button>
+            <Button variant="outline" @click="downloadExport">
+              <Download class="mr-2 h-4 w-4" />
+              Export
+            </Button>
+          </div>
         </div>
-      </div>
 
-      <Card>
-        <CardContent class="p-0">
-          <div class="relative overflow-x-auto">
-            <table class="w-full text-sm text-left">
-              <thead class="text-xs uppercase border-b dark:border-gray-700">
-              <tr>
-                <th scope="col" class="px-6 py-3">Email</th>
-                <th scope="col" class="px-6 py-3">Name</th>
-                <th scope="col" class="px-6 py-3">Company</th>
-                <th scope="col" class="px-6 py-3">Status</th>
-                <th scope="col" class="px-6 py-3">Date Added</th>
-                <th scope="col" class="px-6 py-3">
-                  <span class="sr-only">Actions</span>
-                </th>
-              </tr>
-              </thead>
-              <tbody>
-              <tr v-for="subscriber in subscribers.data"
-                  :key="subscriber.id"
-                  class="border-b dark:border-gray-700 hover:bg-muted/50">
-                <td class="px-6 py-4 whitespace-nowrap">
-                  {{ subscriber.email }}
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap">
-                  {{ [subscriber.first_name, subscriber.last_name].filter(Boolean).join(' ') || '-' }}
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap">
-                  {{ subscriber.company || '-' }}
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap">
-                  <Badge :class="getStatusColor(subscriber.status)">
+        <!-- Bulk Actions -->
+        <div v-if="selectedSubscribers.length > 0" class="mb-4 flex items-center gap-2">
+          <Button variant="destructive" @click="bulkDelete">
+            Delete Selected
+          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline">
+                Update Status
+                <ChevronDown class="ml-2 h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              <DropdownMenuItem
+                v-for="status in statuses.filter(s => s.value !== 'all')"
+                :key="status.value"
+                @click="bulkUpdateStatus(status.value)"
+              >
+                Set as {{ status.label }}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <span class="text-sm text-muted-foreground">
+            {{ selectedSubscribers.length }} selected
+          </span>
+        </div>
+
+        <!-- Subscribers Table -->
+        <div class="rounded-md border">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead class="w-[40px]">
+                  <Checkbox
+                    :checked="selectedSubscribers.length === subscribers.data.length"
+                    :indeterminate="selectedSubscribers.length > 0 && selectedSubscribers.length < subscribers.data.length"
+                    @change="(checked: boolean) => {
+                      selectedSubscribers = checked ? subscribers.data.map(s => s.id) : []
+                    }"
+                  />
+                </TableHead>
+                <TableHead>
+                  <div class="flex items-center gap-1">
+                    <button
+                      class="inline-flex items-center"
+                      @click="sortBy('email')"
+                    >
+                      Email
+                      <component
+                        :is="sort === 'email' ? (direction === 'asc' ? ChevronUp : ChevronDown) : null"
+                        class="ml-1 h-4 w-4"
+                      />
+                    </button>
+                  </div>
+                </TableHead>
+                <TableHead>Name</TableHead>
+                <TableHead>Company</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Campaign Stats</TableHead>
+                <TableHead>
+                  <div class="flex items-center gap-1">
+                    <button
+                      class="inline-flex items-center"
+                      @click="sortBy('created_at')"
+                    >
+                      Joined
+                      <component
+                        :is="sort === 'created_at' ? (direction === 'asc' ? ChevronUp : ChevronDown) : null"
+                        class="ml-1 h-4 w-4"
+                      />
+                    </button>
+                  </div>
+                </TableHead>
+                <TableHead class="w-[70px]"></TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              <TableRow
+                v-for="subscriber in subscribers.data"
+                :key="subscriber.id"
+              >
+                <TableCell>
+                  <Checkbox
+                    :checked="selectedSubscribers.includes(subscriber.id)"
+                    @change="(checked: boolean) => {
+                      selectedSubscribers = checked
+                        ? [...selectedSubscribers, subscriber.id]
+                        : selectedSubscribers.filter(id => id !== subscriber.id)
+                    }"
+                  />
+                </TableCell>
+                <TableCell>{{ subscriber.email }}</TableCell>
+                <TableCell>{{ subscriber.first_name }} {{ subscriber.last_name }}</TableCell>
+                <TableCell>{{ subscriber.company || '-' }}</TableCell>
+                <TableCell>
+                  <Badge :variant="statusColors[subscriber.status]">
                     {{ subscriber.status }}
                   </Badge>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap">
-                  {{ new Date(subscriber.created_at).toLocaleDateString() }}
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap">
+                </TableCell>
+                <TableCell>
+                  <div class="space-y-1 text-sm">
+                    <div>Received: {{ subscriber.campaign_stats.total_received }}</div>
+                    <div>Opened: {{ subscriber.campaign_stats.total_opened }}</div>
+                    <div>Clicked: {{ subscriber.campaign_stats.total_clicked }}</div>
+                  </div>
+                </TableCell>
+                <TableCell>{{ new Date(subscriber.created_at).toLocaleDateString() }}</TableCell>
+                <TableCell>
                   <DropdownMenu>
-                    <DropdownMenuTrigger as="button" class="icon-button">
-                      <MoreHorizontalIcon class="h-4 w-4" />
-                      <span class="sr-only">Open menu</span>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon">
+                        <MoreHorizontal class="h-4 w-4" />
+                        <span class="sr-only">Open menu</span>
+                      </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem @click="router.get(route('subscribers.edit', subscriber.id))">
-                        <PencilIcon class="h-4 w-4 mr-2" />
+                      <DropdownMenuItem @click="editingSubscriber = subscriber; isEditDialogOpen = true">
                         Edit
                       </DropdownMenuItem>
-                      <DropdownMenuItem @click="router.delete(route('subscribers.destroy', subscriber.id))">
-                        <TrashIcon class="h-4 w-4 mr-2" />
+                      <DropdownMenuItem @click="deleteSubscriber(subscriber.id)">
                         Delete
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
-                </td>
-              </tr>
-              </tbody>
-            </table>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
-
-    <!-- Import Modal -->
-    <Dialog :open="showImportModal" @update:open="showImportModal = false">
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Import Subscribers</DialogTitle>
-          <DialogDescription>
-            Upload a CSV file containing your subscribers' information.
-          </DialogDescription>
-        </DialogHeader>
-
-        <div class="grid gap-4 py-4">
-          <div class="grid gap-2">
-            <Label for="file">CSV File</Label>
-            <Input
-              id="file"
-              type="file"
-              accept=".csv"
-              @change="handleFileChange"
-            />
-            <p class="text-sm text-muted-foreground">
-              File must be in CSV format with headers: email, first_name, last_name, company
-            </p>
-          </div>
+                </TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
         </div>
 
-        <DialogFooter>
-          <Button variant="outline" @click="showImportModal = false">
-            Cancel
-          </Button>
-          <Button @click="submitImport">Import</Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        <!-- Add Subscriber Dialog -->
+        <Dialog v-model:open="isAddDialogOpen">
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Add Subscriber</DialogTitle>
+              <DialogDescription>
+                Add a new subscriber to your mailing list.
+              </DialogDescription>
+            </DialogHeader>
 
-    <!-- Toast Provider at the App Root -->
-    <ToastProvider />
+            <div class="grid gap-4 py-4">
+              <div class="grid grid-cols-2 gap-4">
+                <div class="space-y-2">
+                  <Label>First Name</Label>
+                  <Input v-model="form.first_name" />
+                </div>
+                <div class="space-y-2">
+                  <Label>Last Name</Label>
+                  <Input v-model="form.last_name" />
+                </div>
+              </div>
+              <div class="space-y-2">
+                <Label>Email</Label>
+                <Input v-model="form.email" type="email" />
+              </div>
+              <div class="space-y-2">
+                <Label>Company</Label>
+                <Input v-model="form.company" />
+              </div>
+              <div class="space-y-2">
+                <Label>Status</Label>
+                <Select v-model="form.status">
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem
+                      v-for="status in statuses.filter(s => s.value !== 'all')"
+                      :key="status.value"
+                      :value="status.value"
+                    >
+                      {{ status.label }}
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <DialogFooter>
+              <Button variant="ghost" @click="isAddDialogOpen = false">
+                Cancel
+              </Button>
+              <Button @click="addSubscriber">
+                Add Subscriber
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        <!-- Edit Subscriber Dialog -->
+        <Dialog v-model:open="isEditDialogOpen">
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Edit Subscriber</DialogTitle>
+              <DialogDescription>
+                Update subscriber information.
+              </DialogDescription>
+            </DialogHeader>
+
+            <div class="grid gap-4 py-4">
+              <div class="grid grid-cols-2 gap-4">
+                <div class="space-y-2">
+                  <Label>First Name</Label>
+                  <Input v-model="editingSubscriber.first_name" />
+                </div>
+                <div class="space-y-2">
+                  <Label>Last Name</Label>
+                  <Input v-model="editingSubscriber.last_name" />
+                </div>
+              </div>
+              <div class="space-y-2">
+                <Label>Email</Label>
+                <Input v-model="editingSubscriber.email" type="email" />
+              </div>
+              <div class="space-y-2">
+                <Label>Company</Label>
+                <Input v-model="editingSubscriber.company" />
+              </div>
+              <div class="space-y-2">
+                <Label>Status</Label>
+                <Select v-model="editingSubscriber.status">
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem
+                      v-for="status in statuses.filter(s => s.value !== 'all')"
+                      :key="status.value"
+                      :value="status.value"
+                    >
+                      {{ status.label }}
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <DialogFooter>
+              <Button variant="ghost" @click="isEditDialogOpen = false">
+                Cancel
+              </Button>
+              <Button @click="updateSubscriber">
+                Save Changes
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        <!-- Import Dialog -->
+        <Dialog v-model:open="isImportDialogOpen">
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Import Subscribers</DialogTitle>
+              <DialogDescription>
+                Upload a CSV or Excel file containing subscriber data.
+                <button
+                  @click="downloadTemplate"
+                  class="text-primary-600 hover:text-primary-500"
+                >
+                  Download template
+                </button>
+              </DialogDescription>
+            </DialogHeader>
+
+            <div class="grid gap-4 py-4">
+              <div class="space-y-2">
+                <Label>File</Label>
+                <Input
+                  type="file"
+                  @change="e => importFile = e.target.files?.[0]"
+                  accept=".csv,.xlsx,.xls"
+                />
+                <p class="text-sm text-muted-foreground">
+                  Accepted formats: CSV, Excel (.xlsx, .xls)
+                </p>
+              </div>
+            </div>
+
+            <DialogFooter>
+              <Button variant="ghost" @click="isImportDialogOpen = false">
+                Cancel
+              </Button>
+              <Button
+                :disabled="!importFile"
+                @click="handleImport"
+              >
+                Import
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        <!-- Import Errors Modal -->
+        <ImportErrorsModal
+          :is-open="!!$page.props.import_errors"
+          :errors="$page.props.import_errors || []"
+          @close="() => delete $page.props.import_errors"
+        />
+      </div>
+    </div>
   </AppLayout>
 </template>
-
-<style scoped>
-.icon-button {
-  @apply inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 h-10 w-10;
-}
-</style>

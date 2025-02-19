@@ -64,6 +64,7 @@ class CampaignController extends Controller
       'scheduled_at' => 'nullable|date|after:now',
       'recipients' => 'required|array',
       'settings' => 'nullable|array',
+      'team_id' => auth()->user()->currentTeam->id,
     ]);
 
     $campaign = $this->campaignService->create($validated);
@@ -75,22 +76,19 @@ class CampaignController extends Controller
   public function show(Campaign $campaign)
   {
     $campaign->load([
-      'stats',
       'template',
       'user',
       'team',
       'events' => fn($query) => $query->latest()->limit(100)
     ]);
 
-    $eventStats = $this->campaignService->getDetailedStats($campaign);
-
     return Inertia::render('Campaigns/Show', [
       'campaign' => $campaign,
-      'stats' => $eventStats,
+      'stats' => $this->campaignService->getDetailedStats($campaign),
       'chartData' => [
         'opens' => $this->campaignService->getOpenRateOverTime($campaign),
         'clicks' => $this->campaignService->getClickRateOverTime($campaign),
-        'engagement' => $this->campaignService->getEngagementMetrics($campaign),
+        'engagement' => $this->campaignService->getEngagementMetrics($campaign)
       ]
     ]);
   }
@@ -128,10 +126,14 @@ class CampaignController extends Controller
 
   public function destroy(Campaign $campaign)
   {
-    $this->campaignService->delete($campaign);
+    try {
+      $this->campaignService->delete($campaign);
 
-    return redirect()->route('campaigns.index')
-      ->with('success', 'Index deleted successfully.');
+      return redirect()->route('campaigns.index')
+        ->with('success', 'Campaign deleted successfully.');
+    } catch (\Exception $e) {
+      return back()->withErrors(['error' => $e->getMessage()]);
+    }
   }
 
   public function schedule(Request $request, Campaign $campaign)
@@ -141,26 +143,38 @@ class CampaignController extends Controller
       'timezone' => 'required|string'
     ]);
 
-    $this->campaignService->schedule($campaign, $validated['scheduled_at'], $validated['timezone']);
+    try {
+      $this->campaignService->schedule($campaign, $validated['scheduled_at'], $validated['timezone']);
 
-    return redirect()->route('campaigns.show', $campaign)
-      ->with('success', 'Index scheduled successfully.');
+      return redirect()->route('campaigns.show', $campaign)
+        ->with('success', 'Campaign scheduled successfully.');
+    } catch (\Exception $e) {
+      return back()->withErrors(['error' => $e->getMessage()]);
+    }
   }
 
   public function send(Campaign $campaign)
   {
-    $this->campaignService->sendCampaign($campaign);
+    try {
+      $this->campaignService->sendCampaign($campaign);
 
-    return redirect()->route('campaigns.show', $campaign)
-      ->with('success', 'Index sending has been initiated.');
+      return redirect()->route('campaigns.show', $campaign)
+        ->with('success', 'Campaign sending has been initiated.');
+    } catch (\Exception $e) {
+      return back()->withErrors(['error' => $e->getMessage()]);
+    }
   }
 
   public function duplicate(Campaign $campaign)
   {
-    $newCampaign = $this->campaignService->duplicate($campaign);
+    try {
+      $newCampaign = $this->campaignService->duplicate($campaign);
 
-    return redirect()->route('campaigns.edit', $newCampaign)
-      ->with('success', 'Index duplicated successfully.');
+      return redirect()->route('campaigns.edit', $newCampaign)
+        ->with('success', 'Campaign duplicated successfully.');
+    } catch (\Exception $e) {
+      return back()->withErrors(['error' => $e->getMessage()]);
+    }
   }
 
   public function preview(Campaign $campaign)
@@ -172,11 +186,14 @@ class CampaignController extends Controller
 
   public function stats(Campaign $campaign)
   {
-    $stats = $this->campaignService->getDetailedStats($campaign);
-
     return Inertia::render('Campaigns/Stats', [
-      'campaign' => $campaign,
-      'stats' => $stats
+      'campaign' => $campaign->load(['template', 'user', 'team']),
+      'stats' => $this->campaignService->getDetailedStats($campaign),
+      'chartData' => [
+        'opens' => $this->campaignService->getOpenRateOverTime($campaign),
+        'clicks' => $this->campaignService->getClickRateOverTime($campaign),
+        'engagement' => $this->campaignService->getEngagementMetrics($campaign)
+      ]
     ]);
   }
 

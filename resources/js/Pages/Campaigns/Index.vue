@@ -6,6 +6,7 @@ import CampaignList from './Components/CampaignList.vue'
 import type { Campaign } from '@/types'
 import AppLayout from "@/Layouts/AppLayout.vue";
 import {toast} from "vue-sonner";
+import {excludeKeys} from "@/lib/utils";
 
 interface Props {
   campaigns: {
@@ -79,6 +80,8 @@ const handleExport = () => {
     queryString ? `?${queryString}` : ''
   )
 }
+
+const pagination = excludeKeys(props.campaigns, ['data'])
 </script>
 
 <template>
@@ -106,8 +109,7 @@ const handleExport = () => {
 
     <div v-if="campaigns.total > 0" class="mt-4">
       <Pagination
-        :links="campaigns.links"
-        :meta="campaigns.meta"
+        :pagination="pagination"
       />
     </div>
 
@@ -123,14 +125,13 @@ const handleExport = () => {
         <DialogFooter>
           <Button
             variant="outline"
-            @click="isDeleteDialogOpen = false"
-          >
+            @click="isDeleteDialogOpen = false">
             Cancel
           </Button>
+
           <Button
             variant="destructive"
-            @click="handleDelete"
-          >
+            @click="handleDelete">
             Delete {{ campaignsToDelete.length > 1 ? 'Campaigns' : 'Campaign' }}
           </Button>
         </DialogFooter>

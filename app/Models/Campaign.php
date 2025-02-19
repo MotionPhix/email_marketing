@@ -27,6 +27,8 @@ class Campaign extends Model
     'sent_at',
     'settings',
     'recipients',
+    'team_id',
+    'user_id',
   ];
 
   protected $casts = [

@@ -88,26 +88,30 @@ export interface Index {
   user?: User
 }
 
+interface Link {
+  url: string | null
+  label: string
+  active: boolean
+}
+
 export interface PaginationMeta {
   current_page: number
-  from: number
+  first_page_url: string
+  from: number | null
   last_page: number
-  links: Array<{
-    url: string | null
-    label: string
-    active: boolean
-  }>
+  last_page_url: string
+  links: Link[]
+  next_page_url: string | null
   path: string
   per_page: number
-  to: number
+  prev_page_url: string | null
+  to: number | null
   total: number
 }
 
-export interface PaginatedResponse<T> {
-  data: T[]
-  meta: PaginationMeta
+export interface PaginatedResponse<T> extends PaginationMeta {
+  data: T[];
 }
-
 export interface CampaignFilters {
   search?: string
   status?: 'all' | Index['status']

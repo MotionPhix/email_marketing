@@ -14,7 +14,7 @@ class CampaignEvent extends Model
   ];
 
   protected $casts = [
-    'metadata' => 'json',
+    'metadata' => 'array',
   ];
 
   const TYPE_SENT = 'sent';

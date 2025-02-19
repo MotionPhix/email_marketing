@@ -91,11 +91,20 @@ class CampaignService
     $email = new Mail();
     $email->setFrom($campaign->from_email, $campaign->from_name);
     $email->setSubject($campaign->subject);
-    $email->addHeader('X-Campaign-ID', $campaign->id);
 
     if ($campaign->reply_to) {
       $email->setReplyTo($campaign->reply_to);
     }
+
+    // Add tracking data
+    $trackingData = [
+      'campaign_id' => $campaign->id,
+      'tags' => [
+        'team_' . $campaign->team_id,
+        'template_' . ($campaign->template_id ?? 'custom'),
+        $campaign->status
+      ]
+    ];
 
     // Get subscribers
     $subscribers = Subscriber::whereIn('list_id', $campaign->recipients)
@@ -105,16 +114,24 @@ class CampaignService
       $personalization = new Personalization();
       $personalization->addTo($subscriber->email);
 
-      // Add custom variables
+      // Add custom variables for tracking
+      $personalization->addCustomArg('subscriber_id', (string)$subscriber->id);
+
+      // Add template variables
       $personalization->addDynamicTemplateData('subscriber', [
         'first_name' => $subscriber->first_name,
         'last_name' => $subscriber->last_name,
         'email' => $subscriber->email,
+        'unsubscribe_url' => route('subscribers.unsubscribe', [
+          'subscriber' => $subscriber->id,
+          'campaign' => $campaign->id
+        ])
       ]);
 
       $personalization->addDynamicTemplateData('campaign', [
         'name' => $campaign->name,
         'subject' => $campaign->subject,
+        'web_view_url' => route('campaigns.web-view', $campaign)
       ]);
 
       $email->addPersonalization($personalization);
@@ -128,8 +145,8 @@ class CampaignService
 
     $email->addContent('text/html', $content);
 
-    // Send via SendGrid
-    return $this->sendGrid->send($email);
+    // Send via SendGrid with tracking
+    return $this->sendGrid->send($email, $trackingData);
   }
 
   public function duplicate(Campaign $campaign): Campaign

@@ -10,6 +10,7 @@ use App\Http\Controllers\OnboardingController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\SubscriberController;
 use App\Http\Controllers\TeamInvitationController;
+use App\Http\Controllers\WebhookController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -228,3 +229,8 @@ Route::patch(
   'unsubscribe/{subscriber}',
   [SubscriberController::class, 'unsubscribe']
 )->name('subscribers.unsubscribe');
+
+Route::post(
+  'webhooks/sendgrid',
+  [WebhookController::class, 'handleSendGridEvents']
+)->name('webhooks.sendgrid');

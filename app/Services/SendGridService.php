@@ -6,6 +6,7 @@ use SendGrid;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Cache;
 use App\Exceptions\SendGridException;
+use SendGrid\Mail\Mail;
 
 class SendGridService
 {
@@ -143,5 +144,53 @@ class SendGridService
   {
     if ($denominator == 0) return 0;
     return ($numerator / $denominator) * 100;
+  }
+
+  /**
+   * Send email via SendGrid with tracking
+   *
+   * @param Mail $email
+   * @param array $trackingData
+   * @return object
+   * @throws SendGridException
+   */
+  public function send(Mail $email, array $trackingData = [])
+  {
+    try {
+      // Add custom tracking settings
+      $email->addCustomArg('campaign_id', $trackingData['campaign_id']);
+
+      // Add click tracking
+      $trackingSettings = [
+        'click_tracking' => ['enable' => true, 'enable_text' => true],
+        'open_tracking' => ['enable' => true],
+        'subscription_tracking' => ['enable' => true],
+      ];
+
+      foreach ($trackingSettings as $setting => $value) {
+        $email->setTrackingSettings($value);
+      }
+
+      // Add categories for better filtering
+      $email->addCategory('campaign_' . $trackingData['campaign_id']);
+
+      if (!empty($trackingData['tags'])) {
+        foreach ($trackingData['tags'] as $tag) {
+          $email->addCategory($tag);
+        }
+      }
+
+      $response = $this->client->send($email);
+
+      if ($response->statusCode() >= 400) {
+        throw new SendGridException(
+          'Failed to send email: ' . json_decode($response->body())->errors[0]->message ?? 'Unknown error'
+        );
+      }
+
+      return $response;
+    } catch (\Exception $e) {
+      throw new SendGridException('Error sending email: ' . $e->getMessage());
+    }
   }
 }

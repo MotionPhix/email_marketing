@@ -1,7 +1,7 @@
 <script setup>
 import { computed } from 'vue'
 import { Field } from 'vee-validate'
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/Components/ui/form'
+import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/Components/ui/form'
 import Combobox from '@/Components/Combobox.vue'
 
 const props = defineProps({
@@ -152,7 +152,6 @@ const templateOptions = computed(() =>
             </div>
 
             <!-- Schedule options -->
-            <!-- Campaign Settings -->
             <Card>
               <CardHeader>
                 <CardTitle>Campaign Schedule</CardTitle>

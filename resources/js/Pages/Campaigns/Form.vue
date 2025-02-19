@@ -4,12 +4,10 @@ import { Head, useForm } from '@inertiajs/vue3'
 import { useForm as useVeeForm, Field } from 'vee-validate'
 import * as yup from 'yup'
 import AppLayout from '@/Layouts/AppLayout.vue'
-import EmailEditor from '@/Components/Campaign/EmailEditor.vue'
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/Components/ui/form'
+import { Form } from '@/Components/ui/form'
 import Steps from '@/Components/Campaign/Steps/Step.vue'
 import DetailsStep from '@/Components/Campaign/Steps/Detail.vue'
 import EditorStep from '@/Components/Campaign/Steps/Editor.vue'
-import Combobox from '@/Components/Combobox.vue'
 import {toast} from "vue-sonner";
 import {useStorage} from "@vueuse/core";
 

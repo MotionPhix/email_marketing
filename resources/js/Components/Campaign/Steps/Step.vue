@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { IconCheck } from '@tabler/icons-vue'
 import { cn } from '@/lib/utils'
 
 interface Step {
@@ -26,8 +25,7 @@ defineProps<{
               : currentStep === step.id
               ? 'border-primary'
               : 'border-border'
-          )"
-        >
+          )">
           <span
             :class="cn(
               'text-sm font-medium',
@@ -36,8 +34,7 @@ defineProps<{
                 : currentStep === step.id
                 ? 'text-primary'
                 : 'text-muted-foreground'
-            )"
-          >
+            )">
             Step {{ index + 1 }}
           </span>
           <span class="text-sm font-medium">{{ step.name }}</span>
@@ -46,8 +43,7 @@ defineProps<{
             :class="cn(
               'text-sm',
               currentStep >= step.id ? 'text-muted-foreground' : 'text-muted-foreground/60'
-            )"
-          >
+            )">
             {{ step.description }}
           </span>
         </div>

@@ -1,184 +1,246 @@
 <script setup lang="ts">
-import {ref, onMounted, watch, onBeforeUnmount} from 'vue'
-import {EmailEditor} from 'vue-email-editor'
-import type { Variable } from '@/config/variables'
-import { availableVariables } from '@/config/variables'
-import {Loader2Icon} from "lucide-vue-next";
+import { ref, onMounted, watch } from 'vue'
+import EmailEditor from 'vue-email-editor'
+import { useTheme } from '@/Composables/useTheme'
+import type { UnlayerOptions } from '@/types/editor'
 
-const props = defineProps<{
+interface Props {
   modelValue: string
-  templateId?: string | null
-}>()
+  mergeTags?: Record<string, any>
+  customCSS?: string[]
+  tools?: Record<string, any>
+  appearance?: Record<string, any>
+}
 
+const props = defineProps<Props>()
 const emit = defineEmits<{
   (e: 'update:modelValue', value: string): void
+  (e: 'ready'): void
+  (e: 'design:updated', design: any): void
+  (e: 'error', error: Error): void
 }>()
 
-const emailEditorRef = ref()
-const isLoading = ref(true)
+const editor = ref<any>(null)
+const { theme } = useTheme()
 
-// Convert our variables to Unlayer merge tags format
-const mergeTags = {
+// Default merge tags for email personalization
+const defaultMergeTags = {
   subscriber: {
     name: 'Subscriber',
-    items: availableVariables
-      .filter(v => v.category === 'subscriber')
-      .map(v => ({
-        name: v.name,
-        value: v.key,
-        sample: v.key.includes('first_name') ? 'John' :
-          v.key.includes('last_name') ? 'Doe' :
-            v.key.includes('email') ? 'john.doe@example.com' : ''
-      }))
+    mergeTags: {
+      first_name: {
+        name: 'First Name',
+        value: '{{subscriber.first_name}}',
+      },
+      last_name: {
+        name: 'Last Name',
+        value: '{{subscriber.last_name}}',
+      },
+      email: {
+        name: 'Email',
+        value: '{{subscriber.email}}',
+      },
+      company: {
+        name: 'Company',
+        value: '{{subscriber.company}}',
+      },
+    },
   },
   campaign: {
-    name: 'Index',
-    items: availableVariables
-      .filter(v => v.category === 'campaign')
-      .map(v => ({
-        name: v.name,
-        value: v.key,
-        sample: v.key.includes('name') ? 'February Newsletter' : ''
-      }))
+    name: 'Campaign',
+    mergeTags: {
+      name: {
+        name: 'Campaign Name',
+        value: '{{campaign.name}}',
+      },
+      subject: {
+        name: 'Subject',
+        value: '{{campaign.subject}}',
+      },
+      unsubscribe_url: {
+        name: 'Unsubscribe URL',
+        value: '{{campaign.unsubscribe_url}}',
+      },
+      web_view_url: {
+        name: 'Web View URL',
+        value: '{{campaign.web_view_url}}',
+      },
+    },
   },
-  system: {
-    name: 'System',
-    items: availableVariables
-      .filter(v => v.category === 'system')
-      .map(v => ({
-        name: v.name,
-        value: v.key,
-        sample: v.key.includes('date') ? new Date().toLocaleDateString() :
-          v.key.includes('unsubscribe') ? 'http://example.com/unsubscribe' :
-            v.key.includes('web_version') ? 'http://example.com/web' : ''
-      }))
-  }
 }
 
-const editorConfig = {
-  tools: {
-    heading: {
-      properties: {
-        text: {
-          value: 'Hello {{subscriber.first_name}}!'
-        }
-      }
-    }
+// SendGrid specific tools and configurations
+const sendGridConfig = {
+  fonts: {
+    showDefaultFonts: true,
+    customFonts: [
+      {
+        label: 'Inter',
+        value: "'Inter', sans-serif",
+        url: 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap',
+      },
+    ],
   },
-  mergeTags,
+  blocks: [
+    // SendGrid specific blocks
+    {
+      name: 'sendgrid/dynamic',
+      label: 'Dynamic Content',
+      category: 'SendGrid',
+      icon: '<svg>...</svg>', // Add your icon SVG
+      render: ({ values }) => {
+        return `
+          {{#each ${values.variable}}}
+            ${values.content}
+          {{/each}}
+        `
+      },
+      values: {
+        variable: 'items',
+        content: '<p>Dynamic content here</p>',
+      },
+      options: {
+        variable: {
+          title: 'Variable Name',
+          type: 'text',
+        },
+        content: {
+          title: 'Content Template',
+          type: 'rich-text',
+        },
+      },
+    },
+  ],
+}
+
+// Configure the editor options
+const editorOptions = {
   appearance: {
-    theme: 'white',
+    theme: theme.value === 'dark' ? 'dark' : 'white',
     panels: {
       tools: {
-        dock: 'left'
-      }
-    }
+        dock: 'left',
+      },
+    },
+    colors: {
+      primary: 'rgb(var(--primary))',
+      secondary: 'rgb(var(--secondary))',
+    },
   },
+  tools: {
+    ...sendGridConfig.blocks,
+    ...props.tools,
+  },
+  mergeTags: {
+    ...defaultMergeTags,
+    ...props.mergeTags,
+  },
+  fonts: sendGridConfig.fonts,
   features: {
-    stockImages: true,
-    undoRedo: true,
-    textEditor: {
-      spellChecker: true,
-      tables: true,
-      cleanPaste: true,
+    colorPicker: {
+      presets: [
+        '#000000',
+        '#FFFFFF',
+        'rgb(var(--primary))',
+        'rgb(var(--secondary))',
+        'rgb(var(--accent))',
+      ],
+    },
+  },
+  customCSS: [
+    ...(props.customCSS || []),
+    // Dark mode support
+    `
+    [data-theme='dark'] {
+      --unlayer-bg-color: rgb(var(--background));
+      --unlayer-text-color: rgb(var(--foreground));
+      --unlayer-border-color: rgb(var(--border));
     }
-  }
+    `,
+    // SendGrid specific styles
+    `
+    .blockbuilder-layer {
+      font-family: Inter, system-ui, sans-serif;
+    }
+    `,
+  ],
 }
 
-const onReady = () => {
-  isLoading.value = false
-
-  // If we have a template ID, load it
-  if (props.templateId) {
-    loadTemplate()
-  }
-  // If we have existing content, load it
-  else if (props.modelValue) {
-    emailEditorRef.value.editor.loadDesign(JSON.parse(props.modelValue))
-  }
-}
-
-const loadTemplate = async () => {
-  if (!props.templateId) return
-
+// Editor methods
+const loadDesign = async (design: string) => {
   try {
-    const response = await fetch(`/api/templates/${props.templateId}`)
-    const template = await response.json()
+    if (!editor.value) return
+    const parsedDesign = JSON.parse(design)
+    await editor.value.loadDesign(parsedDesign)
+    emit('design:updated', parsedDesign)
+  } catch (error) {
+    emit('error', error as Error)
+  }
+}
 
-    if (template.design) {
-      emailEditorRef.value.editor.loadDesign(JSON.parse(template.design))
+const saveDesign = async () => {
+  try {
+    if (!editor.value) return
+    const design = await editor.value.saveDesign()
+    emit('update:modelValue', JSON.stringify(design))
+    emit('design:updated', design)
+    return design
+  } catch (error) {
+    emit('error', error as Error)
+    return null
+  }
+}
+
+const exportHtml = async () => {
+  try {
+    if (!editor.value) return
+    const { html, design } = await editor.value.exportHtml()
+    return {
+      html,
+      design: JSON.stringify(design),
     }
   } catch (error) {
-    console.error('Failed to load template:', error)
+    emit('error', error as Error)
+    return null
   }
 }
 
-const saveDesign = () => {
-  emailEditorRef.value.editor.saveDesign(design => {
-    emit('update:modelValue', JSON.stringify(design))
+// Watch for theme changes
+watch(() => theme.value, (newTheme) => {
+  if (!editor.value) return
+  editor.value.updateAppearance({
+    theme: newTheme === 'dark' ? 'dark' : 'white',
   })
-}
+})
 
-const exportHtml = () => {
-  emailEditorRef.value.editor.exportHtml(data => {
-    const { html, design } = data
-    // Store both the HTML and the design
-    emit('update:modelValue', JSON.stringify(design))
-  })
-}
+// Watch for design changes
+watch(() => props.modelValue, (newValue) => {
+  if (!newValue) return
+  loadDesign(newValue)
+})
 
-// Watch for template changes
-watch(() => props.templateId, (newId) => {
-  if (newId && !isLoading.value) {
-    loadTemplate()
+// Expose methods to parent
+defineExpose({
+  loadDesign,
+  saveDesign,
+  exportHtml,
+})
+
+// Handle editor ready
+const onEditorReady = () => {
+  if (props.modelValue) {
+    loadDesign(props.modelValue)
   }
-})
-
-// Auto-save every 30 seconds
-let autoSaveInterval: number
-
-onMounted(() => {
-  autoSaveInterval = window.setInterval(saveDesign, 30000)
-})
-
-onBeforeUnmount(() => {
-  if (autoSaveInterval) {
-    clearInterval(autoSaveInterval)
-  }
-})
+  emit('ready')
+}
 </script>
 
 <template>
-  <div class="relative min-h-[700px] w-full">
-    <!-- Loading overlay -->
-    <div
-      v-if="isLoading"
-      class="absolute inset-0 z-10 flex items-center justify-center bg-white/80"
-    >
-      <div class="text-center">
-        <Loader2Icon class="mx-auto h-8 w-8" />
-        <p class="mt-2 text-sm text-gray-600">Loading editor...</p>
-      </div>
-    </div>
-
-    <!-- Unlayer Email Editor -->
+  <div class="h-full relative">
     <EmailEditor
-      ref="emailEditorRef"
-      :options="editorConfig"
-      @ready="onReady"
-      class="h-[700px] w-full"
+      ref="editor"
+      :options="editorOptions"
+      @ready="onEditorReady"
     />
   </div>
 </template>
-
-<style scoped>
-/* Fix for Unlayer editor in dark mode */
-:deep(.unlayer-editor) {
-  @apply bg-white;
-}
-
-/* Ensure the editor takes full height */
-:deep(.unlayer-editor-frame) {
-  min-height: 700px !important;
-}
-</style>

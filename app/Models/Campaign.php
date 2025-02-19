@@ -78,4 +78,43 @@ class Campaign extends Model
   {
     return $this->hasMany(CampaignEvent::class);
   }
+
+  public function scopeSearch($query, string $search)
+  {
+    $query->where(function ($q) use ($search) {
+      $q->where('name', 'like', "%{$search}%")
+        ->orWhere('subject', 'like', "%{$search}%")
+        ->orWhere('from_name', 'like', "%{$search}%")
+        ->orWhere('from_email', 'like', "%{$search}%");
+    });
+  }
+
+  public function scopeWithStats($query)
+  {
+    $query->addSelect([
+      'recipients_count' => CampaignStats::select('recipients_count')
+        ->whereColumn('campaign_id', 'campaigns.id')
+        ->latest()
+        ->take(1)
+    ]);
+  }
+
+  public function scopeStatus($query, string $status)
+  {
+    $query->where('status', $status);
+  }
+
+  public function scopeDateRange($query, $startDate, $endDate)
+  {
+    $query->when($startDate, function ($q, $date) {
+      $q->whereDate('created_at', '>=', $date);
+    })->when($endDate, function ($q, $date) {
+      $q->whereDate('created_at', '<=', $date);
+    });
+  }
+
+  public function scopeForTeam($query, $team)
+  {
+    $query->where('team_id', $team->id);
+  }
 }

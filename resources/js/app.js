@@ -115,6 +115,7 @@ import {Input} from "@/Components/ui/input"
 import {Calendar} from "@/Components/ui/v-calendar"
 import FormField from "@/Components/Forms/FormField.vue";
 import GlobalModal from "@/Components/GlobalModal.vue";
+import Pagination from "@/Components/Pagination.vue";
 import {resolvePageComponent} from "laravel-vite-plugin/inertia-helpers";
 
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
@@ -147,6 +148,7 @@ createInertiaApp({
       .component('TableHeader', TableHeader)
       .component('TableCaption', TableCaption)
       .component('TableFooter', TableFooter)
+      .component('Pagination', Pagination)
       .component('VCalendar', VCalendar)
       .component('VDatePicker', DatePicker)
       .component('GlobalModal', GlobalModal)

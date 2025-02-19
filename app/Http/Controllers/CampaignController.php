@@ -2,25 +2,44 @@
 
 namespace App\Http\Controllers;
 
+use App\Exports\CampaignsExport;
+use App\Http\Filters\CampaignFilter;
 use App\Models\Campaign;
 use App\Models\EmailTemplate;
 use App\Services\CampaignService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
+use Maatwebsite\Excel\Facades\Excel;
 
 class CampaignController extends Controller
 {
   public function __construct(protected CampaignService $campaignService)
   {}
 
-  public function index()
+  public function index(Request $request)
   {
-    $campaigns = Campaign::with(['stats', 'template'])
-      ->latest()
-      ->paginate(10);
+    $filter = new CampaignFilter($request);
+
+    $campaigns = Campaign::select([
+      'id',
+      'name',
+      'subject',
+      'status',
+      'created_at',
+      'scheduled_at',
+      'sent_at',
+    ])
+      ->withCount('events as recipient_count')
+      ->when(auth()->user()->currentTeam, function ($query, $team) {
+        $query->where('team_id', $team->id);
+      })
+      ->tap(fn($query) => $filter->apply($query))
+      ->paginate($request->per_page ?? 10)
+      ->withQueryString();
 
     return Inertia::render('Campaigns/Index', [
-      'campaigns' => $campaigns
+      'campaigns' => $campaigns,
+      'filters' => $filter->getFilters()
     ]);
   }
 
@@ -55,10 +74,24 @@ class CampaignController extends Controller
 
   public function show(Campaign $campaign)
   {
-    $campaign->load(['stats', 'template', 'events']);
+    $campaign->load([
+      'stats',
+      'template',
+      'user',
+      'team',
+      'events' => fn($query) => $query->latest()->limit(100)
+    ]);
+
+    $eventStats = $this->campaignService->getDetailedStats($campaign);
 
     return Inertia::render('Campaigns/Show', [
-      'campaign' => $campaign
+      'campaign' => $campaign,
+      'stats' => $eventStats,
+      'chartData' => [
+        'opens' => $this->campaignService->getOpenRateOverTime($campaign),
+        'clicks' => $this->campaignService->getClickRateOverTime($campaign),
+        'engagement' => $this->campaignService->getEngagementMetrics($campaign),
+      ]
     ]);
   }
 
@@ -145,5 +178,25 @@ class CampaignController extends Controller
       'campaign' => $campaign,
       'stats' => $stats
     ]);
+  }
+
+  public function bulkDelete(Request $request)
+  {
+    $validated = $request->validate([
+      'ids' => 'required|array',
+      'ids.*' => 'exists:campaigns,id'
+    ]);
+
+    Campaign::whereIn('id', $validated['ids'])->delete();
+
+    return back()->with('success', 'Selected campaigns have been deleted.');
+  }
+
+  public function export(Request $request)
+  {
+    return Excel::download(
+      new CampaignsExport($request->all()),
+      'campaigns.xlsx'
+    );
   }
 }

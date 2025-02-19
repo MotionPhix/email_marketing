@@ -130,6 +130,16 @@ Route::middleware(['auth'])->group(function () {
         [CampaignController::class, 'stats']
       )->name('stats');
 
+      Route::delete(
+        '/bulk-delete',
+        [CampaignController::class, 'bulkDelete']
+      )->name('bulk-delete');
+
+      Route::get(
+        '/export',
+        [CampaignController::class, 'export']
+      )->name('export');
+
     });
 
   // Subscriber routes

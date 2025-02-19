@@ -38,10 +38,10 @@ const variables = ref<Variable[]>([
     category: 'subscriber'
   },
 
-  // Campaign variables
+  // Index variables
   {
     key: 'campaign.name',
-    label: 'Campaign Name',
+    label: 'Index Name',
     description: 'Name of the current campaign',
     category: 'campaign'
   },
@@ -87,7 +87,7 @@ const searchQuery = ref('')
 const categories = [
   { id: 'all', label: 'All Variables' },
   { id: 'subscriber', label: 'Subscriber' },
-  { id: 'campaign', label: 'Campaign' },
+  { id: 'campaign', label: 'Index' },
   { id: 'system', label: 'System' },
 ]
 

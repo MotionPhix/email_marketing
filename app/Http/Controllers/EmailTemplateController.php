@@ -139,7 +139,7 @@ class EmailTemplateController extends Controller
         'address' => 'Company Address',
       ],
       'campaign' => [
-        'name' => 'Campaign Name',
+        'name' => 'Index Name',
         'subject' => 'Email Subject',
       ],
       'unsubscribe' => [

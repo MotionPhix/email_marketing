@@ -5,7 +5,7 @@ import {CheckCircleIcon, ArrowRightIcon, ArrowLeftIcon, SendIcon, Loader2Icon} f
 const emit = defineEmits(['next', 'back'])
 
 const form = ref({
-  subject: 'My First Test Campaign',
+  subject: 'My First Test Index',
   preview: 'Testing my email marketing setup',
   from_name: '',
   reply_to: '',
@@ -38,13 +38,13 @@ const sendTestEmail = async () => {
 <template>
   <Card>
     <CardHeader>
-      <CardTitle>Send a Test Campaign</CardTitle>
+      <CardTitle>Send a Test Index</CardTitle>
       <CardDescription>
         Send yourself a test email to verify everything is working
       </CardDescription>
     </CardHeader>
     <CardContent class="space-y-6">
-      <!-- Campaign Details -->
+      <!-- Index Details -->
       <div class="space-y-4">
         <FormField>
           <Label>Subject Line</Label>

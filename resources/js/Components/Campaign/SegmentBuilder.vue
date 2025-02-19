@@ -49,7 +49,7 @@ const fieldOptions = {
     { value: 'email_clicked', label: 'Email Clicks' },
   ],
   engagement: [
-    { value: 'campaign_engagement', label: 'Campaign Engagement' },
+    { value: 'campaign_engagement', label: 'Index Engagement' },
     { value: 'website_visits', label: 'Website Visits' },
   ],
   purchase: [

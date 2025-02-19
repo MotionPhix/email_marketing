@@ -3,7 +3,7 @@ import {ref, computed} from 'vue'
 import {useForm} from '@inertiajs/vue3'
 import AppLayout from '@/Layouts/AppLayout.vue'
 import {format} from 'date-fns'
-import EmailEditor from "@/Components/Campaign/EmailEditor.vue";
+import EmailEditor from "@/Components/Index/EmailEditor.vue";
 import {availableVariables} from "@/config/variables";
 
 interface Props {
@@ -91,11 +91,11 @@ const schedule = (date: Date) => {
 </script>
 
 <template>
-  <AppLayout :title="isEditing ? 'Edit Campaign' : 'Create Campaign'">
+  <AppLayout :title="isEditing ? 'Edit Index' : 'Create Index'">
     <template #header>
       <div class="flex items-center justify-between">
         <h2 class="text-xl font-semibold leading-tight text-gray-800">
-          {{ isEditing ? 'Edit Campaign' : 'Create Campaign' }}
+          {{ isEditing ? 'Edit Index' : 'Create Index' }}
         </h2>
         <div class="flex items-center space-x-4">
           <Button
@@ -114,7 +114,7 @@ const schedule = (date: Date) => {
             @click="submit"
             :disabled="form.processing"
           >
-            {{ isEditing ? 'Update' : 'Create' }} Campaign
+            {{ isEditing ? 'Update' : 'Create' }} Index
           </Button>
         </div>
       </div>
@@ -152,7 +152,7 @@ const schedule = (date: Date) => {
           <div v-show="currentStep === 1">
             <Card>
               <CardHeader>
-                <CardTitle>Campaign Details</CardTitle>
+                <CardTitle>Index Details</CardTitle>
                 <CardDescription>
                   Set up the basic information for your email campaign
                 </CardDescription>
@@ -160,7 +160,7 @@ const schedule = (date: Date) => {
               <CardContent>
                 <div class="grid gap-6">
                   <div class="grid gap-2">
-                    <Label for="name">Campaign Name</Label>
+                    <Label for="name">Index Name</Label>
                     <Input
                       id="name"
                       v-model="form.name"
@@ -295,7 +295,7 @@ const schedule = (date: Date) => {
           <div v-show="currentStep === 4">
             <Card>
               <CardHeader>
-                <CardTitle>Campaign Schedule</CardTitle>
+                <CardTitle>Index Schedule</CardTitle>
                 <CardDescription>
                   Choose when to send your campaign
                 </CardDescription>
@@ -355,18 +355,18 @@ const schedule = (date: Date) => {
           <div v-show="currentStep === 5">
             <Card>
               <CardHeader>
-                <CardTitle>Review Campaign</CardTitle>
+                <CardTitle>Review Index</CardTitle>
                 <CardDescription>
                   Review your campaign details before sending
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <div class="space-y-6">
-                  <!-- Campaign Summary -->
+                  <!-- Index Summary -->
                   <div class="rounded-lg border p-4">
                     <dl class="divide-y">
                       <div class="grid grid-cols-3 py-3">
-                        <dt class="font-medium">Campaign Name</dt>
+                        <dt class="font-medium">Index Name</dt>
                         <dd class="col-span-2">{{ form.name }}</dd>
                       </div>
                       <div class="grid grid-cols-3 py-3">
@@ -403,7 +403,7 @@ const schedule = (date: Date) => {
                       @click="previewCampaign"
                     >
                       <Icon name="eye" class="mr-2 h-4 w-4"/>
-                      Preview Campaign
+                      Preview Index
                     </Button>
                   </div>
                 </div>
@@ -435,7 +435,7 @@ const schedule = (date: Date) => {
     <Dialog v-model:open="showScheduleModal">
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Schedule Campaign</DialogTitle>
+          <DialogTitle>Schedule Index</DialogTitle>
           <DialogDescription>
             Choose when to send your campaign
           </DialogDescription>

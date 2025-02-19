@@ -79,7 +79,7 @@ class CampaignSchedulingServiceTest extends TestCase
       'status' => Campaign::STATUS_DRAFT,
       'scheduled_at' => null,
       'end_date' => null,
-      'title' => 'Test Campaign',
+      'title' => 'Test Index',
       'subject' => 'Test Subject'
     ]);
 
@@ -151,7 +151,7 @@ class CampaignSchedulingServiceTest extends TestCase
     $this->subscription->delete();
 
     $this->expectException(\Exception::class);
-    $this->expectExceptionMessage('Campaign scheduling is only available for paid plans.');
+    $this->expectExceptionMessage('Index scheduling is only available for paid plans.');
 
     $this->service->schedule(
       $this->campaign,

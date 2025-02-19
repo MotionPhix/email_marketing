@@ -2,7 +2,6 @@
 import { computed, ref } from 'vue'
 import {Head, Link, router, useForm} from '@inertiajs/vue3'
 import AppLayout from '@/Layouts/AppLayout.vue'
-import VueApexCharts from 'vue3-apexcharts'
 import {
   MoreVertical,
   Mail,
@@ -310,7 +309,7 @@ const getActivityText = (type: string) => {
               <!-- Stats Cards -->
               <Card>
                 <CardHeader>
-                  <CardTitle>Campaign Activity</CardTitle>
+                  <CardTitle>Index Activity</CardTitle>
                   <CardDescription>Total campaigns received</CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -361,7 +360,7 @@ const getActivityText = (type: string) => {
               <Card class="md:col-span-2">
                 <CardHeader>
                   <CardTitle>Engagement Over Time</CardTitle>
-                  <CardDescription>Campaign opens and clicks history</CardDescription>
+                  <CardDescription>Index opens and clicks history</CardDescription>
                 </CardHeader>
 
                 <CardContent>
@@ -395,7 +394,7 @@ const getActivityText = (type: string) => {
           <TabsContent value="campaigns">
             <Card>
               <CardHeader>
-                <CardTitle>Campaign History</CardTitle>
+                <CardTitle>Index History</CardTitle>
                 <CardDescription>All campaigns this subscriber has received</CardDescription>
               </CardHeader>
               <CardContent>

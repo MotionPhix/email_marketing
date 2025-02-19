@@ -70,7 +70,7 @@ const steps = [
   },
   {
     id: 6,
-    title: 'Test Campaign',
+    title: 'Test Index',
     description: 'Send a test campaign to yourself',
     icon: SendIcon,
   }

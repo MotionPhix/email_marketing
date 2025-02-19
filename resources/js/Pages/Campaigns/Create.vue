@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { Icon } from '@tabler/icons-vue'
 import { useForm } from '@inertiajs/vue3'
 import type { CampaignDraft } from '@/types/campaign'
 import EmailEditor from '@/Components/EmailEditor.vue'
@@ -97,7 +96,7 @@ const submit = () => {
       <div v-show="currentStep === 1" class="space-y-4">
         <Card>
           <CardHeader>
-            <CardTitle>Campaign Details</CardTitle>
+            <CardTitle>Index Details</CardTitle>
             <CardDescription>
               Set up the basic information for your email campaign
             </CardDescription>
@@ -105,7 +104,7 @@ const submit = () => {
           <CardContent>
             <div class="grid gap-4">
               <div class="grid gap-2">
-                <Label for="name">Campaign Name</Label>
+                <Label for="name">Index Name</Label>
                 <Input
                   id="name"
                   v-model="form.name"
@@ -215,7 +214,7 @@ const submit = () => {
       <div v-show="currentStep === 4">
         <Card>
           <CardHeader>
-            <CardTitle>Schedule Campaign</CardTitle>
+            <CardTitle>Schedule Index</CardTitle>
             <CardDescription>
               Choose when to send your campaign
             </CardDescription>
@@ -230,7 +229,7 @@ const submit = () => {
       <div v-show="currentStep === 5">
         <Card>
           <CardHeader>
-            <CardTitle>Review Campaign</CardTitle>
+            <CardTitle>Review Index</CardTitle>
             <CardDescription>
               Review your campaign details before sending
             </CardDescription>
@@ -238,7 +237,7 @@ const submit = () => {
           <CardContent>
             <div class="space-y-6">
               <div class="rounded-lg border p-4">
-                <h4 class="font-medium">Campaign Details</h4>
+                <h4 class="font-medium">Index Details</h4>
                 <dl class="mt-2 grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <div>
                     <dt class="text-sm text-muted-foreground">Name</dt>
@@ -328,7 +327,7 @@ const submit = () => {
               name="loader-2"
               class="mr-2 h-4 w-4 animate-spin"
             />
-            {{ form.scheduledAt ? 'Schedule Campaign' : 'Send Campaign' }}
+            {{ form.scheduledAt ? 'Schedule Index' : 'Send Index' }}
           </Button>
         </div>
       </div>

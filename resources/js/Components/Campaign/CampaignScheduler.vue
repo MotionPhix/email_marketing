@@ -137,7 +137,7 @@ function handleSchedule() {
         v-if="scheduleDateTime"
         class="rounded-lg border p-4"
       >
-        <h4 class="font-medium">Campaign will be sent:</h4>
+        <h4 class="font-medium">Index will be sent:</h4>
         <p class="mt-1 text-sm text-gray-500">
           {{ format(scheduleDateTime, 'MMMM d, yyyy h:mm a') }}
           ({{ selectedTimezone }})
@@ -156,7 +156,7 @@ function handleSchedule() {
           :disabled="!scheduleDateTime"
           @click="handleSchedule"
         >
-          Schedule Campaign
+          Schedule Index
         </Button>
       </div>
     </div>

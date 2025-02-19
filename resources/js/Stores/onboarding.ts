@@ -52,7 +52,7 @@ export const useOnboardingStore = defineStore('onboarding', () => {
     },
     {
       id: 5,
-      title: 'Test Campaign',
+      title: 'Test Index',
       description: 'Send a test campaign to yourself',
       isCompleted: false,
       data: {}

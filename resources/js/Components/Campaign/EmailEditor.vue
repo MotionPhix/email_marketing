@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import {ref, onMounted, watch, onBeforeUnmount} from 'vue'
-import EmailEditor from 'vue-email-editor'
+import {EmailEditor} from 'vue-email-editor'
 import type { Variable } from '@/config/variables'
 import { availableVariables } from '@/config/variables'
+import {Loader2Icon} from "lucide-vue-next";
 
 const props = defineProps<{
   modelValue: string
@@ -31,7 +32,7 @@ const mergeTags = {
       }))
   },
   campaign: {
-    name: 'Campaign',
+    name: 'Index',
     items: availableVariables
       .filter(v => v.category === 'campaign')
       .map(v => ({
@@ -155,7 +156,7 @@ onBeforeUnmount(() => {
       class="absolute inset-0 z-10 flex items-center justify-center bg-white/80"
     >
       <div class="text-center">
-        <Spinner class="mx-auto h-8 w-8" />
+        <Loader2Icon class="mx-auto h-8 w-8" />
         <p class="mt-2 text-sm text-gray-600">Loading editor...</p>
       </div>
     </div>

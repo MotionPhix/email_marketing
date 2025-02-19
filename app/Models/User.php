@@ -153,7 +153,7 @@ class User extends Authenticatable implements MustVerifyEmail
     ]);
   }
 
-// Campaign relationships
+// Index relationships
   public function campaignStats()
   {
     return $this->hasManyThrough(CampaignStats::class, Campaign::class);

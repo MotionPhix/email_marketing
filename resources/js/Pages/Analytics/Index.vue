@@ -261,17 +261,17 @@ const geoChartSeries = computed(() => [{
         </TabsContent>
 
         <TabsContent value="engagement" class="space-y-8">
-          <!-- Campaign Performance Table -->
+          <!-- Index Performance Table -->
           <Card>
             <CardHeader>
-              <CardTitle>Campaign Performance</CardTitle>
+              <CardTitle>Index Performance</CardTitle>
             </CardHeader>
             <CardContent>
               <div class="relative overflow-x-auto">
                 <table class="w-full text-sm">
                   <thead>
                   <tr>
-                    <th class="text-left p-4">Campaign</th>
+                    <th class="text-left p-4">Index</th>
                     <th class="text-left p-4">Sent</th>
                     <th class="text-left p-4">Open Rate</th>
                     <th class="text-left p-4">Click Rate</th>

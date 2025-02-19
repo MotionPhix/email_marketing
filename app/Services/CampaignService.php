@@ -19,7 +19,7 @@ class CampaignService
     $email = new Mail();
     $email->setFrom($campaign->from_email, $campaign->from_name);
     $email->setSubject($campaign->subject);
-    $email->addHeader('X-Campaign-ID', $campaign->id);
+    $email->addHeader('X-Index-ID', $campaign->id);
 
     // Get subscribers
     $subscribers = Subscriber::whereIn('list_id', $campaign->recipient_lists)

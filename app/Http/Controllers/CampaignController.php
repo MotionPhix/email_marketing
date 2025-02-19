@@ -50,7 +50,7 @@ class CampaignController extends Controller
     $campaign = $this->campaignService->create($validated);
 
     return redirect()->route('campaigns.edit', $campaign)
-      ->with('success', 'Campaign created successfully.');
+      ->with('success', 'Index created successfully.');
   }
 
   public function show(Campaign $campaign)
@@ -90,7 +90,7 @@ class CampaignController extends Controller
     $this->campaignService->update($campaign, $validated);
 
     return redirect()->route('campaigns.edit', $campaign)
-      ->with('success', 'Campaign updated successfully.');
+      ->with('success', 'Index updated successfully.');
   }
 
   public function destroy(Campaign $campaign)
@@ -98,7 +98,7 @@ class CampaignController extends Controller
     $this->campaignService->delete($campaign);
 
     return redirect()->route('campaigns.index')
-      ->with('success', 'Campaign deleted successfully.');
+      ->with('success', 'Index deleted successfully.');
   }
 
   public function schedule(Request $request, Campaign $campaign)
@@ -111,7 +111,7 @@ class CampaignController extends Controller
     $this->campaignService->schedule($campaign, $validated['scheduled_at'], $validated['timezone']);
 
     return redirect()->route('campaigns.show', $campaign)
-      ->with('success', 'Campaign scheduled successfully.');
+      ->with('success', 'Index scheduled successfully.');
   }
 
   public function send(Campaign $campaign)
@@ -119,7 +119,7 @@ class CampaignController extends Controller
     $this->campaignService->sendCampaign($campaign);
 
     return redirect()->route('campaigns.show', $campaign)
-      ->with('success', 'Campaign sending has been initiated.');
+      ->with('success', 'Index sending has been initiated.');
   }
 
   public function duplicate(Campaign $campaign)
@@ -127,7 +127,7 @@ class CampaignController extends Controller
     $newCampaign = $this->campaignService->duplicate($campaign);
 
     return redirect()->route('campaigns.edit', $newCampaign)
-      ->with('success', 'Campaign duplicated successfully.');
+      ->with('success', 'Index duplicated successfully.');
   }
 
   public function preview(Campaign $campaign)

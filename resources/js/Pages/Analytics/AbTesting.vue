@@ -176,7 +176,7 @@ const timeSeriesSeries = computed(() => [
       <!-- Test Selection -->
       <Card>
         <CardHeader>
-          <CardTitle>Select Test Campaign</CardTitle>
+          <CardTitle>Select Test Index</CardTitle>
         </CardHeader>
         <CardContent>
           <Select v-model="selectedTest">

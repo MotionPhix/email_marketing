@@ -25,7 +25,7 @@ onMounted(() => {
 
 const nextSteps = [
   {
-    title: 'Create Your First Campaign',
+    title: 'Create Your First Index',
     description: 'Start crafting your first email campaign',
     icon: PenToolIcon,
     href: route('campaigns.create')

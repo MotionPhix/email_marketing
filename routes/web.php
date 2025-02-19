@@ -103,7 +103,7 @@ Route::middleware(['auth'])->group(function () {
         [CampaignController::class, 'destroy']
       )->name('destroy');
 
-      // Campaign Actions
+      // Index Actions
       Route::post(
         '/schedule/{campaign}',
         [CampaignController::class, 'schedule']
@@ -124,7 +124,7 @@ Route::middleware(['auth'])->group(function () {
         [CampaignController::class, 'preview']
       )->name('preview');
 
-      // Campaign Stats
+      // Index Stats
       Route::get(
         '/stats/{campaign}',
         [CampaignController::class, 'stats']

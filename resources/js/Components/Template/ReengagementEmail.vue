@@ -3,7 +3,7 @@ import { ref } from 'vue'
 import type { EmailTemplate } from '@/types'
 
 const template: EmailTemplate = {
-  name: 'Re-engagement Campaign',
+  name: 'Re-engagement Index',
   subject: '{% if subscriber.first_name %}{{subscriber.first_name}}, we miss you!{% else %}We miss you!{% endif %}',
   previewText: 'Special offer inside - Come back and see what\'s new!',
   content: `

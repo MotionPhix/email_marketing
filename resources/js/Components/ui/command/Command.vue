@@ -4,22 +4,25 @@ import { ComboboxRoot, useForwardPropsEmits } from 'radix-vue';
 import { computed } from 'vue';
 
 const props = defineProps({
-  modelValue: { type: null, required: false, default: '' },
-  defaultValue: { type: null, required: false },
-  open: { type: Boolean, required: false, default: true },
-  defaultOpen: { type: Boolean, required: false },
-  searchTerm: { type: String, required: false },
-  selectedValue: { type: null, required: false },
-  multiple: { type: Boolean, required: false },
-  disabled: { type: Boolean, required: false },
-  name: { type: String, required: false },
-  dir: { type: String, required: false },
-  filterFunction: { type: Function, required: false },
-  displayValue: { type: Function, required: false },
-  resetSearchTermOnBlur: { type: Boolean, required: false },
-  asChild: { type: Boolean, required: false },
-  as: { type: null, required: false },
-  class: { type: null, required: false },
+  modelValue: {
+    type: [String, Number, null],
+    default: ''
+  },
+  defaultValue: { type: [String, Number, null], default: null },
+  open: { type: Boolean, default: true },
+  defaultOpen: { type: Boolean, default: false },
+  searchTerm: { type: String, default: '' },
+  selectedValue: { type: [String, Number, null], default: null },
+  multiple: { type: Boolean, default: false },
+  disabled: { type: Boolean, default: false },
+  name: { type: String, default: undefined },
+  dir: { type: String, default: undefined },
+  filterFunction: { type: Function, default: undefined },
+  displayValue: { type: Function, default: undefined },
+  resetSearchTermOnBlur: { type: Boolean, default: true },
+  asChild: { type: Boolean, default: false },
+  as: { type: null, default: undefined },
+  class: { type: null, default: undefined },
 });
 
 const emits = defineEmits([
@@ -31,7 +34,6 @@ const emits = defineEmits([
 
 const delegatedProps = computed(() => {
   const { class: _, ...delegated } = props;
-
   return delegated;
 });
 
@@ -41,12 +43,10 @@ const forwarded = useForwardPropsEmits(delegatedProps, emits);
 <template>
   <ComboboxRoot
     v-bind="forwarded"
-    :class="
-      cn(
-        'flex h-full w-full flex-col overflow-hidden rounded-md bg-popover text-popover-foreground',
-        props.class,
-      )
-    "
+    :class="cn(
+      'flex h-full w-full flex-col overflow-hidden rounded-md bg-popover text-popover-foreground',
+      props.class,
+    )"
   >
     <slot />
   </ComboboxRoot>

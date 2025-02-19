@@ -120,3 +120,32 @@ export interface CampaignFilters {
   sort_by?: keyof Index
   sort_direction?: 'asc' | 'desc'
 }
+
+export interface EmailDesign {
+  design: unknown
+  html?: string
+}
+
+export type PreviewDevice = 'desktop' | 'mobile' | 'tablet'
+
+export interface EditorProps {
+  initialContent: string | null
+  processing?: boolean
+  previewMode?: boolean
+  previewDevice?: PreviewDevice
+  isSaving?: boolean
+  lastSaved?: string | null
+  modelValue: string
+}
+
+export interface SavePayload {
+  design: string
+  isDraft: boolean
+}
+
+export type EditorEmits = {
+  (e: 'back'): void
+  (e: 'save', payload: SavePayload): void
+  (e: 'content-change'): void
+  (e: 'update:modelValue', value: string): void
+}

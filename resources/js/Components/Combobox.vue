@@ -1,21 +1,19 @@
 <script setup lang="ts">
-import { Button } from '@/Components/ui/button'
+import { ref, computed } from 'vue'
 import {
   Command,
   CommandEmpty,
   CommandGroup,
   CommandInput,
   CommandItem,
-  CommandList,
 } from '@/Components/ui/command'
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from '@/Components/ui/popover'
-import { CheckIcon, ChevronsUpDownIcon } from 'lucide-vue-next'
 import { cn } from '@/lib/utils'
-import {computed, ref, watch} from 'vue'
+import { CheckIcon, ChevronsUpDownIcon } from 'lucide-vue-next'
 
 interface Option {
   value: string | number
@@ -28,7 +26,7 @@ const props = defineProps<{
   placeholder?: string
   searchPlaceholder?: string
   emptyMessage?: string
-  disabled?: boolean
+  error?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -37,6 +35,10 @@ const emit = defineEmits<{
 
 const open = ref(false)
 const search = ref('')
+
+const selectedOption = computed(() =>
+  props.options.find(option => option.value === props.modelValue)
+)
 
 const filteredOptions = computed(() => {
   if (!search.value) return props.options
@@ -47,23 +49,11 @@ const filteredOptions = computed(() => {
   )
 })
 
-const selectedLabel = computed(() => {
-  if (!props.modelValue) return props.placeholder || 'Select option...'
-  return props.options.find(opt => opt.value === props.modelValue)?.label || props.placeholder
-})
-
 const handleSelect = (value: string | number) => {
   emit('update:modelValue', value)
   open.value = false
   search.value = ''
 }
-
-// Reset search when popover closes
-watch(open, (newValue) => {
-  if (!newValue) {
-    search.value = ''
-  }
-})
 </script>
 
 <template>
@@ -73,9 +63,13 @@ watch(open, (newValue) => {
         variant="outline"
         role="combobox"
         :aria-expanded="open"
-        :disabled="disabled"
-        class="w-full justify-between">
-        {{ selectedLabel }}
+        :class="cn(
+          'w-full justify-between',
+          error && 'border-destructive',
+          !selectedOption && 'text-muted-foreground'
+        )"
+      >
+        {{ selectedOption?.label || placeholder || 'Select option...' }}
         <ChevronsUpDownIcon class="ml-2 h-4 w-4 shrink-0 opacity-50" />
       </Button>
     </PopoverTrigger>
@@ -83,27 +77,24 @@ watch(open, (newValue) => {
       <Command>
         <CommandInput
           v-model="search"
-          class="h-9"
-          :placeholder="searchPlaceholder || 'Search...'"
+          :placeholder="searchPlaceholder"
         />
-        <CommandEmpty>{{ emptyMessage || 'No option found.' }}</CommandEmpty>
-        <CommandList>
-          <CommandGroup>
-            <CommandItem
-              v-for="option in filteredOptions"
-              :key="option.value"
-              :value="option.value"
-              @select="handleSelect(option.value)">
-              <span>{{ option.label }}</span>
-              <CheckIcon
-                :class="cn(
-                  'ml-auto h-4 w-4',
-                  modelValue === option.value ? 'opacity-100' : 'opacity-0'
-                )"
-              />
-            </CommandItem>
-          </CommandGroup>
-        </CommandList>
+        <CommandEmpty>{{ emptyMessage || 'No options found.' }}</CommandEmpty>
+        <CommandGroup>
+          <CommandItem
+            v-for="option in filteredOptions"
+            :key="option.value"
+            :value="option.value"
+            @select="handleSelect(option.value)">
+            <CheckIcon
+              :class="cn(
+                'mr-2 h-4 w-4',
+                modelValue === option.value ? 'opacity-100' : 'opacity-0'
+              )"
+            />
+            {{ option.label }}
+          </CommandItem>
+        </CommandGroup>
       </Command>
     </PopoverContent>
   </Popover>

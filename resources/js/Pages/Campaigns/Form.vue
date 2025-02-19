@@ -1,197 +1,237 @@
-<script setup>
-import { ref, computed } from 'vue'
-import { Head, useForm } from '@inertiajs/vue3'
-import { useForm as useVeeForm, Field } from 'vee-validate'
-import * as yup from 'yup'
-import AppLayout from '@/Layouts/AppLayout.vue'
-import { Form } from '@/Components/ui/form'
-import Steps from '@/Components/Campaign/Steps/Step.vue'
-import DetailsStep from '@/Components/Campaign/Steps/Detail.vue'
-import EditorStep from '@/Components/Campaign/Steps/Editor.vue'
-import {toast} from "vue-sonner";
-import {useStorage} from "@vueuse/core";
+<script setup lang="ts">
+import { computed, ref, watch } from 'vue'
+import {EmailEditor} from 'vue-email-editor'
+import { toast } from 'vue-sonner'
+import { formatDistanceToNow } from 'date-fns'
+import {TransitionChild, TransitionRoot} from "@headlessui/vue";
 
-const props = defineProps({
-  campaign: {
-    type: Object,
-    required: true
+interface Props {
+  modelValue: string
+  initialContent: string | null
+  previewMode: boolean
+  previewDevice: 'desktop' | 'mobile' | 'tablet'
+  isSaving: boolean
+  lastSaved: string | null
+}
+
+const props = defineProps<Props>()
+
+const emit = defineEmits<{
+  (e: 'update:modelValue', value: string): void
+  (e: 'back'): void
+  (e: 'save', payload: { design: string; isDraft: boolean }): void
+  (e: 'content-change'): void
+}>()
+
+const editor = ref<InstanceType<typeof EmailEditor> | null>(null)
+const previewHtml = ref('')
+const isExporting = ref(false)
+
+const lastSavedText = computed(() => {
+  if (!props.lastSaved) return ''
+  return `Last saved ${formatDistanceToNow(new Date(props.lastSaved))} ago`
+})
+
+// Editor configuration
+const editorConfig = {
+  tools: {
+    // Configure available design tools
+    heading: {
+      properties: {
+        text: {
+          value: 'Hello World'
+        }
+      }
+    }
   },
-  templates: {
-    type: Array,
-    required: true
+  appearance: {
+    theme: 'white',
+    panels: {
+      tools: {
+        dock: 'left'
+      }
+    }
+  },
+  customCSS: [
+    // Add any custom CSS for the editor
+    `.blockbuilder-layer { font-family: Inter, sans-serif; }`,
+  ]
+}
+
+// Methods
+const handleSave = async (isDraft = true) => {
+  try {
+    if (!editor.value) {
+      throw new Error('Editor not initialized')
+    }
+
+    const design = await editor.value.saveDesign()
+    emit('save', { design: JSON.stringify(design), isDraft })
+  } catch (error) {
+    console.error('Error saving design:', error)
+    toast.error('Failed to save email design')
   }
-})
+}
 
-// Define validation schema
-const validationSchema = yup.object({
-  name: yup.string().required('Campaign name is required').max(255),
-  subject: yup.string().required('Email subject is required').max(255),
-  from_name: yup.string().required('From name is required').max(255),
-  from_email: yup.string().required('From email is required').email().max(255),
-  reply_to: yup.string().email().nullable(),
-  content: yup.string().required('Email content is required'),
-  template_id: yup.number().nullable(),
-  recipients: yup.array().min(1, 'At least one recipient list is required'),
-  settings: yup.object({
-    track_opens: yup.boolean(),
-    track_clicks: yup.boolean(),
-    schedule_send: yup.boolean(),
-    scheduled_at: yup.date().nullable().when('schedule_send', {
-      is: true,
-      then: (schema) => schema.required('Schedule date is required').min(new Date(), 'Schedule date must be in the future')
-    }),
-    timezone: yup.string().required('Timezone is required')
-  })
-})
+const handleContentChange = () => {
+  emit('content-change')
+}
 
-// Initialize vee-validate form
-const { handleSubmit, values, errors, setFieldValue } = useVeeForm({
-  validationSchema,
-  initialValues: {
-    name: props.campaign.name || '',
-    subject: props.campaign.subject || '',
-    from_name: props.campaign.from_name || '',
-    from_email: props.campaign.from_email || '',
-    reply_to: props.campaign.reply_to || '',
-    content: props.campaign.content || '',
-    template_id: props.campaign.template_id || null,
-    recipients: props.campaign.recipients || [],
-    settings: props.campaign.settings || {
-      track_opens: true,
-      track_clicks: true,
-      schedule_send: false,
-      scheduled_at: null,
-      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
+const loadDesign = async () => {
+  if (!editor.value || !props.initialContent) return
+
+  try {
+    const design = JSON.parse(props.initialContent)
+    await editor.value.loadDesign(design)
+  } catch (error) {
+    console.error('Error loading design:', error)
+    toast.error('Failed to load email design')
+  }
+}
+
+const exportHtml = async () => {
+  if (!editor.value) return
+
+  try {
+    isExporting.value = true
+    const result = await editor.value.exportHtml()
+    previewHtml.value = result.html || ''
+  } catch (error) {
+    console.error('Error exporting HTML:', error)
+    toast.error('Failed to generate preview')
+  } finally {
+    isExporting.value = false
+  }
+}
+
+// Watch for preview mode changes
+watch(
+  () => props.previewMode,
+  async (newValue) => {
+    if (newValue) {
+      await exportHtml()
     }
   }
-})
-
-// Initialize Inertia form
-const form = useForm(values)
-
-const isEditing = computed(() => !!props.campaign.id)
-const currentStep = useStorage('campaign_form_steps', 1)
-const editor = ref(null)
-
-const templateOptions = computed(() =>
-  props.templates.map(template => ({
-    value: template.id,
-    label: template.name
-  }))
 )
 
-const onSave = handleSubmit((values, { setErrors }) => {
-  // Get editor content
-  editor.value?.saveDesign().then(design => {
-    form.content = JSON.stringify(design)
-
-    const action = isEditing.value ? 'put' : 'post'
-    const route = isEditing.value
-      ? route('campaigns.update', props.campaign.id)
-      : route('campaigns.store')
-
-    form[action](route, {
-      onSuccess: () => {
-        toast({
-          title: 'Success',
-          description: `Campaign ${isEditing.value ? 'updated' : 'created'} successfully`
-        })
-      },
-      onError: (errors) => {
-        setErrors(errors)
-      }
-    })
-  })
-})
-
-const onSchedule = handleSubmit((values, { setErrors }) => {
-  if (!values.settings.scheduled_at) {
-    setErrors({ 'settings.scheduled_at': 'Schedule date is required' })
-    return
-  }
-
-  form.post(route('campaigns.schedule', props.campaign.id), {
-    onSuccess: () => {
-      toast({
-        title: 'Success',
-        description: 'Campaign scheduled successfully'
-      })
-    },
-    onError: (errors) => {
-      setErrors(errors)
-    }
-  })
-})
-
-const steps = [
-  {
-    id: 1,
-    name: 'Campaign Details',
-    description: 'Set up your campaign information'
-  },
-  {
-    id: 2,
-    name: 'Email Design',
-    description: 'Design your email content'
-  }
-]
-
-const handleNext = () => {
-  currentStep.value++
-}
-
-const handleBack = () => {
-  currentStep.value--
-}
-
-const handleSave = ({ design, isDraft }) => {
-  form.content = JSON.stringify(design)
-
-  const action = isEditing.value ? 'put' : 'post'
-  const route = isEditing.value
-    ? route('campaigns.update', props.campaign.id)
-    : route('campaigns.store')
-
-  form[action](route, {
-    onSuccess: () => {
-      toast({
-        title: 'Success',
-        description: `Campaign ${isEditing.value ? 'updated' : 'created'} successfully`
-      })
-    }
-  })
+// Handle editor ready event
+const onEditorReady = async () => {
+  await loadDesign()
 }
 </script>
 
 <template>
-  <AppLayout :title="isEditing ? 'Edit Campaign' : 'Create Campaign'">
-    <Head :title="isEditing ? 'Edit Campaign' : 'Create Campaign'" />
+  <div class="fixed inset-0 z-50 bg-background flex flex-col">
+    <!-- Header -->
+    <header class="border-b p-4 flex items-center justify-between">
+      <div class="flex items-center space-x-4">
+        <Button
+          variant="outline"
+          @click="emit('back')"
+        >
+          Back to Details
+        </Button>
 
-    <div class="max-w-5xl mx-auto p-6 space-y-8">
-      <Steps
-        :steps="steps"
-        :current-step="currentStep"
-      />
+        <span
+          v-if="lastSaved"
+          class="text-sm text-muted-foreground"
+        >
+          {{ lastSavedText }}
+        </span>
 
-      <Form @submit.prevent>
-        <KeepAlive>
-          <DetailsStep
-            v-if="currentStep === 1"
-            :form="form"
-            :templates="templates"
-            :processing="form.processing"
-            @next="handleNext"
-          />
+        <span
+          v-if="isSaving"
+          class="text-sm text-muted-foreground animate-pulse"
+        >
+          Saving...
+        </span>
+      </div>
 
-          <EditorStep
+      <div class="flex items-center space-x-4">
+        <!-- Preview Device Selector -->
+        <Select
+          :model-value="previewDevice"
+          :disabled="!previewMode">
+          <SelectTrigger class="w-32">
+            <SelectValue placeholder="Preview Device" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="desktop">Desktop</SelectItem>
+            <SelectItem value="tablet">Tablet</SelectItem>
+            <SelectItem value="mobile">Mobile</SelectItem>
+          </SelectContent>
+        </Select>
+
+        <!-- Preview Toggle -->
+        <Button
+          variant="outline"
+          :disabled="isSaving"
+          @click="previewMode = !previewMode">
+          {{ previewMode ? 'Edit' : 'Preview' }}
+        </Button>
+
+        <Button
+          variant="outline"
+          :disabled="isSaving"
+          @click="handleSave(true)">
+          Save as Draft
+        </Button>
+
+        <Button
+          variant="default"
+          :disabled="isSaving"
+          @click="handleSave(false)">
+          Save & Continue
+        </Button>
+      </div>
+    </header>
+
+    <!-- Editor/Preview Area -->
+    <main class="flex-1 relative">
+      <TransitionRoot
+        appear
+        show
+        as="template">
+        <div class="h-full">
+          <!-- Preview Mode -->
+          <TransitionChild
+            v-if="previewMode"
+            enter="transition ease-out duration-200"
+            enter-from="opacity-0"
+            enter-to="opacity-100"
+            leave="transition ease-in duration-150"
+            leave-from="opacity-100"
+            leave-to="opacity-0"
+            class="absolute inset-0 bg-background"
+            :class="{
+              'max-w-md mx-auto': previewDevice === 'mobile',
+              'max-w-2xl mx-auto': previewDevice === 'tablet'
+            }">
+            <div
+              class="h-full w-full overflow-auto"
+              v-html="previewHtml"
+            />
+          </TransitionChild>
+
+          <!-- Editor Mode -->
+          <TransitionChild
             v-else
-            :initial-content="form.content"
-            :processing="form.processing"
-            @back="handleBack"
-            @save="handleSave"
-          />
-        </KeepAlive>
-      </Form>
-    </div>
-  </AppLayout>
+            enter="transition ease-out duration-200"
+            enter-from="opacity-0"
+            enter-to="opacity-100"
+            leave="transition ease-in duration-150"
+            leave-from="opacity-100"
+            leave-to="opacity-0"
+            class="h-full">
+            <EmailEditor
+              ref="editor"
+              :config="editorConfig"
+              @ready="onEditorReady"
+              @change="handleContentChange"
+            />
+          </TransitionChild>
+        </div>
+      </TransitionRoot>
+    </main>
+  </div>
 </template>

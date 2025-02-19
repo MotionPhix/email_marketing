@@ -9,17 +9,19 @@ defineOptions({
 });
 
 const props = defineProps({
-  type: { type: String, required: false },
-  disabled: { type: Boolean, required: false },
-  autoFocus: { type: Boolean, required: false },
-  asChild: { type: Boolean, required: false },
-  as: { type: null, required: false },
-  class: { type: null, required: false },
+  modelValue: { type: [String, Number, null], default: '' },
+  type: { type: String, default: 'text' },
+  disabled: { type: Boolean, default: false },
+  autoFocus: { type: Boolean, default: false },
+  asChild: { type: Boolean, default: false },
+  as: { type: null, default: undefined },
+  class: { type: null, default: undefined },
 });
 
-const delegatedProps = computed(() => {
-  const { class: _, ...delegated } = props;
+const emit = defineEmits(['update:modelValue']);
 
+const delegatedProps = computed(() => {
+  const { class: _, modelValue, ...delegated } = props;
   return delegated;
 });
 
@@ -31,13 +33,12 @@ const forwardedProps = useForwardProps(delegatedProps);
     <Search class="mr-2 h-4 w-4 shrink-0 opacity-50 absolute top-3 left-3" />
     <ComboboxInput
       v-bind="{ ...forwardedProps, ...$attrs }"
-      auto-focus
-      :class="
-        cn(
-          'pl-8 flex h-11 w-full !focus:outline-none rounded-md bg-transparent py-3 text-sm outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50',
-          props.class,
-        )
-      "
+      :value="modelValue"
+      @input="$emit('update:modelValue', $event.target.value)"
+      :class="cn(
+        'pl-8 flex h-11 w-full !focus:outline-none rounded-md bg-transparent py-3 text-sm outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50',
+        props.class,
+      )"
     />
   </div>
 </template>

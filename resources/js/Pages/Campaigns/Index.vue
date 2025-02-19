@@ -1,12 +1,13 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-import { router, Link } from '@inertiajs/vue3'
-import { IconPlus } from '@tabler/icons-vue'
+import {ref} from 'vue'
+import {router, Link} from '@inertiajs/vue3'
+import {IconPlus} from '@tabler/icons-vue'
 import CampaignList from './Components/CampaignList.vue'
-import type { Campaign } from '@/types'
+import type {Campaign} from '@/types'
 import AppLayout from "@/Layouts/AppLayout.vue";
 import {toast} from "vue-sonner";
 import {excludeKeys} from "@/lib/utils";
+import EmptyState from "@/Pages/Campaigns/Components/EmptyState.vue";
 
 interface Props {
   campaigns: {
@@ -36,8 +37,8 @@ const campaignsToDelete = ref<number[]>([])
 const handleFilter = (newFilters: Partial<Props['filters']>) => {
   router.get(
     route('campaigns.index'),
-    { ...props.filters, ...newFilters },
-    { preserveState: true, preserveScroll: true }
+    {...props.filters, ...newFilters},
+    {preserveState: true, preserveScroll: true}
   )
 }
 
@@ -50,7 +51,7 @@ const handleDelete = () => {
   router.delete(
     route('campaigns.bulk-delete'),
     {
-      data: { ids: campaignsToDelete.value },
+      data: {ids: campaignsToDelete.value},
       onSuccess: () => {
         isDeleteDialogOpen.value = false
         campaignsToDelete.value = []
@@ -91,27 +92,31 @@ const pagination = excludeKeys(props.campaigns, ['data'])
     <template #action>
       <Button asChild>
         <Link :href="route('campaigns.create')">
-          <IconPlus class="mr-2 h-4 w-4" />
+          <IconPlus class="mr-2 h-4 w-4"/>
           New Campaign
         </Link>
       </Button>
     </template>
 
-    <CampaignList
-      :campaigns="campaigns.data"
-      :selected="selectedCampaigns"
-      :filters="filters"
-      @update:selected="selectedCampaigns = $event"
-      @delete="confirmDelete"
-      @filter="handleFilter"
-      @export="handleExport"
-    />
-
-    <div v-if="campaigns.total > 0" class="mt-4">
-      <Pagination
-        :pagination="pagination"
+    <template v-if="campaigns.total > 0">
+      <CampaignList
+        :campaigns="campaigns.data"
+        :selected="selectedCampaigns"
+        :filters="filters"
+        @update:selected="selectedCampaigns = $event"
+        @delete="confirmDelete"
+        @filter="handleFilter"
+        @export="handleExport"
       />
-    </div>
+
+      <div v-if="campaigns.total > 0" class="mt-4">
+        <Pagination
+          :pagination="pagination"
+        />
+      </div>
+    </template>
+
+    <EmptyState v-else />
 
     <Dialog :open="isDeleteDialogOpen" @update:open="isDeleteDialogOpen = false">
       <DialogContent>

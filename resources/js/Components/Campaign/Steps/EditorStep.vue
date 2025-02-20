@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import UITransition from '@/Components/Transition.vue'
-import EmailEditor from '@/Components/Campaign/EmailEditor.vue'
+import EmailEditor from '@/Components/Campaign/UnlayerEmailEditor.vue'
 import { formatDistanceToNow } from 'date-fns'
 import type { EditorProps, EditorEmits, EmailDesign } from '@/types'
 

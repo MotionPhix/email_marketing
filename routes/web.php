@@ -94,6 +94,11 @@ Route::middleware(['auth'])->group(function () {
         [CampaignController::class, 'edit']
       )->name('edit');
 
+      Route::post(
+        '/draft',
+        [CampaignController::class, 'draft']
+      )->name('draft');
+
       Route::put(
         '/u/{campaign}',
         [CampaignController::class, 'update']

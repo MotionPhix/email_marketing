@@ -57,6 +57,36 @@ class CampaignController extends Controller
     ]);
   }
 
+  public function draft(Request $request)
+  {
+    $validated = $request->validate([
+      'name' => 'required|string|max:255',
+      'subject' => 'required|string|max:255',
+      'from_name' => 'required|string|max:255',
+      'from_email' => 'required|email|max:255',
+      'reply_to' => 'nullable|email|max:255',
+      'template_id' => 'nullable|exists:email_templates,id',
+      'recipients' => 'required|array|min:1',
+      'settings' => 'required|array',
+      'settings.track_opens' => 'boolean',
+      'settings.track_clicks' => 'boolean',
+      'settings.schedule_send' => 'boolean',
+      'settings.scheduled_at' => 'nullable|date|after:now',
+      'settings.timezone' => 'required|string',
+    ]);
+
+    // If we have an ID, update the existing draft
+    if ($request->has('id')) {
+      $campaign = Campaign::findOrFail($request->id);
+      $campaign = $this->campaignService->update($campaign, $validated);
+    } else {
+      // Create new draft campaign
+      $campaign = $this->campaignService->create($validated);
+    }
+
+    return redirect(route('campaigns.edit', ['campaign' => $campaign?->id]));
+  }
+
   public function store(Request $request)
   {
     $validated = $request->validate([

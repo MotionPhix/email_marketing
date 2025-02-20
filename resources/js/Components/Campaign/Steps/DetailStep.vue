@@ -1,6 +1,5 @@
 <script setup>
 import {computed} from 'vue'
-import {Field} from 'vee-validate'
 import Combobox from '@/Components/Combobox.vue'
 
 const props = defineProps({
@@ -132,7 +131,7 @@ const templateOptions = computed(() =>
         variant="default"
         :disabled="processing"
         @click="$emit('next')">
-        Continue to Design
+        Continue to design
       </Button>
     </div>
   </div>

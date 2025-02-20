@@ -1,16 +1,15 @@
 <script setup lang="ts">
-import {ref, computed, markRaw} from 'vue'
-import { Head, useForm } from '@inertiajs/vue3'
-import { useForm as useVeeForm } from 'vee-validate'
-import * as yup from 'yup'
+import {ref, computed} from 'vue'
+import {Head, useForm} from '@inertiajs/vue3'
 import AppLayout from '@/Layouts/AppLayout.vue'
+import {Button} from '@/Components/ui/button'
 import Steps from '@/Components/Campaign/Steps/Step.vue'
 import DetailStep from '@/Components/Campaign/Steps/DetailStep.vue'
 import EditorStep from '@/Components/Campaign/Steps/EditorStep.vue'
 import StepContainer from '@/Components/Campaign/Steps/StepContainer.vue'
-import { toast } from 'vue-sonner'
-import { useStorage } from '@vueuse/core'
-import {Campaign, EmailTemplate} from "@/types";
+import {toast} from 'vue-sonner'
+import {useStorage} from '@vueuse/core'
+import type {Campaign, EmailTemplate} from '@/types'
 
 interface Props {
   campaign: Campaign
@@ -24,54 +23,27 @@ interface Props {
 
 const props = defineProps<Props>()
 
-// Define validation schema
-const validationSchema = yup.object({
-  name: yup.string().required('Campaign name is required').max(255),
-  subject: yup.string().required('Email subject is required').max(255),
-  from_name: yup.string().required('From name is required').max(255),
-  from_email: yup.string().required('From email is required').email().max(255),
-  reply_to: yup.string().email().nullable(),
-  content: yup.string().required('Email content is required'),
-  template_id: yup.number().nullable(),
-  recipients: yup.array().min(1, 'At least one recipient list is required'),
-  settings: yup.object({
-    track_opens: yup.boolean(),
-    track_clicks: yup.boolean(),
-    schedule_send: yup.boolean(),
-    scheduled_at: yup.date().nullable().when('schedule_send', {
-      is: true,
-      then: (schema) => schema.required('Schedule date is required')
-        .min(new Date(), 'Schedule date must be in the future')
-    }),
-    timezone: yup.string().required('Timezone is required')
-  })
-})
-
-// Initialize vee-validate form
-const { handleSubmit, values, errors, setFieldValue } = useVeeForm({
-  validationSchema,
-  initialValues: {
-    name: props.campaign.name || '',
-    subject: props.campaign.subject || '',
-    from_name: props.campaign.from_name || props.userSettings.from_name,
-    from_email: props.campaign.from_email || props.userSettings.from_email,
-    reply_to: props.campaign.reply_to || props.userSettings.reply_to || '',
-    content: props.campaign.content || '',
-    template_id: props.campaign.template_id || null,
-    recipients: props.campaign.recipients || [],
-    settings: {
-      track_opens: true,
-      track_clicks: true,
-      schedule_send: false,
-      scheduled_at: props.campaign.settings?.scheduled_at || null,
-      timezone: props.campaign.settings?.timezone ||
-        Intl.DateTimeFormat().resolvedOptions().timeZone
-    }
+// Initialize Inertia form
+const form = useForm({
+  id: props.campaign?.id || null,
+  name: props.campaign.name || '',
+  subject: props.campaign.subject || '',
+  from_name: props.campaign.from_name || props.userSettings.from_name,
+  from_email: props.campaign.from_email || props.userSettings.from_email,
+  reply_to: props.campaign.reply_to || props.userSettings.reply_to || '',
+  content: props.campaign.content || '',
+  template_id: props.campaign.template_id || null,
+  recipients: props.campaign.recipients || [],
+  settings: {
+    track_opens: true,
+    track_clicks: true,
+    schedule_send: false,
+    scheduled_at: props.campaign.settings?.scheduled_at || null,
+    timezone: props.campaign.settings?.timezone ||
+      Intl.DateTimeFormat().resolvedOptions().timeZone
   }
 })
 
-// Initialize Inertia form
-const form = useForm(values)
 const isEditing = computed(() => !!props.campaign.id)
 const currentStep = useStorage('campaign_form_step', 1)
 const editor = ref<InstanceType<typeof EditorStep> | null>(null)
@@ -113,14 +85,13 @@ const mergeTags = {
 
 // Step components configuration
 const stepComponents = {
-  1: markRaw(DetailStep),
-  2: markRaw(EditorStep)
+  1: DetailStep,
+  2: EditorStep
 }
 
 const stepProps = computed(() => ({
   1: {
     form,
-    errors,
     templates: props.templates,
     processing: form.processing,
     onNext: handleNext
@@ -128,6 +99,7 @@ const stepProps = computed(() => ({
   2: {
     modelValue: form.content,
     initialContent: props.campaign.content,
+    mergeTags,
     processing: form.processing,
     isSaving: form.processing,
     lastSaved: lastSaved.value,
@@ -163,15 +135,22 @@ const steps = [
 ]
 
 // Navigation handlers
-const handleNext = async () => {
-  const isValid = await handleSubmit(() => {
-    currentStep.value++
-    return true
-  })()
-
-  if (!isValid) {
-    toast.error('Please fix the validation errors before continuing')
-  }
+const handleNext = () => {
+  // Save first step data and create draft campaign
+  form.post(route('campaigns.draft'), {
+    preserveScroll: true,
+    onSuccess: (response) => {
+      // Update form with returned campaign data (to get the ID)
+      if (response?.props?.campaign) {
+        form.id = response.props.campaign.id
+      }
+      currentStep.value++
+      toast.success('Campaign details saved')
+    },
+    onError: () => {
+      toast.error('Please fix the validation errors before continuing')
+    }
+  })
 }
 
 const handleBack = () => {
@@ -179,7 +158,7 @@ const handleBack = () => {
 }
 
 // Save handlers
-const handleSave = async (isDraft = true) => {
+/*const handleSave = async (isDraft = true) => {
   try {
     if (!editor.value) return
 
@@ -198,9 +177,35 @@ const handleSave = async (isDraft = true) => {
           `Campaign ${isEditing.value ? 'updated' : 'created'} successfully`
         )
       },
-      onError: (errors) => {
+      onError: () => {
         toast.error('Failed to save campaign')
-        console.error(errors)
+      }
+    })
+  } catch (error) {
+    toast.error('Failed to save email design')
+    console.error(error)
+  }
+}*/
+
+// Modify handleSave to update existing draft
+const handleSave = async (isDraft = true) => {
+  try {
+    if (!editor.value) return
+
+    const design = await editor.value.saveDesign()
+    form.content = JSON.stringify(design)
+
+    // Always use PUT since we're updating the draft
+    form.put(route('campaigns.update', form.id), {
+      onSuccess: () => {
+        lastSaved.value = new Date().toISOString()
+
+        toast.success(
+          `Campaign ${isDraft ? 'saved as draft' : 'created'} successfully`
+        )
+      },
+      onError: () => {
+        toast.error('Failed to save campaign')
       }
     })
   } catch (error) {
@@ -233,7 +238,7 @@ const handleSchedule = () => {
 
 <template>
   <AppLayout :title="isEditing ? 'Edit Campaign' : 'Create Campaign'">
-    <Head :title="isEditing ? 'Edit Campaign' : 'Create Campaign'" />
+    <Head :title="isEditing ? 'Edit Campaign' : 'Create Campaign'"/>
 
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <!-- Progress Steps -->
@@ -248,22 +253,26 @@ const handleSchedule = () => {
         <KeepAlive>
           <StepContainer
             :is="currentStepComponent"
-            v-bind="currentStepProps">
+            v-bind="currentStepProps"
+          >
             <template
               v-if="currentStep === 2"
-              #header>
+              #header
+            >
               <!-- Editor Header -->
               <div class="h-16 border-b px-4 flex items-center justify-between">
                 <div class="flex items-center space-x-4">
                   <Button
                     variant="outline"
-                    @click="handleBack">
+                    @click="handleBack"
+                  >
                     Back
                   </Button>
 
                   <span
                     v-if="lastSaved"
-                    class="text-sm text-muted-foreground">
+                    class="text-sm text-muted-foreground"
+                  >
                     Last saved {{ new Date(lastSaved).toLocaleTimeString() }}
                   </span>
                 </div>
@@ -272,14 +281,16 @@ const handleSchedule = () => {
                   <Button
                     variant="outline"
                     :disabled="form.processing"
-                    @click="handleSave(true)">
+                    @click="handleSave(true)"
+                  >
                     Save Draft
                   </Button>
 
                   <Button
                     variant="default"
                     :disabled="form.processing"
-                    @click="handleSave(false)">
+                    @click="handleSave(false)"
+                  >
                     Save & Continue
                   </Button>
                 </div>

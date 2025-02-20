@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import {computed} from "vue";
 import {PaginationMeta} from "@/types";
+import {IconChevronLeft, IconChevronRight} from "@tabler/icons-vue";
 
 interface Props {
   pagination: PaginationMeta

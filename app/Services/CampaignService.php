@@ -21,15 +21,16 @@ class CampaignService
   {
     return DB::transaction(function () use ($data) {
       $campaign = Campaign::create([
+        'user_id' => auth()->user()->id,
         'team_id' => auth()->user()->currentTeam->id,
         'name' => $data['name'],
         'subject' => $data['subject'],
         'from_name' => $data['from_name'],
         'from_email' => $data['from_email'],
         'reply_to' => $data['reply_to'],
-        'content' => $data['content'],
+        'content' => $data['content'] ?? 'No content yet',
         'template_id' => $data['template_id'],
-        'scheduled_at' => $data['scheduled_at'],
+        'scheduled_at' => $data['scheduled_at'] ?? null,
         'recipients' => $data['recipients'],
         'settings' => $data['settings'] ?? [],
         'status' => 'draft'

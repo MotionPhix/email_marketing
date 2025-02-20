@@ -66,6 +66,7 @@ class CampaignController extends Controller
       'name' => 'required|string|max:255',
       'subject' => 'required|string|max:255',
       'from_name' => 'required|string|max:255',
+      'content' => 'nullable|string|max:255',
       'from_email' => [
         'required',
         'email',
@@ -121,7 +122,7 @@ class CampaignController extends Controller
     $this->validateRecipientsArray($validated['recipients']);
 
     // If we have an ID, update the existing draft
-    if ($request->has('id')) {
+    if ($request->has('id') && ! empty($request->id)) {
       $campaign = Campaign::findOrFail($request->id);
       $campaign = $this->campaignService->update($campaign, $validated);
     } else {
@@ -129,7 +130,16 @@ class CampaignController extends Controller
       $campaign = $this->campaignService->create($validated);
     }
 
-    return Inertia('Campaigns/Form', ['campaign' => $campaign]);
+    return Inertia::render('Campaigns/Form', [
+      'campaign' => $campaign,
+      'templates' => $request->user()->currentTeam->templates,
+      'userSettings' => auth()->user()->settings()->first([
+        'sender_settings->default_sender_name as from_name',
+        'sender_settings->default_sender_email as from_email',
+        'sender_settings->reply_to as reply_to'
+      ]),
+      'step' => 2,
+    ]);
   }
 
   protected function validateRecipientsArray(array $recipients)

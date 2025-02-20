@@ -1,18 +1,16 @@
 <script setup lang="ts">
-import { ref, computed, markRaw } from 'vue'
+import {ref, computed, markRaw} from 'vue'
 import { Head, useForm } from '@inertiajs/vue3'
 import { useForm as useVeeForm } from 'vee-validate'
 import * as yup from 'yup'
 import AppLayout from '@/Layouts/AppLayout.vue'
-import { Form } from '@/Components/ui/form'
-import { Button } from '@/Components/ui/button'
 import Steps from '@/Components/Campaign/Steps/Step.vue'
-import DetailsStep from '@/Components/Campaign/Steps/DetailStep.vue'
+import DetailStep from '@/Components/Campaign/Steps/DetailStep.vue'
 import EditorStep from '@/Components/Campaign/Steps/EditorStep.vue'
 import StepContainer from '@/Components/Campaign/Steps/StepContainer.vue'
 import { toast } from 'vue-sonner'
 import { useStorage } from '@vueuse/core'
-import type { Campaign, EmailTemplate } from '@/types'
+import {Campaign, EmailTemplate} from "@/types";
 
 interface Props {
   campaign: Campaign
@@ -76,7 +74,7 @@ const { handleSubmit, values, errors, setFieldValue } = useVeeForm({
 const form = useForm(values)
 const isEditing = computed(() => !!props.campaign.id)
 const currentStep = useStorage('campaign_form_step', 1)
-const editor = ref<InstanceType<typeof EditoStep> | null>(null)
+const editor = ref<InstanceType<typeof EditorStep> | null>(null)
 const lastSaved = useStorage('campaign_last_saved', '')
 
 // Custom merge tags
@@ -115,13 +113,13 @@ const mergeTags = {
 
 // Step components configuration
 const stepComponents = {
-  1: markRaw(DetailsStep),
+  1: markRaw(DetailStep),
   2: markRaw(EditorStep)
 }
 
 const stepProps = computed(() => ({
   1: {
-    modelValue: form,
+    form,
     errors,
     templates: props.templates,
     processing: form.processing,
@@ -129,12 +127,14 @@ const stepProps = computed(() => ({
   },
   2: {
     modelValue: form.content,
-    mergeTags,
-    ref: editor,
+    initialContent: props.campaign.content,
+    processing: form.processing,
+    isSaving: form.processing,
+    lastSaved: lastSaved.value,
+    onBack: handleBack,
+    onSave: handleSave,
     'onUpdate:modelValue': (value: string) => form.content = value,
-    onReady: () => {},
-    'onDesign:updated': handleDesignUpdated,
-    onError: (error: Error) => toast.error(error.message)
+    'onContent:change': handleDesignUpdated
   }
 }))
 
@@ -244,30 +244,26 @@ const handleSchedule = () => {
       />
 
       <!-- Form Steps -->
-      <Form @submit.prevent>
+      <form @submit.prevent>
         <KeepAlive>
           <StepContainer
             :is="currentStepComponent"
-            v-bind="currentStepProps"
-          >
+            v-bind="currentStepProps">
             <template
               v-if="currentStep === 2"
-              #header
-            >
+              #header>
               <!-- Editor Header -->
               <div class="h-16 border-b px-4 flex items-center justify-between">
                 <div class="flex items-center space-x-4">
                   <Button
                     variant="outline"
-                    @click="handleBack"
-                  >
+                    @click="handleBack">
                     Back
                   </Button>
 
                   <span
                     v-if="lastSaved"
-                    class="text-sm text-muted-foreground"
-                  >
+                    class="text-sm text-muted-foreground">
                     Last saved {{ new Date(lastSaved).toLocaleTimeString() }}
                   </span>
                 </div>
@@ -276,16 +272,14 @@ const handleSchedule = () => {
                   <Button
                     variant="outline"
                     :disabled="form.processing"
-                    @click="handleSave(true)"
-                  >
+                    @click="handleSave(true)">
                     Save Draft
                   </Button>
 
                   <Button
                     variant="default"
                     :disabled="form.processing"
-                    @click="handleSave(false)"
-                  >
+                    @click="handleSave(false)">
                     Save & Continue
                   </Button>
                 </div>
@@ -293,7 +287,7 @@ const handleSchedule = () => {
             </template>
           </StepContainer>
         </KeepAlive>
-      </Form>
+      </form>
     </div>
   </AppLayout>
 </template>

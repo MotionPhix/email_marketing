@@ -14,7 +14,8 @@ use Maatwebsite\Excel\Facades\Excel;
 class CampaignController extends Controller
 {
   public function __construct(protected CampaignService $campaignService)
-  {}
+  {
+  }
 
   public function index(Request $request)
   {
@@ -47,7 +48,12 @@ class CampaignController extends Controller
   {
     return Inertia::render('Campaigns/Form', [
       'templates' => EmailTemplate::all(),
-      'campaign' => new Campaign()
+      'campaign' => new Campaign(),
+      'userSettings' => auth()->user()->settings()->first([
+        'sender_settings->default_sender_name as from_name',
+        'sender_settings->default_sender_email as from_email',
+        'sender_settings->reply_to as reply_to'
+      ])
     ]);
   }
 

@@ -50,7 +50,7 @@ export interface CampaignEvent {
   updated_at: string
 }
 
-export interface Index {
+export interface Campaign {
   id: number
   name: string
   subject: string
@@ -114,10 +114,10 @@ export interface PaginatedResponse<T> extends PaginationMeta {
 }
 export interface CampaignFilters {
   search?: string
-  status?: 'all' | Index['status']
+  status?: 'all' | Campaign['status']
   date_from?: string
   date_to?: string
-  sort_by?: keyof Index
+  sort_by?: keyof Campaign
   sort_direction?: 'asc' | 'desc'
 }
 

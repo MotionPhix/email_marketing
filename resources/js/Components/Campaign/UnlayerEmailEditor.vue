@@ -1,8 +1,7 @@
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue'
-import EmailEditor from 'vue-email-editor'
-import { useTheme } from '@/Composables/useTheme'
-import type { UnlayerOptions } from '@/types/editor'
+import { ref, watch } from 'vue'
+import {EmailEditor} from 'vue-email-editor'
+import {useDark} from "@vueuse/core";
 
 interface Props {
   modelValue: string
@@ -21,7 +20,7 @@ const emit = defineEmits<{
 }>()
 
 const editor = ref<any>(null)
-const { theme } = useTheme()
+const isDark = useDark()
 
 // Default merge tags for email personalization
 const defaultMergeTags = {
@@ -116,7 +115,7 @@ const sendGridConfig = {
 // Configure the editor options
 const editorOptions = {
   appearance: {
-    theme: theme.value === 'dark' ? 'dark' : 'white',
+    theme: isDark ? 'dark' : 'white',
     panels: {
       tools: {
         dock: 'left',
@@ -206,7 +205,7 @@ const exportHtml = async () => {
 }
 
 // Watch for theme changes
-watch(() => theme.value, (newTheme) => {
+watch(() => isDark, (newTheme) => {
   if (!editor.value) return
   editor.value.updateAppearance({
     theme: newTheme === 'dark' ? 'dark' : 'white',

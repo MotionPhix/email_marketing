@@ -1,7 +1,6 @@
 <script setup>
 import {computed} from 'vue'
 import {Field} from 'vee-validate'
-import {FormControl, FormField, FormItem, FormLabel, FormMessage} from '@/Components/ui/form'
 import Combobox from '@/Components/Combobox.vue'
 
 const props = defineProps({
@@ -44,116 +43,83 @@ const templateOptions = computed(() =>
         <div class="space-y-4">
           <div class="grid grid-cols-2 gap-4">
             <!-- Name and Subject fields -->
-            <FormField name="name">
-              <FormItem>
-                <FormLabel>Campaign Name</FormLabel>
-                <FormControl>
-                  <Field name="name" v-slot="{ field, errorMessage }">
-                    <Input v-bind="field" :error="!!errorMessage" placeholder="Spring Newsletter 2024"/>
-                  </Field>
-                </FormControl>
-                <FormMessage/>
-              </FormItem>
-            </FormField>
+            <FormField
+              label="Campaign Name"
+              v-model="form.name"
+              :error="form.errors.name"
+              placeholder="Spring Newsletter 2024"
+            />
 
-            <FormField name="subject">
-              <FormItem>
-                <FormLabel>Email Subject</FormLabel>
-                <FormControl>
-                  <Field name="subject" v-slot="{ field, errorMessage }">
-                    <Input v-bind="field" :error="!!errorMessage" placeholder="Your Spring Updates Are Here!"/>
-                  </Field>
-                </FormControl>
-                <FormMessage/>
-              </FormItem>
-            </FormField>
+            <FormField
+              label="Email Subject"
+              v-model="form.subject"
+              :error="form.errors.subject"
+              placeholder="Your Spring Updates Are Here!"
+            />
           </div>
 
           <div class="grid grid-cols-2 gap-4">
-            <FormField name="from_name">
-              <FormItem>
-                <FormLabel>From Name</FormLabel>
-                <FormControl>
-                  <Field name="from_name" v-slot="{ field, errorMessage }">
-                    <Input v-bind="field" :error="!!errorMessage" placeholder="Your Company Name"/>
-                  </Field>
-                </FormControl>
-                <FormMessage/>
-              </FormItem>
-            </FormField>
+            <FormField
+              label="From Name"
+              v-model="form.from_name"
+              :error="form.errors.from_name"
+              placeholder="Your Company Name"
+            />
 
-            <FormField name="from_email">
-              <FormItem>
-                <FormLabel>From Email</FormLabel>
-                <FormControl>
-                  <Field name="from_email" v-slot="{ field, errorMessage }">
-                    <Input v-bind="field" :error="!!errorMessage" type="email"
-                           placeholder="newsletter@yourcompany.com"/>
-                  </Field>
-                </FormControl>
-                <FormMessage/>
-              </FormItem>
-            </FormField>
+            <FormField
+              label="From Email"
+              v-model="form.from_email"
+              :error="form.errors.from_email"
+              placeholder="newsletter@yourcompany.com"
+              type="email"
+            />
           </div>
 
-          <FormField name="reply_to">
-            <FormItem>
-              <FormLabel>Reply-To Email (Optional)</FormLabel>
-              <FormControl>
-                <Field name="reply_to" v-slot="{ field, errorMessage }">
-                  <Input v-bind="field" :error="!!errorMessage" type="email" placeholder="support@yourcompany.com"/>
-                </Field>
-              </FormControl>
-              <FormMessage/>
-            </FormItem>
-          </FormField>
+          <div class="grid grid-cols-2 gap-4">
+            <FormField
+              v-model="form.reply_to"
+              label="Reply-To Email (Optional)"
+              placeholder="support@yourcompany.com"
+              :error="form.errors.reply_to"
+              type="email"
+            />
 
-          <FormField name="template_id">
-            <FormItem>
-              <FormLabel>Email Template</FormLabel>
-              <FormControl>
-                <Field name="template_id" v-slot="{ field }">
-                  <Combobox
-                    :model-value="field.value || null"
-                    :options="templateOptions"
-                    :error="!!field.error"
-                    placeholder="Select a template"
-                    search-placeholder="Search templates..."
-                    empty-message="No templates found"
-                    @update:model-value="field.onChange"
-                  />
-                </Field>
-              </FormControl>
-              <FormMessage/>
-            </FormItem>
-          </FormField>
+            <div class="grid">
+              <Label>Email Template</Label>
+              <Combobox
+                :model-value="form.template_id || null"
+                :options="templateOptions"
+                :error="form.errors.template_id"
+                placeholder="Select a template"
+                search-placeholder="Search templates..."
+                empty-message="No templates found"
+                @update:model-value="value => form.template_id = value"
+              />
+            </div>
+          </div>
 
           <!-- Campaign Settings -->
           <div class="space-y-4">
             <div class="flex items-center space-x-4">
-              <Field name="settings.track_opens" v-slot="{ field }">
-                <FormItem class="flex items-center space-x-2">
-                  <FormControl>
-                    <Checkbox
-                      :checked="field.value"
-                      @update:checked="$emit('update:modelValue', $event)"
-                    />
-                  </FormControl>
-                  <FormLabel>Track Opens</FormLabel>
-                </FormItem>
-              </Field>
+              <Label
+                class="flex items-center space-x-2">
+                <Checkbox
+                  :checked="form.settings.track_opens"
+                  @update:checked="$emit('update:modelValue', $event)"
+                />
 
-              <Field name="settings.track_clicks" v-slot="{ field }">
-                <FormItem class="flex items-center space-x-2">
-                  <FormControl>
-                    <Checkbox
-                      :checked="field.value"
-                      @update:checked="$emit('update:modelValue', $event)"
-                    />
-                  </FormControl>
-                  <FormLabel>Track Clicks</FormLabel>
-                </FormItem>
-              </Field>
+                <span>Track Opens</span>
+              </Label>
+
+              <Label
+                class="flex items-center space-x-2">
+                <Checkbox
+                  :checked="form.settings.track_clicks"
+                  @update:checked="$emit('update:modelValue', $event)"
+                />
+
+                <span>Track Clicks</span>
+              </Label>
             </div>
           </div>
         </div>

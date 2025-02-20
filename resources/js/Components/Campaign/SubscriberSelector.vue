@@ -3,6 +3,7 @@ import {onMounted, ref, watch} from 'vue'
 import { IconCheck, IconCircleCheck } from '@tabler/icons-vue'
 import {router} from "@inertiajs/vue3";
 import axios from "axios";
+import MultipleCombobox from "@/Components/MultipleCombobox.vue";
 
 interface Props {
   modelValue: {
@@ -168,18 +169,22 @@ onMounted(async () => {
     <!-- Exclusion Lists -->
     <div class="space-y-4">
       <Label>Exclude Lists (Optional)</Label>
-      <Select
-        multiple
+      <MultipleCombobox
         v-model="excludedLists"
-        :options="mailingLists.filter(list => !selectedLists.includes(list.id))"
-        option-label="name"
-        option-value="id">
-        <template #trigger>
-          <Button variant="outline" class="w-full justify-start">
-            {{ excludedLists.length ? `${excludedLists.length} lists excluded` : 'Select lists to exclude' }}
-          </Button>
-        </template>
-      </Select>
+        :options="mailingLists
+          .filter(list => !selectedLists.includes(list.id))
+          .map(list => ({
+            value: list.id,
+            label: list.name
+          }))"
+        placeholder="Select lists to exclude"
+        search-placeholder="Search lists..."
+        empty-message="No lists available"
+        :trigger-text="selected =>
+          selected.length
+            ? `${selected.length} list${selected.length === 1 ? '' : 's'} excluded`
+            : 'Select lists to exclude'"
+      />
     </div>
   </div>
 </template>

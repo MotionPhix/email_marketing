@@ -21,12 +21,12 @@ withDefaults(
   }
 )
 
-function onClose() {
+function close() {
   modalRef.value.close()
 }
 
 defineExpose({
-  onClose,
+  close,
 });
 </script>
 
@@ -38,22 +38,29 @@ defineExpose({
     :paddingClasses="padding"
     :close-explicitly="manualClose"
     :close-button="hasCloseButton"
-    panel-classes="border-none dark:bg-gray-800 rounded-lg bg-gray-100 dark:text-muted-foreground max-h-[80svh] overflow-y-auto scrollbar-none scroll-smooth">
-    <slot name="header" v-if="$slots.header">
+    panel-classes="dark:text-muted-foreground max-h-[80svh] overflow-y-auto scrollbar-none scroll-smooth">
+    <Card>
 
-      <CardHeader class="sticky top-0 z-10 bg-gray-100 dark:bg-gray-800">
+      <CardHeader
+        v-if="modalTitle"
+        class="sticky top-0 z-10 bg-gray-100 dark:bg-gray-800">
         <CardTitle class="flex items-center gap-2">
           <component :is="icon"/>
           {{ modalTitle }}
         </CardTitle>
 
-        <CardDescription>
+        <CardDescription v-if="description">
           {{ description }}
         </CardDescription>
       </CardHeader>
 
-    </slot>
+     <CardContent>
+       <slot/>
+     </CardContent>
 
-    <slot/>
+      <CardFooter class="justify-end gap-x-2" v-if="$slots.footer">
+        <slot name="footer" />
+      </CardFooter>
+    </Card>
   </Modal>
 </template>

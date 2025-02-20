@@ -1,8 +1,7 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-import { Head, useForm } from '@inertiajs/vue3'
+import {ref} from 'vue'
+import {Head, useForm, Link} from '@inertiajs/vue3'
 import AuthLayout from '@/Layouts/AuthLayout.vue'
-import InputError from "@/Components/InputError.vue"
 import {Loader2Icon} from "lucide-vue-next"
 
 const props = defineProps<{
@@ -39,7 +38,7 @@ const submit = () => {
 
 <template>
   <AuthLayout>
-    <Head title="Accept Team Invitation" />
+    <Head title="Accept Team Invitation"/>
 
     <div class="lg:p-8">
       <div class="mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[450px]">
@@ -54,63 +53,46 @@ const submit = () => {
 
         <form @submit.prevent="submit" class="space-y-4">
           <div class="grid gap-4 sm:grid-cols-2">
-            <FormField>
-              <Label for="first_name">First name</Label>
-              <Input
-                id="first_name"
-                v-model="form.first_name"
-                type="text"
-                :disabled="isLoading"
-                required
-              />
-              <InputError :message="form.errors.first_name" />
-            </FormField>
+            <FormField
+              label="First name"
+              v-model="form.first_name"
+              :disabled="isLoading"
+              required
+              :error="form.errors.first_name"
+            />
 
-            <FormField>
-              <Label for="last_name">Last name</Label>
-              <Input
-                id="last_name"
-                v-model="form.last_name"
-                type="text"
-                :disabled="isLoading"
-                required
-              />
-              <InputError :message="form.errors.last_name" />
-            </FormField>
+            <FormField
+              label="Last name"
+              v-model="form.last_name"
+              :disabled="isLoading"
+              required
+              :error="form.errors.last_name"
+            />
           </div>
 
-          <FormField>
-            <Label for="email">Email</Label>
-            <Input
-              id="email"
-              :value="email"
-              type="email"
-              disabled
-            />
-          </FormField>
+          <FormField
+            label="Email"
+            v-model="email"
+            type="email"
+            disabled
+          />
 
-          <FormField>
-            <Label for="password">Password</Label>
-            <Input
-              id="password"
-              v-model="form.password"
-              type="password"
-              :disabled="isLoading"
-              required
-            />
-            <InputError :message="form.errors.password" />
-          </FormField>
+          <FormField
+            label="Password"
+            v-model="form.password"
+            type="password"
+            :disabled="isLoading"
+            required
+            :message="form.errors.password"
+          />
 
-          <FormField>
-            <Label for="password_confirmation">Confirm password</Label>
-            <Input
-              id="password_confirmation"
-              v-model="form.password_confirmation"
-              type="password"
-              :disabled="isLoading"
-              required
-            />
-          </FormField>
+          <FormField
+            label="Confirm password"
+            v-model="form.password_confirmation"
+            type="password"
+            :disabled="isLoading"
+            required
+          />
 
           <div class="flex items-center space-x-2">
             <Checkbox
@@ -121,22 +103,19 @@ const submit = () => {
             />
             <label
               for="terms"
-              class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-            >
+              class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
               I agree to the
               <Link
                 :href="route('terms.show')"
                 class="text-primary hover:underline"
-                target="_blank"
-              >
+                target="_blank">
                 terms of service
               </Link>
               and
               <Link
                 :href="route('policy.show')"
                 class="text-primary hover:underline"
-                target="_blank"
-              >
+                target="_blank">
                 privacy policy
               </Link>
             </label>

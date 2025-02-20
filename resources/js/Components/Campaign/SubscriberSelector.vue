@@ -6,15 +6,6 @@ import {router} from "@inertiajs/vue3";
 import axios from "axios";
 import MultipleCombobox from "@/Components/MultipleCombobox.vue";
 
-interface Props {
-  modelValue: {
-    mailingLists: number[]
-    segments: number[]
-    excludedLists: number[]
-  }
-  error?: string
-}
-
 interface MailingList {
   id: number
   name: string
@@ -27,6 +18,15 @@ interface Segment {
   name: string
   subscriberCount: number
   description?: string
+}
+
+interface Props {
+  modelValue: {
+    mailingLists: MailingList[]
+    segments: Segment[]
+    excludedLists: MailingList[]
+  }
+  error?: string
 }
 
 const props = withDefaults(defineProps<Props>(), {

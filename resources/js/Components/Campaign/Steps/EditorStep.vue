@@ -111,23 +111,20 @@ defineExpose({
       <div class="flex items-center space-x-4">
         <Button
           variant="outline"
-          @click="emit('back')"
-        >
+          @click="emit('back')">
           Back to Details
         </Button>
 
         <span
           v-if="lastSaved"
           class="text-sm text-muted-foreground"
-          :title="lastSaved"
-        >
+          :title="lastSaved">
           {{ lastSavedText }}
         </span>
 
         <span
           v-if="isSaving"
-          class="text-sm text-muted-foreground animate-pulse"
-        >
+          class="text-sm text-muted-foreground animate-pulse">
           Saving...
         </span>
       </div>
@@ -136,16 +133,14 @@ defineExpose({
         <Button
           variant="outline"
           :disabled="processing || isSaving"
-          @click="handleSave(true)"
-        >
+          @click="handleSave(true)">
           Save Draft
         </Button>
 
         <Button
           variant="default"
           :disabled="processing || isSaving"
-          @click="handleSave(false)"
-        >
+          @click="handleSave(false)">
           Save & Continue
         </Button>
       </div>
@@ -157,8 +152,7 @@ defineExpose({
         <div
           v-if="previewMode"
           class="absolute inset-0 bg-background"
-          :class="{ 'max-w-md mx-auto': shouldShowMobileView }"
-        >
+          :class="{ 'max-w-md mx-auto': shouldShowMobileView }">
           <div
             class="h-full w-full overflow-auto"
             v-html="previewHtml"

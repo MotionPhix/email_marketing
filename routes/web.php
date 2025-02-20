@@ -197,27 +197,68 @@ Route::middleware(['auth'])->group(function () {
     Route::delete('/{apiKey}', [ApiKeyController::class, 'destroy']);
   });*/
 
-  // Additional segment routes for specific functionality
+  // Segment routes
   Route::prefix('segments')->name('segments.')->group(function () {
+    Route::get(
+      '/',
+      [SegmentController::class, 'index']
+    )->name('index');
+
+    Route::get(
+      's/{segment}',
+      [SegmentController::class, 'show']
+    )->name('show');
+
+    Route::get(
+      'e/{segment}',
+      [SegmentController::class, 'edit']
+    )->name('edit');
+
+    Route::get(
+      'new-segment',
+      [SegmentController::class, 'create']
+    )->name('create');
+
+    Route::post(
+      '/',
+      [SegmentController::class, 'store']
+    )->name('store');
+
+    Route::put(
+      'u/{segment}',
+      [SegmentController::class, 'update']
+    )->name('update');
+
+    Route::delete(
+      'd/{segment}',
+      [SegmentController::class, 'destroy']
+    )->name('destroy');
+
     // Preview segment subscribers
-    Route::get('{segment}/preview', [SegmentController::class, 'preview'])
-      ->name('preview');
+    Route::get(
+      'p/{segment}',
+      [SegmentController::class, 'preview']
+    )->name('preview');
 
     // Duplicate segment
-    Route::post('{segment}/duplicate', [SegmentController::class, 'duplicate'])
-      ->name('duplicate');
+    Route::post(
+      'duplicate/{segment}',
+      [SegmentController::class, 'duplicate']
+    )->name('duplicate');
 
     // Calculate segment size
-    Route::post('{segment}/calculate', [SegmentController::class, 'calculateSize'])
-      ->name('calculate-size');
+    Route::post(
+      'calculate/{segment}',
+      [SegmentController::class, 'calculateSize']
+    )->name('calculate-size');
 
     // Bulk actions
-    Route::post('bulk-delete', [SegmentController::class, 'bulkDestroy'])
-      ->name('bulk-delete');
-  });
+    Route::post(
+      'bulk-delete',
+      [SegmentController::class, 'bulkDestroy']
+    )->name('bulk-delete');
 
-  // Segments resource routes
-  Route::resource('segments', SegmentController::class);
+  });
 
   Route::get(
     'mailing-lists/{mailingList}/subscribers',

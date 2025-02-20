@@ -31,6 +31,13 @@ class MailingListController extends Controller
     ]);
   }
 
+  public function create()
+  {
+    return Inertia::render('MailingLists/Form', [
+      'list' => new MailingList()
+    ]);
+  }
+
   public function store(Request $request)
   {
     $validated = $request->validate([
@@ -47,6 +54,21 @@ class MailingListController extends Controller
     return back()->with('success', 'Mailing list created successfully.');
   }
 
+  public function edit(MailingList $mailingList)
+  {
+    $this->authorize('update', $mailingList);
+
+    return Inertia::render('MailingLists/Form', [
+      'list' => [
+        'id' => $mailingList->id,
+        'name' => $mailingList->name,
+        'description' => $mailingList->description,
+        'is_default' => $mailingList->is_default,
+        'settings' => $mailingList->settings,
+      ],
+    ]);
+  }
+
   public function update(Request $request, MailingList $mailingList)
   {
     $this->authorize('update', $mailingList);
@@ -61,6 +83,27 @@ class MailingListController extends Controller
     $mailingList->update($validated);
 
     return back()->with('success', 'Mailing list updated successfully.');
+  }
+
+  public function show(MailingList $mailingList)
+  {
+    $this->authorize('view', $mailingList);
+
+    return Inertia::render('MailingLists/Show', [
+      'list' => [
+        'id' => $mailingList->id,
+        'name' => $mailingList->name,
+        'description' => $mailingList->description,
+        'is_default' => $mailingList->is_default,
+        'subscriberCount' => $mailingList->subscribers()->count(),
+        'created_at' => $mailingList->created_at,
+        'updated_at' => $mailingList->updated_at,
+      ],
+      'subscribers' => $mailingList->subscribers()
+        ->select(['id', 'email', 'first_name', 'last_name', 'status', 'created_at'])
+        ->latest()
+        ->paginate(10)
+    ]);
   }
 
   public function destroy(MailingList $mailingList)

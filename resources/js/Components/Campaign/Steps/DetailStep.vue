@@ -1,7 +1,9 @@
 <script setup>
 import {computed} from 'vue'
 import Combobox from '@/Components/Combobox.vue'
-import SubscriberSelector from "@/Components/Campaign/SubscriberSelector.vue";
+import SubscriberSelector from "@/Components/Campaign/SubscriberSelector.vue"
+import { visitModal } from '@inertiaui/modal-vue'
+import {router} from "@inertiajs/vue3";
 
 const props = defineProps({
   form: {
@@ -26,6 +28,16 @@ const templateOptions = computed(() =>
     label: template.name
   }))
 )
+
+const onCreateMailingList = () => {
+  // router.visit(route('mailing-lists.create'))
+  visitModal(route('mailing-lists.create'), {
+    listeners: {},
+    onClose: () => console.log('Modal closed'),
+    onAfterLeave: () => console.log('Modal removed from DOM'),
+    queryStringArrayFormat: 'brackets',
+  })
+}
 </script>
 
 <template>
@@ -142,7 +154,7 @@ const templateOptions = computed(() =>
       <CardContent>
         <SubscriberSelector
           v-model="form.recipients"
-          @create-list="router.visit(route('mailing-lists.create'))"
+          @create-list="onCreateMailingList"
           @create-segment="router.visit(route('segments.create'))"
           :error="form.errors.recipients"
         />

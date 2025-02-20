@@ -10,7 +10,6 @@ import StepContainer from '@/Components/Campaign/Steps/StepContainer.vue'
 import {toast} from 'vue-sonner'
 import {useStorage} from '@vueuse/core'
 import type {Campaign, EmailTemplate} from '@/types'
-import CampaignList from "@/Pages/Campaigns/Components/CampaignList.vue";
 import {IconPlus} from "@tabler/icons-vue";
 
 interface Props {
@@ -265,26 +264,22 @@ const handleSchedule = () => {
         <KeepAlive>
           <StepContainer
             :is="currentStepComponent"
-            v-bind="currentStepProps"
-          >
+            v-bind="currentStepProps">
             <template
               v-if="currentStep === 2"
-              #header
-            >
+              #header>
               <!-- Editor Header -->
               <div class="h-16 border-b px-4 flex items-center justify-between">
                 <div class="flex items-center space-x-4">
                   <Button
                     variant="outline"
-                    @click="handleBack"
-                  >
+                    @click="handleBack">
                     Back
                   </Button>
 
                   <span
                     v-if="lastSaved"
-                    class="text-sm text-muted-foreground"
-                  >
+                    class="text-sm text-muted-foreground">
                     Last saved {{ new Date(lastSaved).toLocaleTimeString() }}
                   </span>
                 </div>
@@ -293,16 +288,14 @@ const handleSchedule = () => {
                   <Button
                     variant="outline"
                     :disabled="form.processing"
-                    @click="handleSave(true)"
-                  >
+                    @click="handleSave(true)">
                     Save Draft
                   </Button>
 
                   <Button
                     variant="default"
                     :disabled="form.processing"
-                    @click="handleSave(false)"
-                  >
+                    @click="handleSave(false)">
                     Save & Continue
                   </Button>
                 </div>

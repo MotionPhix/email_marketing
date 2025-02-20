@@ -2,7 +2,6 @@
 import {onMounted, ref, watch} from 'vue'
 import { IconCheck, IconCircleCheck, IconMailOpened, IconFilterCog } from '@tabler/icons-vue'
 import {PlusIcon} from "lucide-vue-next";
-import {router} from "@inertiajs/vue3";
 import axios from "axios";
 import MultipleCombobox from "@/Components/MultipleCombobox.vue";
 
@@ -46,9 +45,17 @@ const emit = defineEmits<{
 const mailingLists = ref<MailingList[]>([])
 const segments = ref<Segment[]>([])
 
-const selectedLists = ref(props.modelValue.mailingLists)
-const selectedSegments = ref(props.modelValue.segments)
-const excludedLists = ref(props.modelValue.excludedLists)
+// Change these to store IDs instead of full objects
+const selectedListIds = ref<number[]>([])
+const selectedSegmentIds = ref<number[]>([])
+const excludedListIds = ref<number[]>([])
+
+// Initialize with IDs from props if available
+onMounted(() => {
+  selectedListIds.value = props.modelValue?.mailingLists.map(list => list.id)
+  selectedSegmentIds.value = props.modelValue?.segments.map(segment => segment.id)
+  excludedListIds.value = props.modelValue?.excludedLists.map(list => list.id)
+})
 
 const fetchLists = async (search?: string) => {
   try {
@@ -80,12 +87,12 @@ const navigateToCreateSegment = () => {
   emit('create-segment')
 }
 
-// Watch for changes and emit updates
-watch([selectedLists, selectedSegments, excludedLists], () => {
+// Watch for changes and emit updates with full objects
+watch([selectedListIds, selectedSegmentIds, excludedListIds], () => {
   emit('update:modelValue', {
-    mailingLists: selectedLists.value,
-    segments: selectedSegments.value,
-    excludedLists: excludedLists.value,
+    mailingLists: mailingLists.value.filter(list => selectedListIds.value.includes(list.id)),
+    segments: segments.value.filter(segment => selectedSegmentIds.value.includes(segment.id)),
+    excludedLists: mailingLists.value.filter(list => excludedListIds.value.includes(list.id)),
   })
 }, { deep: true })
 
@@ -107,17 +114,18 @@ onMounted(async () => {
           :key="list.id"
           :class="[
             'cursor-pointer transition-colors hover:border-primary',
-            selectedLists.includes(list.id) ? 'border-primary bg-primary/5' : ''
+            selectedListIds.includes(list.id) ? 'border-primary bg-primary/5' : ''
           ]"
           @click="
-            selectedLists.includes(list.id)
-              ? selectedLists = selectedLists.filter(id => id !== list.id)
-              : selectedLists.push(list.id)
+            selectedListIds.includes(list.id)
+              ? selectedListIds = selectedListIds.filter(id => id !== list.id)
+              : selectedListIds.push(list.id)
           ">
           <CardContent class="p-4">
             <div class="flex items-center justify-between">
               <div>
                 <h4 class="font-medium">{{ list.name }}</h4>
+
                 <p class="text-sm text-muted-foreground">
                   {{ list.subscriberCount }} subscribers
                 </p>
@@ -128,7 +136,7 @@ onMounted(async () => {
               </div>
 
               <IconCheck
-                v-if="selectedLists.includes(list.id)"
+                v-if="selectedListIds.includes(list.id)"
                 class="h-5 w-5 text-primary"
               />
             </div>
@@ -167,12 +175,12 @@ onMounted(async () => {
           :key="segment.id"
           :class="[
             'cursor-pointer transition-colors hover:border-primary',
-            selectedSegments.includes(segment.id) ? 'border-primary bg-primary/5' : ''
+            selectedSegmentIds.includes(segment.id) ? 'border-primary bg-primary/5' : ''
           ]"
           @click="
-            selectedSegments.includes(segment.id)
-              ? selectedSegments = selectedSegments.filter(id => id !== segment.id)
-              : selectedSegments.push(segment.id)
+            selectedSegmentIds.includes(segment.id)
+              ? selectedSegmentIds = selectedSegmentIds.filter(id => id !== segment.id)
+              : selectedSegmentIds.push(segment.id)
           ">
           <CardContent class="p-4">
             <div class="flex items-center justify-between">
@@ -189,7 +197,7 @@ onMounted(async () => {
               </div>
 
               <IconCircleCheck
-                v-if="selectedSegments.includes(segment.id)"
+                v-if="selectedSegmentIds.includes(segment.id)"
                 class="h-5 w-5 text-primary"
               />
             </div>
@@ -221,9 +229,9 @@ onMounted(async () => {
     <div class="space-y-4">
       <Label>Exclude Lists (Optional)</Label>
       <MultipleCombobox
-        v-model="excludedLists"
+        v-model="excludedListIds"
         :options="mailingLists
-          .filter(list => !selectedLists.includes(list.id))
+          .filter(list => !selectedListIds.includes(list.id))
           .map(list => ({
             value: list.id,
             label: list.name

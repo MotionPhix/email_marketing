@@ -1,36 +1,68 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
-import type { CampaignDraft } from '@/types/campaign'
+import {onMounted, ref, watch} from 'vue'
+import { IconCheck, IconCircleCheck } from '@tabler/icons-vue'
+import {router} from "@inertiajs/vue3";
+import axios from "axios";
 
-const props = defineProps<{
-  modelValue: CampaignDraft['recipients']
-}>()
+interface Props {
+  modelValue: {
+    mailingLists: number[]
+    segments: number[]
+    excludedLists: number[]
+  }
+  error?: string
+}
+
+interface MailingList {
+  id: number
+  name: string
+  subscriberCount: number
+  description?: string
+}
+
+interface Segment {
+  id: number
+  name: string
+  subscriberCount: number
+  description?: string
+}
+
+const props = withDefaults(defineProps<Props>(), {
+  modelValue: () => ({
+    mailingLists: [],
+    segments: [],
+    excludedLists: []
+  })
+})
 
 const emit = defineEmits<{
-  (e: 'update:modelValue', value: CampaignDraft['recipients']): void
+  (e: 'update:modelValue', value: Props['modelValue']): void
 }>()
 
-const lists = ref<{ id: string; name: string; subscriberCount: number }[]>([])
-const segments = ref<{ id: string; name: string; subscriberCount: number }[]>([])
+const mailingLists = ref<MailingList[]>([])
+const segments = ref<Segment[]>([])
 
-const selectedLists = ref(props.modelValue.lists || [])
-const selectedSegments = ref(props.modelValue.segments || [])
-const excludedLists = ref(props.modelValue.excludedLists || [])
+const selectedLists = ref(props.modelValue.mailingLists)
+const selectedSegments = ref(props.modelValue.segments)
+const excludedLists = ref(props.modelValue.excludedLists)
 
-// Fetch lists and segments on mount
-const fetchLists = async () => {
+const fetchLists = async (search?: string) => {
   try {
-    const response = await fetch('/api/lists')
-    lists.value = await response.json()
+    const response = await axios.get(route('api.mailing-lists.index'), {
+      params: { search }
+    })
+    mailingLists.value = response.data.lists
   } catch (error) {
-    console.error('Failed to fetch lists:', error)
+    console.error('Failed to fetch mailing lists:', error)
   }
 }
 
-const fetchSegments = async () => {
+const fetchSegments = async (search?: string) => {
   try {
-    const response = await fetch('/api/segments')
-    segments.value = await response.json()
+    const response = await axios.get(route('api.segments.index'), {
+      params: { search }
+    })
+    segments.value = response.data.segments
   } catch (error) {
     console.error('Failed to fetch segments:', error)
   }
@@ -39,15 +71,17 @@ const fetchSegments = async () => {
 // Watch for changes and emit updates
 watch([selectedLists, selectedSegments, excludedLists], () => {
   emit('update:modelValue', {
-    lists: selectedLists.value,
+    mailingLists: selectedLists.value,
     segments: selectedSegments.value,
     excludedLists: excludedLists.value,
   })
 }, { deep: true })
 
-// Initialize
-fetchLists()
-fetchSegments()
+// Fetch lists and segments on mount
+onMounted(async () => {
+  fetchLists()
+  fetchSegments()
+})
 </script>
 
 <template>
@@ -57,7 +91,7 @@ fetchSegments()
       <Label>Mailing Lists</Label>
       <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <Card
-          v-for="list in lists"
+          v-for="list in mailingLists"
           :key="list.id"
           :class="[
             'cursor-pointer transition-colors hover:border-primary',
@@ -75,10 +109,14 @@ fetchSegments()
                 <p class="text-sm text-muted-foreground">
                   {{ list.subscriberCount }} subscribers
                 </p>
+
+                <p v-if="list.description" class="mt-1 text-xs text-muted-foreground">
+                  {{ list.description }}
+                </p>
               </div>
-              <Icon
+
+              <IconCheck
                 v-if="selectedLists.includes(list.id)"
-                name="check-circle"
                 class="h-5 w-5 text-primary"
               />
             </div>
@@ -107,13 +145,18 @@ fetchSegments()
             <div class="flex items-center justify-between">
               <div>
                 <h4 class="font-medium">{{ segment.name }}</h4>
+
                 <p class="text-sm text-muted-foreground">
                   {{ segment.subscriberCount }} subscribers
                 </p>
+
+                <p v-if="segment.description" class="mt-1 text-xs text-muted-foreground">
+                  {{ segment.description }}
+                </p>
               </div>
-              <Icon
+
+              <IconCircleCheck
                 v-if="selectedSegments.includes(segment.id)"
-                name="check-circle"
                 class="h-5 w-5 text-primary"
               />
             </div>
@@ -126,9 +169,9 @@ fetchSegments()
     <div class="space-y-4">
       <Label>Exclude Lists (Optional)</Label>
       <Select
-        v-model="excludedLists"
         multiple
-        :options="lists.filter(list => !selectedLists.includes(list.id))"
+        v-model="excludedLists"
+        :options="mailingLists.filter(list => !selectedLists.includes(list.id))"
         option-label="name"
         option-value="id">
         <template #trigger>

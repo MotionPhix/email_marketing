@@ -6,6 +6,7 @@ use App\Exports\CampaignsExport;
 use App\Http\Filters\CampaignFilter;
 use App\Models\Campaign;
 use App\Models\EmailTemplate;
+use App\Models\MailingList;
 use App\Services\CampaignService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -13,9 +14,9 @@ use Maatwebsite\Excel\Facades\Excel;
 
 class CampaignController extends Controller
 {
-  public function __construct(protected CampaignService $campaignService)
-  {
-  }
+  public function __construct(
+    protected CampaignService $campaignService
+  ) {}
 
   public function index(Request $request)
   {
@@ -63,16 +64,89 @@ class CampaignController extends Controller
       'name' => 'required|string|max:255',
       'subject' => 'required|string|max:255',
       'from_name' => 'required|string|max:255',
-      'from_email' => 'required|email|max:255',
-      'reply_to' => 'nullable|email|max:255',
-      'template_id' => 'nullable|exists:email_templates,id',
-      'recipients' => 'required|array|min:1',
-      'settings' => 'required|array',
-      'settings.track_opens' => 'boolean',
-      'settings.track_clicks' => 'boolean',
-      'settings.schedule_send' => 'boolean',
-      'settings.scheduled_at' => 'nullable|date|after:now',
-      'settings.timezone' => 'required|string',
+      'from_email' => [
+        'required',
+        'email',
+        function ($attribute, $value, $fail) {
+          // Add additional email validation if needed
+          if (!filter_var($value, FILTER_VALIDATE_EMAIL)) {
+            $fail('The from email must be a valid email address.');
+          }
+        }
+      ],
+      'reply_to' => [
+        'nullable',
+        'email',
+        function ($attribute, $value, $fail) {
+          if ($value && !filter_var($value, FILTER_VALIDATE_EMAIL)) {
+            $fail('The reply-to email must be a valid email address.');
+          }
+        }
+      ],
+      'template_id' => [
+        'nullable',
+        'exists:email_templates,id',
+        function ($attribute, $value, $fail) {
+          if ($value) {
+            $template = EmailTemplate::find($value);
+            if (!$template) {
+              $fail('The selected template does not exist.');
+            }
+            // Add any additional template validation
+          }
+        }
+      ],
+      'recipients' => [
+        'required',
+        'array',
+        function ($attribute, $value, $fail) {
+          if (empty($value['lists']) && empty($value['segments'])) {
+            $fail('Please select at least one list or segment of recipients.');
+          }
+
+          // Validate lists exist
+          if (!empty($value['lists'])) {
+            $listCount = MailingList::whereIn('id', $value['lists'])
+              ->where('team_id', auth()->user()->currentTeam->id)
+              ->count();
+
+                    if ($listCount !== count($value['lists'])) {
+                      $fail('One or more selected lists are invalid.');
+                    }
+                }
+
+          // Validate segments exist
+          if (!empty($value['segments'])) {
+            $segmentCount = Segment::whereIn('id', $value['segments'])
+              ->where('team_id', auth()->user()->currentTeam->id)
+              ->count();
+
+            if ($segmentCount !== count($value['segments'])) {
+              $fail('One or more selected segments are invalid.');
+            }
+          }
+        }
+      ],
+      'settings' => [
+        'required',
+        'array',
+        function ($attribute, $value, $fail) {
+          $requiredSettings = ['track_opens', 'track_clicks'];
+          foreach ($requiredSettings as $setting) {
+            if (!isset($value[$setting])) {
+              $fail("The {$setting} setting is required.");
+            }
+          }
+        }
+      ],
+    ], [
+      'name.required' => 'Please provide a name for your campaign.',
+      'subject.required' => 'Email subject line is required.',
+      'from_name.required' => 'Please specify the sender name.',
+      'from_email.required' => 'Please provide a valid sender email address.',
+      'from_email.email' => 'The sender email must be a valid email address.',
+      'reply_to.email' => 'The reply-to email must be a valid email address.',
+      'recipients.required' => 'Please select campaign recipients.',
     ]);
 
     // If we have an ID, update the existing draft
@@ -101,6 +175,14 @@ class CampaignController extends Controller
       'recipients' => 'required|array',
       'settings' => 'nullable|array',
       'team_id' => auth()->user()->currentTeam->id,
+    ], [
+      'name.required' => 'Please provide a name for your campaign.',
+      'subject.required' => 'Email subject line is required.',
+      'from_name.required' => 'Please specify the sender name.',
+      'from_email.required' => 'Please provide a valid sender email address.',
+      'from_email.email' => 'The sender email must be a valid email address.',
+      'reply_to.email' => 'The reply-to email must be a valid email address.',
+      'recipients.required' => 'Please select campaign recipients.',
     ]);
 
     $campaign = $this->campaignService->create($validated);

@@ -6,7 +6,9 @@ use App\Http\Controllers\Api\V1\TeamController;
 use App\Http\Controllers\Api\V1\TeamMemberController;
 use App\Http\Controllers\CampaignController;
 use App\Http\Controllers\EmailTemplateController;
+use App\Http\Controllers\MailingListController;
 use App\Http\Controllers\OnboardingController;
+use App\Http\Controllers\SegmentController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\SubscriberController;
 use App\Http\Controllers\TeamInvitationController;
@@ -194,6 +196,38 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/', [ApiKeyController::class, 'store']);
     Route::delete('/{apiKey}', [ApiKeyController::class, 'destroy']);
   });*/
+
+  // Additional segment routes for specific functionality
+  Route::prefix('segments')->name('segments.')->group(function () {
+    // Preview segment subscribers
+    Route::get('{segment}/preview', [SegmentController::class, 'preview'])
+      ->name('preview');
+
+    // Duplicate segment
+    Route::post('{segment}/duplicate', [SegmentController::class, 'duplicate'])
+      ->name('duplicate');
+
+    // Calculate segment size
+    Route::post('{segment}/calculate', [SegmentController::class, 'calculateSize'])
+      ->name('calculate-size');
+
+    // Bulk actions
+    Route::post('bulk-delete', [SegmentController::class, 'bulkDestroy'])
+      ->name('bulk-delete');
+  });
+
+  // Segments resource routes
+  Route::resource('segments', SegmentController::class);
+
+  Route::get(
+    'mailing-lists/{mailingList}/subscribers',
+    [MailingListController::class, 'getSubscribers']
+  )->name('mailing-lists.subscribers');
+
+  Route::resource(
+    'mailing-lists',
+    MailingListController::class
+  );
 
   // Branding
   Route::prefix('branding')->group(function () {

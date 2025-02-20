@@ -1,6 +1,7 @@
 <script setup>
 import {computed} from 'vue'
 import Combobox from '@/Components/Combobox.vue'
+import SubscriberSelector from "@/Components/Campaign/SubscriberSelector.vue";
 
 const props = defineProps({
   form: {
@@ -94,6 +95,10 @@ const templateOptions = computed(() =>
                 empty-message="No templates found"
                 @update:model-value="value => form.template_id = value"
               />
+
+              <p v-if="form.errors.template_id" class="text-sm text-destructive">
+                {{ form.errors.template_id }}
+              </p>
             </div>
           </div>
 
@@ -122,6 +127,27 @@ const templateOptions = computed(() =>
             </div>
           </div>
         </div>
+      </CardContent>
+    </Card>
+
+    <!-- Recipients Selection -->
+    <Card>
+      <CardHeader>
+        <CardTitle>Campaign Recipients</CardTitle>
+        <CardDescription>
+          Select who will receive this campaign
+        </CardDescription>
+      </CardHeader>
+
+      <CardContent>
+        <SubscriberSelector
+          v-model="form.recipients"
+          :error="form.errors.recipients"
+        />
+
+        <p v-if="form.errors.recipients" class="mt-2 text-sm text-destructive">
+          {{ form.errors.recipients }}
+        </p>
       </CardContent>
     </Card>
 

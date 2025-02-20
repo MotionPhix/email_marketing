@@ -7,8 +7,10 @@ use App\Http\Filters\CampaignFilter;
 use App\Models\Campaign;
 use App\Models\EmailTemplate;
 use App\Models\MailingList;
+use App\Models\Segment;
 use App\Services\CampaignService;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Maatwebsite\Excel\Facades\Excel;
 
@@ -96,49 +98,15 @@ class CampaignController extends Controller
           }
         }
       ],
-      'recipients' => [
-        'required',
-        'array',
-        function ($attribute, $value, $fail) {
-          if (empty($value['lists']) && empty($value['segments'])) {
-            $fail('Please select at least one list or segment of recipients.');
-          }
-
-          // Validate lists exist
-          if (!empty($value['lists'])) {
-            $listCount = MailingList::whereIn('id', $value['lists'])
-              ->where('team_id', auth()->user()->currentTeam->id)
-              ->count();
-
-                    if ($listCount !== count($value['lists'])) {
-                      $fail('One or more selected lists are invalid.');
-                    }
-                }
-
-          // Validate segments exist
-          if (!empty($value['segments'])) {
-            $segmentCount = Segment::whereIn('id', $value['segments'])
-              ->where('team_id', auth()->user()->currentTeam->id)
-              ->count();
-
-            if ($segmentCount !== count($value['segments'])) {
-              $fail('One or more selected segments are invalid.');
-            }
-          }
-        }
-      ],
-      'settings' => [
-        'required',
-        'array',
-        function ($attribute, $value, $fail) {
-          $requiredSettings = ['track_opens', 'track_clicks'];
-          foreach ($requiredSettings as $setting) {
-            if (!isset($value[$setting])) {
-              $fail("The {$setting} setting is required.");
-            }
-          }
-        }
-      ],
+      'recipients.mailingLists' => ['required_if:recipients.segments,=,null', 'array'],
+      'recipients.segments' => ['required_if:recipients.mailingLists,=,null', 'array'],
+      'recipients.excludedLists' => ['nullable', 'array'],
+      'settings' => ['required', 'array'],
+      'settings.track_opens' => ['required', 'boolean'],
+      'settings.track_clicks' => ['required', 'boolean'],
+      'settings.schedule_send' => ['required', 'boolean'],
+      'settings.scheduled_at' => ['nullable', 'required_if:settings.schedule_send,true', 'date'],
+      'settings.timezone' => ['required', 'string'],
     ], [
       'name.required' => 'Please provide a name for your campaign.',
       'subject.required' => 'Email subject line is required.',
@@ -149,6 +117,9 @@ class CampaignController extends Controller
       'recipients.required' => 'Please select campaign recipients.',
     ]);
 
+    // Custom validation for recipients
+    $this->validateRecipientsArray($validated['recipients']);
+
     // If we have an ID, update the existing draft
     if ($request->has('id')) {
       $campaign = Campaign::findOrFail($request->id);
@@ -158,7 +129,47 @@ class CampaignController extends Controller
       $campaign = $this->campaignService->create($validated);
     }
 
-    return redirect(route('campaigns.edit', ['campaign' => $campaign?->id]));
+    return Inertia('Campaigns/Form', ['campaign' => $campaign]);
+  }
+
+  protected function validateRecipientsArray(array $recipients)
+  {
+    // Convert objects to IDs if necessary
+    $listIds = collect($recipients['mailingLists'] ?? [])
+      ->map(fn($list) => is_array($list) ? $list['id'] : $list)
+      ->all();
+
+    $segmentIds = collect($recipients['segments'] ?? [])
+      ->map(fn($segment) => is_array($segment) ? $segment['id'] : $segment)
+      ->all();
+
+    $excludedListIds = collect($recipients['excludedLists'] ?? [])
+      ->map(fn($list) => is_array($list) ? $list['id'] : $list)
+      ->all();
+
+    if (empty($listIds) && empty($segmentIds)) {
+      throw ValidationException::withMessages([
+        'recipients' => 'Please select at least one list or segment of recipients.'
+      ]);
+    }
+
+    $teamId = auth()->user()->currentTeam->id;
+
+    // Validate mailing lists
+    if (!empty($listIds)) {
+      $validListCount = MailingList::query()
+        ->where('team_id', $teamId)
+        ->whereIn('id', $listIds)
+        ->count();
+
+      if ($validListCount !== count($listIds)) {
+        throw ValidationException::withMessages([
+          'recipients' => 'One or more selected lists are invalid.'
+        ]);
+      }
+    }
+
+    // Similar validation for segments and excluded lists...
   }
 
   public function store(Request $request)

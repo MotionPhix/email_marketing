@@ -52,9 +52,10 @@ const excludedListIds = ref<number[]>([])
 
 // Initialize with IDs from props if available
 onMounted(() => {
-  selectedListIds.value = props.modelValue?.mailingLists.map(list => list.id)
-  selectedSegmentIds.value = props.modelValue?.segments.map(segment => segment.id)
-  excludedListIds.value = props.modelValue?.excludedLists.map(list => list.id)
+  // Use optional chaining and provide default empty arrays
+  selectedListIds.value = props.modelValue?.mailingLists?.map(list => list.id) || []
+  selectedSegmentIds.value = props.modelValue?.segments?.map(segment => segment.id) || []
+  excludedListIds.value = props.modelValue?.excludedLists?.map(list => list.id) || []
 })
 
 const fetchLists = async (search?: string) => {

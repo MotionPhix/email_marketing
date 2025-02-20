@@ -98,7 +98,7 @@ const containerSizes = {
 <!--      </header>-->
 
       <header
-        v-if="$slots.header"
+        v-if="title || $slots.action"
         class="sticky top-0 z-10 bg-white shadow dark:bg-gray-800">
         <div :class="['px-4 py-4 mx-auto sm:px-6 lg:px-8', containerSizes[containerSize]]">
           <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">

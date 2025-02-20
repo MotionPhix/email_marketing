@@ -142,6 +142,8 @@ const templateOptions = computed(() =>
       <CardContent>
         <SubscriberSelector
           v-model="form.recipients"
+          @create-list="router.visit(route('mailing-lists.create'))"
+          @create-segment="router.visit(route('segments.create'))"
           :error="form.errors.recipients"
         />
 

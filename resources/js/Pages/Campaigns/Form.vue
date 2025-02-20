@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import {ref, computed} from 'vue'
-import {Head, useForm} from '@inertiajs/vue3'
+import {Head, Link, useForm} from '@inertiajs/vue3'
 import AppLayout from '@/Layouts/AppLayout.vue'
 import {Button} from '@/Components/ui/button'
 import Steps from '@/Components/Campaign/Steps/Step.vue'
@@ -10,6 +10,8 @@ import StepContainer from '@/Components/Campaign/Steps/StepContainer.vue'
 import {toast} from 'vue-sonner'
 import {useStorage} from '@vueuse/core'
 import type {Campaign, EmailTemplate} from '@/types'
+import CampaignList from "@/Pages/Campaigns/Components/CampaignList.vue";
+import {IconPlus} from "@tabler/icons-vue";
 
 interface Props {
   campaign: Campaign
@@ -237,8 +239,18 @@ const handleSchedule = () => {
 </script>
 
 <template>
-  <AppLayout :title="isEditing ? 'Edit Campaign' : 'Create Campaign'">
+  <AppLayout
+    :title="isEditing ? 'Edit Campaign' : 'Create Campaign'">
     <Head :title="isEditing ? 'Edit Campaign' : 'Create Campaign'"/>
+
+    <template #action>
+      <Button asChild>
+        <Link :href="route('campaigns.create')">
+          <IconPlus class="mr-2 h-4 w-4"/>
+          New Campaign
+        </Link>
+      </Button>
+    </template>
 
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <!-- Progress Steps -->

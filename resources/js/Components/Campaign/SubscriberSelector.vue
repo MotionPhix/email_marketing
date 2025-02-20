@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import {onMounted, ref, watch} from 'vue'
-import { IconCheck, IconCircleCheck } from '@tabler/icons-vue'
+import { IconCheck, IconCircleCheck, IconMailOpened, IconFilterCog } from '@tabler/icons-vue'
+import {PlusIcon} from "lucide-vue-next";
 import {router} from "@inertiajs/vue3";
 import axios from "axios";
 import MultipleCombobox from "@/Components/MultipleCombobox.vue";
@@ -38,6 +39,8 @@ const props = withDefaults(defineProps<Props>(), {
 
 const emit = defineEmits<{
   (e: 'update:modelValue', value: Props['modelValue']): void
+  (e: 'create-list'): void
+  (e: 'create-segment'): void
 }>()
 
 const mailingLists = ref<MailingList[]>([])
@@ -69,6 +72,14 @@ const fetchSegments = async (search?: string) => {
   }
 }
 
+const navigateToCreateList = () => {
+  emit('create-list')
+}
+
+const navigateToCreateSegment = () => {
+  emit('create-segment')
+}
+
 // Watch for changes and emit updates
 watch([selectedLists, selectedSegments, excludedLists], () => {
   emit('update:modelValue', {
@@ -90,7 +101,7 @@ onMounted(async () => {
     <!-- Lists Selection -->
     <div class="space-y-4">
       <Label>Mailing Lists</Label>
-      <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div v-if="mailingLists.length > 0" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <Card
           v-for="list in mailingLists"
           :key="list.id"
@@ -124,12 +135,33 @@ onMounted(async () => {
           </CardContent>
         </Card>
       </div>
+
+      <div v-else class="rounded-lg border border-dashed p-8 text-center">
+        <div class="mx-auto flex max-w-[420px] flex-col items-center justify-center text-center">
+          <IconMailOpened class="h-10 w-10 text-muted-foreground" />
+
+          <h3 class="mt-4 text-lg font-semibold">No mailing lists</h3>
+
+          <p class="mt-2 text-sm text-muted-foreground">
+            You haven't created any mailing lists yet. Lists help you organize your subscribers into groups.
+          </p>
+
+          <Button
+            variant="outline"
+            class="mt-4"
+            @click="navigateToCreateList">
+            <PlusIcon class="h-4 w-4" />
+            Create your first list
+          </Button>
+        </div>
+      </div>
     </div>
 
     <!-- Segments Selection -->
     <div class="space-y-4">
       <Label>Segments</Label>
-      <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+
+      <div v-if="segments.length > 0" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <Card
           v-for="segment in segments"
           :key="segment.id"
@@ -163,6 +195,25 @@ onMounted(async () => {
             </div>
           </CardContent>
         </Card>
+      </div>
+
+      <div v-else class="rounded-lg border border-dashed p-8 text-center">
+        <div class="mx-auto flex max-w-[420px] flex-col items-center justify-center text-center">
+          <IconFilterCog class="h-10 w-10 text-muted-foreground" />
+
+          <h3 class="mt-4 text-lg font-semibold">No segments defined</h3>
+          <p class="mt-2 text-sm text-muted-foreground">
+            Create segments to filter subscribers based on their properties or behavior.
+          </p>
+
+          <Button
+            variant="outline"
+            class="mt-4"
+            @click="navigateToCreateSegment">
+            <PlusIcon class="h-4 w-4" />
+            Create your first segment
+          </Button>
+        </div>
       </div>
     </div>
 

@@ -18,7 +18,9 @@ class CampaignController extends Controller
 {
   public function __construct(
     protected CampaignService $campaignService
-  ) {}
+  )
+  {
+  }
 
   public function index(Request $request)
   {
@@ -123,7 +125,7 @@ class CampaignController extends Controller
     $this->validateRecipientsArray($validated['recipients']);
 
     // If we have an ID, update the existing draft
-    if ($request->has('id') && ! empty($request->id)) {
+    if ($request->has('id') && !empty($request->id)) {
       $campaign = Campaign::findOrFail($request->id);
       $campaign = $this->campaignService->update($campaign, $validated);
     } else {
@@ -131,15 +133,8 @@ class CampaignController extends Controller
       $campaign = $this->campaignService->create($validated);
     }
 
-    return Inertia::render('Campaigns/Form', [
-      'campaign' => $campaign,
-      'templates' => $request->user()->currentTeam->templates,
-      'userSettings' => auth()->user()->settings()->first([
-        'sender_settings->default_sender_name as from_name',
-        'sender_settings->default_sender_email as from_email',
-        'sender_settings->reply_to as reply_to'
-      ]),
-      'step' => 2,
+    return redirect()->route('campaigns.edit', [
+      'campaign' => $campaign->id,
     ]);
   }
 
@@ -234,13 +229,19 @@ class CampaignController extends Controller
     ]);
   }
 
-  public function edit(Campaign $campaign)
+  public function edit(Request $request, Campaign $campaign)
   {
     $campaign->load('template');
 
     return Inertia::render('Campaigns/Form', [
       'campaign' => $campaign,
-      'templates' => EmailTemplate::all()
+      'templates' => $request->user()->currentTeam->templates,
+      'userSettings' => auth()->user()->settings()->first([
+        'sender_settings->default_sender_name as from_name',
+        'sender_settings->default_sender_email as from_email',
+        'sender_settings->reply_to as reply_to'
+      ]),
+      'step' => $campaign->current_step ?? 2,
     ]);
   }
 
@@ -253,7 +254,7 @@ class CampaignController extends Controller
       'from_email' => 'required|email',
       'reply_to' => 'nullable|email',
       'current_step' => ['required', 'integer', 'min:1', 'max:2'],
-      'content' => 'required|string',
+      'content' => 'nullable|string',
       'template_id' => 'nullable|exists:templates,id',
       'scheduled_at' => 'nullable|date|after:now',
       'recipients' => 'required|array',

@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { ref, watch, onBeforeUnmount, computed } from 'vue'
 import UITransition from '@/Components/Transition.vue'
 import UnlayerEmailEditor from '@/Components/Campaign/UnlayerEmailEditor.vue'
-import { Button } from '@/Components/ui/button'
 import { formatDistanceToNow } from 'date-fns'
+import { toast } from 'vue-sonner'
 
 interface EditorProps {
   modelValue: string
@@ -32,57 +32,105 @@ const emit = defineEmits<EditorEmits>()
 const editor = ref<InstanceType<typeof UnlayerEmailEditor> | null>(null)
 const previewMode = ref(false)
 const previewDevice = ref<'desktop' | 'mobile' | 'tablet'>('desktop')
-const previewHtml = ref('')
 const isExporting = ref(false)
+const previewHtml = ref('')
+const isEditorReady = ref(false)
+const isLoading = ref(false)
 
-// Handle saving
-const handleSave = async (isDraft = true) => {
-  try {
-    if (!editor.value) {
-      throw new Error('Editor not initialized')
-    }
+const onEditorReady = () => {
+  isEditorReady.value = true
+  console.log('Editor is ready')
+}
 
-    const design = await editor.value.saveDesign()
+const handleSave = (isDraft = true) => {
+  if (!editor.value) {
+    console.error('Editor reference is null')
+    toast.error('Editor is not ready. Please try again.')
+    return
+  }
+
+  isLoading.value = true
+  console.log('Attempting to save design...')
+
+  editor.value.saveDesign((design) => {
     if (!design) {
-      throw new Error('Failed to save design')
+      console.error('No design data returned')
+      toast.error('Failed to save design. Please try again.')
+      isLoading.value = false
+      return
     }
 
     emit('save', { design, isDraft })
-  } catch (error) {
-    console.error('Error saving design:', error)
-    throw error
-  }
+    toast.success('Design saved successfully')
+    isLoading.value = false
+  })
 }
 
 const handleContentChange = () => {
   emit('content:change')
 }
 
-// Handle preview updates
+const togglePreviewMode = () => {
+  previewMode.value = !previewMode.value
+  console.log(`Preview mode: ${previewMode.value}`)
+}
+
+const exportHtml = () => {
+  if (!editor.value) {
+    console.error('Editor reference is null')
+    toast.error('Editor is not ready. Please try again.')
+    return
+  }
+
+  isExporting.value = true
+  console.log('Attempting to export design...')
+
+  editor.value.exportHtml((data) => {
+    if (!data || !data.html) {
+      console.error('No HTML data returned')
+      toast.error('Failed to export HTML. Please try again.')
+      isExporting.value = false
+      return
+    }
+
+    previewHtml.value = data.html
+    console.log('Design exported successfully')
+    toast.success('Design exported successfully')
+    isExporting.value = false
+  })
+}
+
 watch(
-  [
-    () => previewMode.value,
-    () => previewDevice.value
-  ],
-  async ([newPreviewMode]) => {
+  () => props.modelValue,
+  (newValue) => {
+    if (newValue && editor.value) {
+      editor.value.loadDesign(JSON.parse(newValue))
+    }
+  }
+)
+
+watch(
+  [() => previewMode.value, () => previewDevice.value],
+  ([newPreviewMode]) => {
     if (!newPreviewMode || !editor.value || isExporting.value) return
 
+    isExporting.value = true
+
     try {
-      isExporting.value = true
-      const result = await editor.value.exportHtml()
-      if (result?.html) {
-        previewHtml.value = result.html
-      }
+      editor.value.exportHtml((data) => {
+        if (data?.html) {
+          previewHtml.value = data.html
+        }
+        isExporting.value = false
+      })
     } catch (error) {
       console.error('Error exporting HTML:', error)
       previewHtml.value = '<div class="p-4 text-red-500">Error loading preview</div>'
-    } finally {
       isExporting.value = false
     }
   }
 )
 
-// Computed properties
 const lastSavedText = computed(() => {
   if (!props.lastSaved) return ''
   try {
@@ -97,10 +145,21 @@ const shouldShowMobileView = computed(() =>
   previewMode.value && previewDevice.value === 'mobile'
 )
 
-// Expose methods to parent
+onBeforeUnmount(() => {
+  isExporting.value = false
+  previewMode.value = false
+  previewHtml.value = ''
+})
+
 defineExpose({
   saveDesign: handleSave,
-  exportHtml: () => editor.value?.exportHtml()
+  exportHtml: () => {
+    if (!editor.value) return
+    return new Promise((resolve) => {
+      editor.value.exportHtml((data) => resolve(data))
+    })
+  },
+  isReady: isEditorReady
 })
 </script>
 
@@ -115,15 +174,38 @@ defineExpose({
           Back to Details
         </Button>
 
+        <!-- Preview controls -->
+        <div class="flex items-center space-x-2">
+          <Button
+            size="sm"
+            variant="outline"
+            :class="{ 'bg-primary text-primary-foreground': previewMode }"
+            @click="togglePreviewMode">
+            {{ previewMode ? 'Edit' : 'Preview' }}
+          </Button>
+
+          <div v-if="previewMode" class="flex items-center space-x-1">
+            <Button
+              v-for="device in ['desktop', 'tablet', 'mobile']"
+              :key="device"
+              size="sm"
+              variant="outline"
+              :class="{ 'bg-primary text-primary-foreground': previewDevice === device }"
+              @click="previewDevice = device">
+              {{ device }}
+            </Button>
+          </div>
+        </div>
+
         <span
-          v-if="lastSaved"
+          v-if="props.lastSaved"
           class="text-sm text-muted-foreground"
-          :title="lastSaved">
+          :title="props.lastSaved">
           {{ lastSavedText }}
         </span>
 
         <span
-          v-if="isSaving"
+          v-if="props.isSaving"
           class="text-sm text-muted-foreground animate-pulse">
           Saving...
         </span>
@@ -132,44 +214,69 @@ defineExpose({
       <div class="flex items-center space-x-4">
         <Button
           variant="outline"
-          :disabled="processing || isSaving"
           @click="handleSave(true)">
+          <template v-if="isLoading">
+            <span class="animate-spin mr-2">⌛</span>
+          </template>
           Save Draft
         </Button>
 
         <Button
           variant="default"
-          :disabled="processing || isSaving"
+          :disabled="props.processing || props.isSaving || !isEditorReady || isLoading"
           @click="handleSave(false)">
+          <template v-if="isLoading">
+            <span class="animate-spin mr-2">⌛</span>
+          </template>
           Save & Continue
         </Button>
       </div>
     </header>
 
     <!-- Editor/Preview -->
-    <main class="flex-1 relative">
+    <main class="flex-1 relative overflow-hidden">
       <UITransition>
         <div
           v-if="previewMode"
           class="absolute inset-0 bg-background"
           :class="{ 'max-w-md mx-auto': shouldShowMobileView }">
-          <div
-            class="h-full w-full overflow-auto"
-            v-html="previewHtml"
-          />
+          <div class="h-full w-full overflow-auto">
+            <div v-if="previewHtml" v-html="previewHtml" />
+            <div v-else class="p-4 text-muted-foreground">
+              Loading preview...
+            </div>
+          </div>
         </div>
 
         <div v-else class="h-full">
           <UnlayerEmailEditor
             ref="editor"
-            :model-value="modelValue"
-            :initial-design="initialContent ? JSON.parse(initialContent) : null"
+            :model-value="props.modelValue"
+            :initial-design="props.initialContent ? JSON.parse(props.initialContent) : null"
             class="h-full w-full"
             @update:model-value="$emit('update:modelValue', $event)"
             @change="handleContentChange"
+            @ready="onEditorReady"
           />
         </div>
       </UITransition>
     </main>
   </div>
 </template>
+
+<style scoped>
+.email-editor-container {
+  height: 80%;
+}
+
+.preview-mode-container {
+  height: 80%;
+  overflow: auto;
+}
+
+.actions {
+  display: flex;
+  justify-content: space-around;
+  margin-top: 10px;
+}
+</style>

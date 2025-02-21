@@ -138,28 +138,50 @@ const steps = [
 
 // Navigation handlers
 const handleNext = () => {
-  // Save first step data and create draft campaign
-  form.post(route('campaigns.draft'), {
-    preserveScroll: true,
-    onSuccess: (response) => {
-      // Update form with returned campaign data (to get the ID)
-      if (response?.props?.campaign) {
-        form.id = response.props.campaign.id
+
+  if (props.campaign.id) {
+
+    // Save first step data and create draft campaign
+    form.put(route('campaigns.update', props.campaign.id), {
+      preserveScroll: true,
+      onSuccess: (response) => {
+        // Update form with returned campaign data (to get the ID)
+        if (response?.props?.campaign) {
+          form.id = response.props.campaign.id
+        }
+        form.current_step = 2 // Set the next step
+        toast.success('Campaign details saved')
+      },
+      onError: () => {
+        form.current_step = 1
+        toast.error('Please fix the validation errors before continuing')
       }
-      currentStep.value++
-      form.current_step = 2 // Set the next step
-      toast.success('Campaign details saved')
-    },
-    onError: () => {
-      form.current_step = 1
-      toast.error('Please fix the validation errors before continuing')
-    }
-  })
+    })
+
+  } else {
+
+    // Save first step data and create draft campaign
+    form.post(route('campaigns.draft'), {
+      preserveScroll: true,
+      onSuccess: (response) => {
+        // Update form with returned campaign data (to get the ID)
+        if (response?.props?.campaign) {
+          form.id = response.props.campaign.id
+        }
+        form.current_step = 2 // Set the next step
+        toast.success('Campaign details saved')
+      },
+      onError: () => {
+        form.current_step = 1
+        toast.error('Please fix the validation errors before continuing')
+      }
+    })
+
+  }
 }
 
 const handleBack = () => {
   form.current_step = 1
-  currentStep.value--
 }
 
 // Save handlers

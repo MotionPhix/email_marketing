@@ -118,7 +118,7 @@ const editorOptions = {
     theme: isDark ? 'dark' : 'white',
     panels: {
       tools: {
-        dock: 'left',
+        dock: 'right',
       },
     },
     colors: {
@@ -235,11 +235,18 @@ const onEditorReady = () => {
 </script>
 
 <template>
-  <div class="h-full relative">
+  <div class="min-h-screen relative">
     <EmailEditor
       ref="editor"
+      :min-height="'100vh'"
       :options="editorOptions"
       @ready="onEditorReady"
     />
   </div>
 </template>
+
+<style>
+iframe {
+  @apply !min-h-screen;
+}
+</style>

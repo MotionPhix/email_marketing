@@ -86,6 +86,8 @@ export interface Campaign {
   events?: CampaignEvent[]
   team?: Team
   user?: User
+
+  current_step: number // Add this line
 }
 
 interface Link {

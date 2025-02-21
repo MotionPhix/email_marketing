@@ -28,11 +28,12 @@ class CampaignService
         'from_name' => $data['from_name'],
         'from_email' => $data['from_email'],
         'reply_to' => $data['reply_to'],
-        'content' => $data['content'] ?? 'No content yet',
+        'content' => $data['content'] ?? '',
         'template_id' => $data['template_id'],
         'scheduled_at' => $data['scheduled_at'] ?? null,
         'recipients' => $data['recipients'],
         'settings' => $data['settings'] ?? [],
+        'current_step' => $data['current_step'] ?? 1,
         'status' => 'draft'
       ]);
 
@@ -57,7 +58,8 @@ class CampaignService
         'template_id' => $data['template_id'],
         'scheduled_at' => $data['scheduled_at'],
         'recipients' => $data['recipients'],
-        'settings' => $data['settings'] ?? $campaign->settings,
+        'settings' => array_merge($campaign->settings ?? [], $data['settings'] ?? []),
+        'current_step' => $data['current_step'] ?? $campaign->current_step,
       ]);
 
       return $campaign->fresh(['template']);

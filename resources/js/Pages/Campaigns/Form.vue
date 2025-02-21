@@ -8,9 +8,9 @@ import DetailStep from '@/Components/Campaign/Steps/DetailStep.vue'
 import EditorStep from '@/Components/Campaign/Steps/EditorStep.vue'
 import StepContainer from '@/Components/Campaign/Steps/StepContainer.vue'
 import {toast} from 'vue-sonner'
-import {useStorage} from '@vueuse/core'
 import type {Campaign, EmailTemplate} from '@/types'
 import {IconPlus} from "@tabler/icons-vue";
+import {useStorage} from "@vueuse/core";
 
 interface Props {
   campaign: Campaign
@@ -42,11 +42,12 @@ const form = useForm({
     scheduled_at: props.campaign.settings?.scheduled_at || null,
     timezone: props.campaign.settings?.timezone ||
       Intl.DateTimeFormat().resolvedOptions().timeZone
-  }
+  },
+  current_step: props.campaign.current_step || 1, // Add this line
 })
 
 const isEditing = computed(() => !!props.campaign.id)
-const currentStep = useStorage('campaign_form_step', 1)
+const currentStep = computed(() => form.current_step)
 const editor = ref<InstanceType<typeof EditorStep> | null>(null)
 const lastSaved = useStorage('campaign_last_saved', '')
 
@@ -146,15 +147,18 @@ const handleNext = () => {
         form.id = response.props.campaign.id
       }
       currentStep.value++
+      form.current_step = 2 // Set the next step
       toast.success('Campaign details saved')
     },
     onError: () => {
+      form.current_step = 1
       toast.error('Please fix the validation errors before continuing')
     }
   })
 }
 
 const handleBack = () => {
+  form.current_step = 1
   currentStep.value--
 }
 

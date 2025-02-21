@@ -27,6 +27,7 @@ class Campaign extends Model
     'sent_at',
     'settings',
     'recipients',
+    'current_step',
     'team_id',
     'user_id',
   ];
@@ -36,6 +37,10 @@ class Campaign extends Model
     'recipients' => 'json',
     'scheduled_at' => 'datetime',
     'sent_at' => 'datetime',
+  ];
+
+  protected $attributes = [
+    'current_step' => 1,
   ];
 
   const STATUS_DRAFT = 'draft';

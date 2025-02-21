@@ -66,6 +66,7 @@ class CampaignController extends Controller
       'name' => 'required|string|max:255',
       'subject' => 'required|string|max:255',
       'from_name' => 'required|string|max:255',
+      'current_step' => ['required', 'integer', 'min:1', 'max:2'],
       'content' => 'nullable|string|max:255',
       'from_email' => [
         'required',
@@ -190,6 +191,7 @@ class CampaignController extends Controller
       'from_name' => 'required|string|max:255',
       'from_email' => 'required|email',
       'reply_to' => 'nullable|email',
+      'current_step' => ['required', 'integer', 'min:1', 'max:2'],
       'content' => 'required|string',
       'template_id' => 'nullable|exists:templates,id',
       'scheduled_at' => 'nullable|date|after:now',
@@ -250,6 +252,7 @@ class CampaignController extends Controller
       'from_name' => 'required|string|max:255',
       'from_email' => 'required|email',
       'reply_to' => 'nullable|email',
+      'current_step' => ['required', 'integer', 'min:1', 'max:2'],
       'content' => 'required|string',
       'template_id' => 'nullable|exists:templates,id',
       'scheduled_at' => 'nullable|date|after:now',
